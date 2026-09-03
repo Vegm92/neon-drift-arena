@@ -16,6 +16,7 @@ type Action =
     | Rematch
     | Restart
     | Quit
+    | Configure
 
 let joined = HashSet<int>()
 let teams: int[] = Array.zeroCreate 4
@@ -30,6 +31,7 @@ let private owner = Array.create 4 ""
 let mutable private teamMode = false
 let mutable private optRows: Settings.Row list = []
 let mutable private optCursor = 0
+let mutable private optBack = Lobby
 let mutable private repeatAt = 0.
 let private held = HashSet<string>()
 let private el = document.getElementById "menu"
@@ -83,7 +85,7 @@ let private hide () =
 
 let private items () =
     match screen with
-    | Pause -> [ Strings.t.Resume, Resume; Strings.t.Restart, Restart; Strings.t.Quit, Quit ]
+    | Pause -> [ Strings.t.Resume, Resume; Strings.t.Settings, Configure; Strings.t.Restart, Restart; Strings.t.Quit, Quit ]
     | _ -> [ Strings.t.Rematch, Rematch; Strings.t.Quit, Quit ]
 
 let private teamName t = [| ""; Strings.t.Blue; Strings.t.Red |].[t]
@@ -244,6 +246,7 @@ let private renderOptions () =
             Strings.t.OptHint
 
 let private openOptions () =
+    optBack <- screen
     optRows <- Settings.rows ()
     optCursor <- optRows |> List.findIndex Settings.selectable
     open' Options
@@ -323,10 +326,11 @@ let private updateOptions () =
         if esc || start then back <- true
     renderOptions ()
     if back then
-        let devices = Input.devices ()
-        for s in Seq.toArray joined do
-            if not (devices |> Array.exists (fun d -> d.Key = owner.[s] && d.Slot = s)) then leave s
-        open' Lobby
+        if optBack = Lobby then
+            let devices = Input.devices ()
+            for s in Seq.toArray joined do
+                if not (devices |> Array.exists (fun d -> d.Key = owner.[s] && d.Slot = s)) then leave s
+        open' optBack
 
 let private updateList (title: string) (inputs: Input[]) =
     let n = (items ()).Length
@@ -341,8 +345,14 @@ let private updateList (title: string) (inputs: Input[]) =
         if fire || start then action <- Some(snd (items ()).[cursor])
         if rising k "back" inp.Back then action <- Some(if screen = Pause then Resume else Quit))
     renderList title
-    action |> Option.iter (fun _ -> hide ())
-    action
+    match action with
+    | Some Configure ->
+        openOptions ()
+        None
+    | Some _ ->
+        hide ()
+        action
+    | None -> None
 
 let update (inputs: Input[]) =
     match screen with

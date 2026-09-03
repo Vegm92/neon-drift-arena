@@ -39,6 +39,7 @@ type Locale =
       Team: string -> string
       Tweaks: string
       Reset: string
+      Save: string
       Settings: string
       Arena: string
       Arenas: string[]
@@ -125,6 +126,7 @@ let en =
       NavKeys = [ "W / S / STICK", "MOVE"; "SPACE / A", "SELECT"; "ESC / B", "BACK" ]
       Tweaks = "TWEAKS"
       Reset = "RESET"
+      Save = "SAVE TO CODE"
       Settings = "SETTINGS"
       Arena = "ARENA"
       Arenas = [| "CORE RING"; "CROSS BASTIONS"; "PINWHEEL"; "TWIN GAUNTLET"; "OPEN BELT" |]
