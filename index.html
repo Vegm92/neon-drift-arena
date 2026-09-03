@@ -92,9 +92,12 @@
   #menu .lobby .slot.away{filter:brightness(.7)}
   #menu .lobby .slot.away .foot::after{content:" \25BC"}
   #menu .lobby .note{font-size:11px;letter-spacing:.25em;color:#ff2bd6;min-height:1em}
-  #menu .lobby .legends{display:grid;grid-template-columns:1fr 1fr;gap:clamp(8px,1.4vw,22px);width:100%}
+  #menu .lobby .legends{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:clamp(8px,1.4vw,22px);width:100%}
   #menu .lobby .legend{padding:10px 16px;text-align:left;border:1px solid #26405e;border-radius:6px;background:rgba(8,14,26,.5)}
   #menu .lobby .legend:first-child{color:#00f6ff}.lobby .legend:last-child{color:#ff2bd6}
+  #menu .lobby .legend.qr{color:#00f6ff;display:flex;flex-direction:column;align-items:center;gap:6px;filter:drop-shadow(0 0 10px rgba(0,246,255,.5))}
+  #menu .lobby .legend.qr svg{width:clamp(90px,10vw,150px);height:auto}
+  #menu .lobby .legend.qr .url{font-size:clamp(8px,.8vw,11px);letter-spacing:.1em;color:#cfe;opacity:.7}
   #menu .lobby .lt{font-size:clamp(9px,1vw,13px);letter-spacing:.24em;text-shadow:0 0 12px currentColor}
   #menu .lobby .keys{display:flex;flex-wrap:wrap;justify-content:space-around;gap:8px 4px;margin-top:8px;color:#cfe}
   #menu .lobby .key{text-align:center}

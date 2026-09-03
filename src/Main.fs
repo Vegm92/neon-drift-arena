@@ -1,6 +1,7 @@
 module Main
 
 open Browser
+open Fable.Core.JsInterop
 open Domain
 
 Input.init ()
@@ -10,6 +11,7 @@ let view = Render.create ()
 let banner = document.getElementById "banner"
 let mutable world = Sim.initial
 let mutable last = 0.
+let mutable lastHost = 0.
 let mutable acc = 0.
 let mutable countdown = 0.
 let mutable slowmo = 0.
@@ -96,9 +98,16 @@ let private announce (w: World) (events: Event list) =
             hyped.[s.Id] <- true
             if shout <= 0. then say (Strings.t.OnFire(name s.Id)))
 
+let private broadcast () =
+    let pads = createObj [ for d in Input.devices () do if d.Key.StartsWith "ph:" then d.Key.Substring 3 ==> Menu.padCard d.Key ]
+    Input.hotSend "nda:host" (createObj [ "phase" ==> Menu.phase (); "pads" ==> pads ])
+
 let rec frame (t: float) =
     let dt = if last = 0. then 0. else (t - last) / 1000. |> max 0. |> min 0.1
     last <- t
+    if t - lastHost > 100. then
+        lastHost <- t
+        broadcast ()
     Sfx.track (Menu.visible ())
     if Menu.visible () then
         Sfx.silence ()

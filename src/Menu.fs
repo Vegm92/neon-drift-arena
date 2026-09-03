@@ -3,7 +3,11 @@ module Menu
 open System.Collections.Generic
 open Browser
 open Fable.Core
+open Fable.Core.JsInterop
 open Domain
+
+[<Import("qrToSvg", "./qr.js")>]
+let private qrToSvg (text: string) : string = jsNative
 
 type Screen =
     | Lobby
@@ -38,6 +42,8 @@ let private el = document.getElementById "menu"
 let private colors = [| "#00f6ff"; "#ff2bd6"; "#b6ff3b"; "#ffb347" |]
 let private teamColors = [| ""; "#3b7bff"; "#ff3b5c" |]
 let private window' = 11
+let mutable private padUrl = ""
+window?fetch("/__pad-url")?``then``(fun r -> r?text())?``then``(fun (t: string) -> padUrl <- t) |> ignore
 
 let visible () = shown
 
@@ -140,6 +146,22 @@ let private ship i =
     let k = if teams.[i] > 0 then teams.[i] - 1 else [| 0; 1; 3; 4 |].[playerColor.[i]]
     sprintf "<i class=\"ship k%d t%d\"></i>" k teams.[i]
 
+let private cardColor i = if teams.[i] > 0 then teamColors.[teams.[i]] else colors.[playerColor.[i]]
+
+let phase () =
+    if not shown then "play"
+    else match screen with Lobby -> "lobby" | _ -> "menu"
+
+let padCard (key: string) : obj =
+    match [ 0..3 ] |> List.tryFind (fun s -> joined.Contains s && owner.[s] = key) with
+    | Some i ->
+        createObj [ "slot" ==> i; "name" ==> Strings.t.Player i; "color" ==> cardColor i; "ship" ==> ship i; "pick" ==> pickName i; "ready" ==> ready.[i] ]
+    | None -> null
+
+let private qr () =
+    if padUrl = "" then ""
+    else sprintf "<div class=\"legend qr\"><div class=\"lt\">%s</div>%s<div class=\"url\">%s</div></div>" Strings.t.ScanToJoin (qrToSvg padUrl) padUrl
+
 let private plus =
     "<svg viewBox=\"0 0 100 100\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linejoin=\"round\"><path d=\"M50 8 L86 29 L86 71 L50 92 L14 71 L14 29 Z\"/><path d=\"M50 34 L50 66 M34 50 L66 50\" stroke-width=\"4\"/></svg>"
 
@@ -165,7 +187,7 @@ let private renderLobby (devices: Input.Device[]) =
                   dev
                   |> Option.map (fun d -> if d.Key = "kb" then Strings.t.Keyboard else d.Name)
                   |> Option.defaultValue Strings.t.PressToJoin
-              let color = if teams.[i] > 0 then teamColors.[teams.[i]] else colors.[playerColor.[i]]
+              let color = cardColor i
               let foot =
                   if not inGame then ""
                   elif ready.[i] then sprintf "<div class=\"foot\">%s</div>" Strings.t.Ready
@@ -182,7 +204,7 @@ let private renderLobby (devices: Input.Device[]) =
         |> Seq.filter (fun s -> onRow.[s])
         |> Seq.sort
         |> Seq.map (fun s ->
-            let c = if teams.[s] > 0 then teamColors.[teams.[s]] else colors.[playerColor.[s]]
+            let c = cardColor s
             sprintf "<i style=\"color:%s\">%s</i>" c (Strings.t.Player s))
         |> String.concat ""
     let picks =
@@ -209,10 +231,12 @@ let private renderLobby (devices: Input.Device[]) =
         else Strings.t.NeedReady
     el.innerHTML <-
         sprintf
-            "<div class=\"lobby\"><div class=\"title\"><h1>%s</h1><div class=\"sub\">%s</div></div><div class=\"modebar\">%s</div><div class=\"slots\">%s</div><div class=\"hints\">%s</div><div class=\"buttons\">%s</div><div class=\"note\">%s</div><div class=\"legends\">%s%s</div></div>"
+            "<div class=\"lobby\"><div class=\"title\"><h1>%s</h1><div class=\"sub\">%s</div></div><div class=\"modebar\">%s</div><div class=\"slots\">%s</div><div class=\"hints\">%s</div><div class=\"buttons\">%s</div><div class=\"note\">%s</div><div class=\"legends\">%s%s%s%s</div></div>"
             Strings.t.TitleMain Strings.t.TitleSub mode slots hints picks note
             (legend Strings.t.Keyboard Strings.t.KbLegend)
             (legend Strings.t.Gamepad Strings.t.PadLegend)
+            (legend Strings.t.Phone Strings.t.PhoneLegend)
+            (qr ())
 
 let private renderList (title: string) =
     let list =
@@ -221,8 +245,8 @@ let private renderList (title: string) =
         |> String.concat ""
     let hints = Strings.t.NavKeys |> List.map (fun (k, l) -> hint k l) |> String.concat ""
     el.innerHTML <-
-        sprintf "<div class=\"lobby\"><div class=\"title\"><h1>%s</h1></div><div class=\"stats\">%s</div><div class=\"buttons col\">%s</div><div class=\"hints\">%s</div></div>"
-            title note list hints
+        sprintf "<div class=\"lobby\"><div class=\"title\"><h1>%s</h1></div><div class=\"stats\">%s</div><div class=\"buttons col\">%s</div><div class=\"hints\">%s</div>%s</div>"
+            title note list hints (if screen = Pause then qr () else "")
 
 let private renderOptions () =
     let n = optRows.Length
@@ -251,8 +275,13 @@ let private openOptions () =
     optCursor <- optRows |> List.findIndex Settings.selectable
     open' Options
 
+let private dropMissing (devices: Input.Device[]) =
+    for s in Seq.toArray joined do
+        if not (devices |> Array.exists (fun d -> d.Key = owner.[s] && d.Slot = s)) then leave s
+
 let private updateLobby () =
     let devices = Input.devices ()
+    dropMissing devices
     let mutable launch = false
     let mutable options = false
     for d in devices do
@@ -326,10 +355,7 @@ let private updateOptions () =
         if esc || start then back <- true
     renderOptions ()
     if back then
-        if optBack = Lobby then
-            let devices = Input.devices ()
-            for s in Seq.toArray joined do
-                if not (devices |> Array.exists (fun d -> d.Key = owner.[s] && d.Slot = s)) then leave s
+        if optBack = Lobby then dropMissing (Input.devices ())
         open' optBack
 
 let private updateList (title: string) (inputs: Input[]) =

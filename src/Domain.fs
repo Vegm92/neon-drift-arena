@@ -77,6 +77,9 @@ module Cfg =
     let mutable pulseForce = 430.
     let pulseAmmo = 3
 
+    let mutable padAimOn = 0.15
+    let mutable padThrustOn = 0.5
+
     let tunables: (string * (unit -> float) * (float -> unit))[] =
         [| "turnRate", (fun () -> turnRate), (fun x -> turnRate <- x)
            "thrustAccel", (fun () -> thrustAccel), (fun x -> thrustAccel <- x)
@@ -115,7 +118,9 @@ module Cfg =
            "seekerDamage", (fun () -> seekerDamage), (fun x -> seekerDamage <- x)
            "pulseRange", (fun () -> pulseRange), (fun x -> pulseRange <- x)
            "pulseCone", (fun () -> pulseCone), (fun x -> pulseCone <- x)
-           "pulseForce", (fun () -> pulseForce), (fun x -> pulseForce <- x) |]
+           "pulseForce", (fun () -> pulseForce), (fun x -> pulseForce <- x)
+           "padAimOn", (fun () -> padAimOn), (fun x -> padAimOn <- x)
+           "padThrustOn", (fun () -> padThrustOn), (fun x -> padThrustOn <- x) |]
 
 type Input =
     { Turn: float

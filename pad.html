@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Neon Drift Pad</title>
+<link rel="icon" href="data:,">
+<style>
+  html,body{margin:0;height:100%;background:#03030a;overflow:hidden;font-family:ui-monospace,Consolas,monospace;color:#cfe;
+    touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+  #pad{position:fixed;inset:0;display:flex;letter-spacing:.2em}
+  .zone{position:relative;flex:1;overflow:hidden}
+  .ring,.knob{position:absolute;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none}
+  .ring{width:140px;height:140px;border:2px solid #00f6ff;opacity:.5;box-shadow:0 0 18px #00f6ff}
+  .knob{width:56px;height:56px;background:#00f6ff;box-shadow:0 0 22px #00f6ff}
+  .hidden{display:none}
+  .fire{display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:22px;color:#ff2bd6;text-shadow:0 0 16px #ff2bd6}
+  .fire small{font-size:10px;opacity:.6;margin-top:10px}
+  .fire.on{background:radial-gradient(circle,rgba(255,43,214,.35),transparent 70%)}
+  .fire.boost{background:radial-gradient(circle,rgba(0,246,255,.45),transparent 70%);color:#00f6ff;text-shadow:0 0 16px #00f6ff}
+  .btn{position:absolute;padding:14px 18px;border:2px solid #26405e;border-radius:6px;background:rgba(8,14,26,.7);font-size:14px;text-align:center;color:#cfe}
+  .btn.on{border-color:#00f6ff;color:#fff;box-shadow:0 0 18px #00f6ff}
+  .btn.special{right:16px;top:16px;color:#b6ff3b;border-color:#b6ff3b}
+  .btn.special.on{background:#b6ff3b;color:#03030a}
+  .btn.menu{left:50%;top:12px;transform:translateX(-50%);padding:6px 16px}
+  .card{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}
+  .card b{font-size:26px;text-shadow:0 0 14px currentColor}
+  .card .art{width:min(30vh,160px);aspect-ratio:1;filter:drop-shadow(0 0 10px currentColor)}
+  .card .ship{display:block;width:100%;aspect-ratio:530/450;background:url(/ships.png) no-repeat;background-size:289.81% 227.56%}
+  .k0{background-position:21.57% 6.97%}.k1{background-position:78.53% 8.01%}
+  .k2{background-position:1.19% 78.75%}.k3{background-position:49.9% 83.8%;transform:rotate(180deg)}.k4{background-position:97.81% 82.58%}
+  .t1{filter:hue-rotate(35deg)}.t2{filter:hue-rotate(50deg)}
+  .row{display:flex;gap:14px;align-items:center}
+  .card .btn{position:static;color:#cfe}
+  .btn.big{padding:18px 36px;font-size:18px}
+  .btn.ready{background:currentColor}
+  .btn.ready span{color:#03030a}
+  .title{font-size:22px;color:#00f6ff;text-shadow:0 0 18px #00f6ff}
+</style>
+</head>
+<body>
+<div id="pad"></div>
+<script type="module" src="/build/Pad.js"></script>
+</body>
+</html>

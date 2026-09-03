@@ -19,12 +19,17 @@ Requires the .NET 10 SDK (Fable 5.15 ships as a net10.0 tool) and Node 18+.
 |------|--------|------|--------|--------|---------|-------|------|---------|---------|
 | P1 | Keyboard | A / D or arrows | Q / E | W / Up | S / Down | Shift | Space | F | Enter |
 | Any | Gamepad (slot from lobby or SETTINGS) | Right stick X | Left stick X | Left stick up | Left stick down | A / LT | RT | RB | Start |
+| Any | Phone (`pad.html`) | Left thumb direction | - | Left thumb past half deflection | - | Slide the fire thumb up | Right half of the screen | SPECIAL button | ☰ |
 
 SWAP STICKS in SETTINGS > CONTROLLERS flips the stick roles per pad. `M` mutes everything, music included; SETTINGS > AUDIO sets MUSIC and SOUNDS levels (left/right steps 10%, Fire toggles OFF/100%).
 
 SETTINGS lives in the lobby: a READY player moves down to the SETTINGS entry and confirms. The panel is a single controller-driven list - up/down moves, left/right adjusts, A/Space toggles, B/Esc goes back - covering controller slots, SWAP STICKS, every tunable in `Cfg`, and RESET.
 
 The lobby opens on load. Each device presses Fire or A to claim one of the four slots (explicit slot from SETTINGS, else the first free one); the keyboard holds no slot until it joins, so four gamepads can fill the lobby without it. On your ship card, left/right picks your colour - CYAN / MAGENTA / LIME / AMBER, never two players on the same one - or your side in TEAMS mode, Fire confirms you as READY, and Back (Esc / B) un-confirms, then leaves. Down moves you from your card onto the shared menu row below the slots, where left/right moves the cursor and Up (or Back) returns to your card; the cursor pulses and shows the tags of the players sitting on it, and a card whose player went down dims with a ▼. MODE toggles FREE FOR ALL and TEAMS (which resets everyone to unconfirmed), START launches, SETTINGS opens the panel. A device whose saved slot is already taken joins the first free slot instead. START only lights up with 2+ players, everyone READY, and - in TEAMS - both sides filled; Start (Enter) launches from anywhere once that holds. Teammates share a colour, do not damage each other, and win together. Slots not in the lobby are ignored during the match. Every entry into play starts with a 3-2-1 countdown. Start during play opens the pause menu (RESUME / RESTART MATCH / QUIT TO LOBBY); the result screen offers REMATCH / QUIT TO LOBBY. Menus navigate with stick, d-pad or W/S, confirm with A / Fire / Start, back with B / Esc.
+
+## Play from your phone
+
+`npm run dev` serves the game on the LAN (`--host`). The lobby shows a QR code with the pad URL (`http://<lan-ip>:5173/pad.html`); the pause menu shows it again. A phone that opens it becomes a controller: JOIN, then ◀ ▶ picks the colour (or side in TEAMS), the big button readies up, BACK and START match the gamepad buttons. In play the left half is a floating stick — the ship points where the thumb points and thrusts once the thumb is past half deflection (`padAimOn` / `padThrustOn` in TUNING) — and the right half fires while touched; slide that thumb up to add boost. SPECIAL sits top-right, ☰ pauses. Pause and result menus turn the phone into ▲ ▼ OK BACK. A phone silent for 2 s drops out of the lobby. Messages travel over Vite's HMR WebSocket, so the pad only works under the dev server, not a static build.
 
 ## Rules
 
@@ -61,7 +66,8 @@ Every tunable in `Cfg` is a row in SETTINGS > TUNING, adjusted with left/right i
 | `src/Sfx.fs` | WebAudio synth: arcade square/noise voices, shimmer delay bus, stereo pan, boost engine drone; music player (`public/music/menu.mp3` loops in menus, `battle1..3.mp3` shuffle in play) |
 | `src/Render.fs` | Scene, ship meshes, asteroids, trails, bursts, ring/beam flashes, bloom spike, HUD shake, dynamic camera, DOM HUD |
 | `src/Settings.fs` | Settings model: rows for controller slots, swap sticks (`nda-pads`) and `Cfg.tunables` (`nda-tweaks`), plus their persistence |
-| `src/Menu.fs` | Lobby, settings, pause and result overlays: join/leave/launch by device, owns the `joined` slot set |
+| `src/Menu.fs` | Lobby, settings, pause and result overlays: join/leave/launch by device, owns the `joined` slot set, renders the phone QR (`src/qr.js`) |
+| `src/Pad.fs` | Phone controller page (`pad.html`): lobby card, floating stick, fire/boost zone, menu buttons; talks to the host over the HMR socket |
 | `src/Main.fs` | requestAnimationFrame loop with a 120 Hz accumulator |
 | `test/Check.fs` | Headless .NET run of the simulation with assertions |
 

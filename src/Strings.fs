@@ -11,6 +11,15 @@ type Locale =
       KbLegend: (string list * string) list
       PadLegend: (string list * string) list
       Gamepad: string
+      Phone: string
+      ScanToJoin: string
+      PadConnecting: string
+      PadFire: string
+      PadBoostHint: string
+      PadSpecial: string
+      PadOk: string
+      PadBack: string
+      PhoneLegend: (string list * string) list
       Join: string
       Leave: string
       KeysJoin: string
@@ -98,6 +107,20 @@ let en =
           [ "START" ], "PAUSE"
           [ "B" ], "BACK" ]
       Gamepad = "GAMEPAD"
+      Phone = "PHONE"
+      ScanToJoin = "SCAN TO PLAY FROM YOUR PHONE"
+      PadConnecting = "CONNECTING"
+      PadFire = "FIRE"
+      PadBoostHint = "SLIDE UP TO BOOST"
+      PadSpecial = "SPECIAL"
+      PadOk = "OK"
+      PadBack = "BACK"
+      PhoneLegend =
+        [ [ "L" ], "AIM + THRUST"
+          [ "R" ], "FIRE"
+          [ "R ↑" ], "BOOST"
+          [ "SP" ], "SPECIAL"
+          [ "☰" ], "PAUSE" ]
       Join = "JOIN"
       Leave = "LEAVE"
       KeysJoin = "SPACE / A"

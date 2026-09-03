@@ -21,4 +21,15 @@ const bakeTweaks = {
   },
 };
 
-export default { plugins: [bakeTweaks] };
+const phonePad = {
+  name: "phone-pad",
+  configureServer(server) {
+    for (const ev of ["nda:pad", "nda:host"]) server.ws.on(ev, (data) => server.ws.send(ev, data));
+    server.middlewares.use("/__pad-url", (_, res) => {
+      const net = server.resolvedUrls?.network[0] ?? "";
+      res.end(net && net + "pad.html");
+    });
+  },
+};
+
+export default { plugins: [bakeTweaks, phonePad] };

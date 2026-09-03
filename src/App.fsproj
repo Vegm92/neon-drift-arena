@@ -15,6 +15,7 @@
     <Compile Include="Sfx.fs" />
     <Compile Include="Settings.fs" />
     <Compile Include="Menu.fs" />
+    <Compile Include="Pad.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>
