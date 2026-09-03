@@ -31,6 +31,10 @@
   #menu{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;letter-spacing:.3em;text-align:center;
     background:linear-gradient(rgba(3,3,10,.78),rgba(3,3,10,.9)),url(/backdrop.jpg) center/cover no-repeat #03030a}
   #menu.hidden{display:none}
+  #menu.play{background:rgba(3,3,10,.72)}
+  #menu .lobby .buttons.col{flex-direction:column;align-items:center}
+  #menu .lobby .buttons.col .item{width:min(360px,80vw)}
+  #menu .lobby .stats{white-space:pre-line;line-height:1.9;letter-spacing:.2em;opacity:.75;font-size:12px;color:#cfe}
   #menu h1{font-size:34px;margin:0;text-shadow:0 0 24px #00f6ff,0 0 48px #ff2bd6}
   #menu .mode{font-size:12px;opacity:.8}
   #menu .lobby{display:flex;flex-direction:column;align-items:center;gap:clamp(10px,2.2vh,26px);width:min(1360px,94vw);letter-spacing:normal}

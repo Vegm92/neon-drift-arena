@@ -70,7 +70,7 @@ let private open' s =
     cursor <- 0
     shown <- true
     swallow ()
-    el.className <- ""
+    el.className <- (match s with Lobby | Options -> "" | _ -> "play")
 
 let show () = open' Lobby
 let pause () = open' Pause
@@ -150,6 +150,10 @@ let private legend (title: string) (rows: (string list * string) list) =
         |> String.concat ""
     sprintf "<div class=\"legend\"><div class=\"lt\">%s</div><div class=\"keys\">%s</div></div>" title cells
 
+let private hint (keys: string) (label: string) =
+    let caps = keys.Split([| " / " |], System.StringSplitOptions.None) |> Array.map (sprintf "<i>%s</i>") |> String.concat ""
+    sprintf "<div class=\"key\"><div class=\"caps\">%s</div><span>%s</span></div>" caps label
+
 let private renderLobby (devices: Input.Device[]) =
     let slots =
         [ for i in 0..3 ->
@@ -189,9 +193,6 @@ let private renderLobby (devices: Input.Device[]) =
             let cls = (if sel then " sel" else "") + (if ok then "" else " dim") + (if i = 3 && go then " go" else "")
             sprintf "<div class=\"item%s\"><em>%s</em><b>%s</b><div class=\"who\">%s</div></div>" cls top t (if sel then who else ""))
         |> String.concat ""
-    let hint (keys: string) (label: string) =
-        let caps = keys.Split([| " / " |], System.StringSplitOptions.None) |> Array.map (sprintf "<i>%s</i>") |> String.concat ""
-        sprintf "<div class=\"key\"><div class=\"caps\">%s</div><span>%s</span></div>" caps label
     let hints =
         [ Strings.t.KeysJoin, Strings.t.Join + " / " + Strings.t.Ready
           "&#9664; / &#9654;", (if teamMode then Strings.t.TeamLabel else Strings.t.ColorLabel)
@@ -214,11 +215,12 @@ let private renderLobby (devices: Input.Device[]) =
 let private renderList (title: string) =
     let list =
         items ()
-        |> List.mapi (fun i (label, _) -> sprintf "<div class=\"item%s\">%s</div>" (if i = cursor then " sel" else "") label)
+        |> List.mapi (fun i (label, _) -> sprintf "<div class=\"item%s\"><b>%s</b></div>" (if i = cursor then " sel" else "") label)
         |> String.concat ""
+    let hints = Strings.t.NavKeys |> List.map (fun (k, l) -> hint k l) |> String.concat ""
     el.innerHTML <-
-        sprintf "<h1>%s</h1><div class=\"stats\">%s</div><div class=\"list\">%s</div><div class=\"hint\">%s</div>"
-            title note list Strings.t.NavHint
+        sprintf "<div class=\"lobby\"><div class=\"title\"><h1>%s</h1></div><div class=\"stats\">%s</div><div class=\"buttons col\">%s</div><div class=\"hints\">%s</div></div>"
+            title note list hints
 
 let private renderOptions () =
     let n = optRows.Length

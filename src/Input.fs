@@ -16,7 +16,7 @@ let mutable keyboardSlot = autoSlot
 let pref i =
     match prefs.TryGetValue i with
     | true, p -> p
-    | _ -> { Slot = autoSlot; Swap = false; Absolute = false }
+    | _ -> { Slot = autoSlot; Swap = false; Absolute = true }
 
 let private keys = HashSet<string>()
 let mutable private keyboardSeen = false

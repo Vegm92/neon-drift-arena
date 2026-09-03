@@ -32,7 +32,7 @@ type Locale =
       Paused: string
       Resume: string
       Quit: string
-      NavHint: string
+      NavKeys: (string * string) list
       Restart: string
       Blue: string
       Red: string
@@ -122,7 +122,7 @@ let en =
       Blue = "BLUE"
       Red = "RED"
       Team = sprintf "%s TEAM"
-      NavHint = "STICK / D-PAD / W S  ·  MOVE        A / SPACE / ENTER  ·  SELECT        B / ESC  ·  BACK"
+      NavKeys = [ "W / S / STICK", "MOVE"; "SPACE / A", "SELECT"; "ESC / B", "BACK" ]
       Tweaks = "TWEAKS"
       Reset = "RESET"
       Settings = "SETTINGS"
