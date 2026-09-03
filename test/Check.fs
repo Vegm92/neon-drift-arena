@@ -191,4 +191,39 @@ let main _ =
         |> edit 0 (fun s -> { s with Weapon = Mines; Ammo = 4 })
         |> step dt using
     check "mine drops dormant behind the ship" (mined.Mines.Length = 1 && mined.Mines.Head.Fuse < 0.)
-    let idle = run 10 (all pre
+    let idle = run 10 (all present) mined
+    check "mine stays dormant out of range" (idle.Mines |> List.forall (fun m -> m.Fuse < 0.))
+    let lured = idle |> place 1 (v 60. 0.) 0. |> step dt (all present)
+    check "mine arms when an enemy closes in" (lured.Mines |> List.forall (fun m -> m.Fuse > 0.))
+    let boom = run (int (mineFuse / dt) + 2) (all present) lured
+    check "mine blows 1.5s after arming" (boom.Mines.IsEmpty && boom.Ships.[1].Hp < hpMax)
+
+    let swarmed =
+        w0 |> place 0 zero 0. |> edit 0 (fun s -> { s with Weapon = Swarm; Ammo = 3 })
+        |> run 30 using
+    check "swarm fires one seeker per press" (swarmed.Bullets.Length = 1 && swarmed.Ships.[0].Ammo = 2)
+    let both =
+        w0 |> place 0 zero 0. |> edit 0 (fun s -> { s with Weapon = Swarm; Ammo = 3 })
+        |> step dt (Array.init 4 (fun i -> if i = 0 then { present with Fire = true; Special = true } else present))
+    check "blaster and special fire together" (both.Bullets.Length = 2 && both.Ships.[0].Ammo = 2)
+    check "seekers run at seeker speed" (swarmed.Bullets |> List.forall (fun b -> abs (len b.Vel - seekerSpeed) < 1.))
+
+    let pulsed =
+        w0 |> place 0 zero 0. |> place 1 (v 200. 0.) 0. |> place 2 (v (-200.) 0.) 0.
+        |> edit 0 (fun s -> { s with Weapon = Pulse; Ammo = 3 })
+        |> step dt using
+    check "pulse shoves the ship in front" (pulsed.Ships.[1].Vel.X > 100.)
+    check "pulse spares the ship behind" (abs pulsed.Ships.[2].Vel.X < 1.)
+    check "pulse deals no damage" (pulsed.Ships.[1].Hp = hpMax)
+    check "pulse kicks the user back" (pulsed.Ships.[0].Vel.X < 0.)
+
+    let ringed = w0 |> place 0 (v (arenaHalf + killMargin + 1.) 0.) 0. |> step dt (all present)
+    check "ring outs are flagged" (ringed.Events |> List.exists (function Explode(_, _, r) -> r | _ -> false))
+    check "ring outs are counted" (ringed.Ships.[0].Rings = 1)
+    let shotDown =
+        w0 |> place 0 zero 0. |> place 1 (v 200. 0.) 0.
+        |> edit 1 (fun s -> { s with Hp = 1. }) |> run 60 firing
+    check "kills are credited to the shooter" (shotDown.Ships.[0].Kills = 1 && shotDown.Ships.[0].Streak = 1)
+    check "hits are counted for accuracy" (shotDown.Ships.[0].Hits > 0 && shotDown.Ships.[0].Shots > 0)
+
+    0

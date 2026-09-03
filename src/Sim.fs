@@ -143,9 +143,9 @@ let layouts =
                    turn (polar 640. -15.) a, 42.
                    turn (v 790. 0.) a, 36. ])
              yield! quad (fun sx sy ->
-                 let c = arenaHalf * 0.72
+                 let c = arenaHalf * 0.62
                  [ v (sx * c) (sy * c), 48.
-                   v (sx * (c + 180.)) (sy * (c - 240.)), 38. ]) ]
+                   v (sx * (c + 210.)) (sy * (c - 260.)), 38. ]) ]
          Pads =
            core
            :: quad (fun sx sy ->
@@ -153,7 +153,7 @@ let layouts =
                [ v (sx * d) (sy * d), padRefill, 0
                  v (sx * d * 0.45) (sy * d * 0.45), padRefill, 0 ])
            @ heals (arenaHalf * 0.86)
-         Crates = spin (fun a -> [ turn (v (arenaHalf * 0.45) 0.) a; turn (v (arenaHalf * 0.8) 0.) a ]) }
+         Crates = spin (fun a -> [ turn (v (arenaHalf * 0.32) 0.) a; turn (v (arenaHalf * 0.85) 0.) a ]) }
 
        { Rocks =
            spin (fun a ->

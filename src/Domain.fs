@@ -24,21 +24,21 @@ module Cfg =
     let mutable bulletSpeed = 560.
     let bulletLife = 1.3
     let mutable bulletDamage = 20.
-    let mutable bulletKnockback = 110.
+    let mutable bulletKnockback = 40.
     let mutable recoil = 4.08
     let hpMax = 100.
     let stocks = 3
-    let respawnDelay = 2.
+    let respawnDelay = 3.
     let invulnTime = 1.5
     let restitution = 0.85
-    let mutable ramDamageFactor = 0.08
+    let mutable ramDamageFactor = 0.09
     let physicsDt = 1. / 120.
-    let mutable asteroidStun = 0.582
-    let mutable asteroidSpin = 7.21
+    let mutable asteroidStun = 0.666
+    let mutable asteroidSpin = 6.3
 
     let heatMax = 100.
-    let mutable heatPerShot = 9.5
-    let mutable heatCool = 32.
+    let mutable heatPerShot = 9.6
+    let mutable heatCool = 33.
     let mutable overheatLock = 1.5
 
     let mutable hurtBelow = 25.
@@ -53,7 +53,7 @@ module Cfg =
     let crateRespawn = 10.
     let crateRadius = 26.
 
-    let mutable railCharge = 1.
+    let mutable railCharge = 1.5
     let mutable railDamage = 100.
     let mutable railRecoil = 46.
     let railAmmo = 2
