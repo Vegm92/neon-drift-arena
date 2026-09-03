@@ -40,6 +40,8 @@ type Locale =
       Tweaks: string
       Reset: string
       Settings: string
+      Arena: string
+      Arenas: string[]
       Controllers: string
       Keyboard: string
       Auto: string
@@ -100,7 +102,7 @@ let en =
       KeysJoin = "SPACE / A"
       KeysLeave = "ESC / B"
       KeysLaunch = "ENTER / START"
-      RowLabel = "SHIP / MENU"
+      RowLabel = "MENU"
       TeamLabel = "TEAM"
       ColorLabel = "COLOUR"
       Colors = [| "CYAN"; "MAGENTA"; "LIME"; "AMBER" |]
@@ -124,6 +126,8 @@ let en =
       Tweaks = "TWEAKS"
       Reset = "RESET"
       Settings = "SETTINGS"
+      Arena = "ARENA"
+      Arenas = [| "CORE RING"; "CROSS BASTIONS"; "PINWHEEL"; "TWIN GAUNTLET"; "OPEN BELT" |]
       Controllers = "CONTROLLERS"
       Keyboard = "KEYBOARD"
       Auto = "AUTO"

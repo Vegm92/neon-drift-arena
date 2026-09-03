@@ -181,12 +181,22 @@ let private renderLobby (devices: Input.Device[]) =
         |> String.concat ""
     let picks =
         [ Strings.t.ModeLabel, (if teamMode then Strings.t.Teams else Strings.t.Ffa), true
-          Strings.t.KeysLaunch, Strings.t.Start, go
-          "", Strings.t.Settings, true ]
+          "", Strings.t.Settings, true
+          Strings.t.KeysLaunch, Strings.t.Start, go ]
         |> List.mapi (fun i (top, t, ok) ->
             let sel = i = lobbyPick && who <> ""
-            sprintf "<div class=\"item%s%s\"><em>%s</em><b>%s</b><div class=\"who\">%s</div></div>"
-                (if sel then " sel" else "") (if ok then "" else " dim") top t (if sel then who else ""))
+            let cls = (if sel then " sel" else "") + (if ok then "" else " dim") + (if i = 2 && go then " go" else "")
+            sprintf "<div class=\"item%s\"><em>%s</em><b>%s</b><div class=\"who\">%s</div></div>" cls top t (if sel then who else ""))
+        |> String.concat ""
+    let hint (keys: string) (label: string) =
+        let caps = keys.Split([| " / " |], System.StringSplitOptions.None) |> Array.map (sprintf "<i>%s</i>") |> String.concat ""
+        sprintf "<div class=\"key\"><div class=\"caps\">%s</div><span>%s</span></div>" caps label
+    let hints =
+        [ Strings.t.KeysJoin, Strings.t.Join + " / " + Strings.t.Ready
+          "&#9664; / &#9654;", (if teamMode then Strings.t.TeamLabel else Strings.t.ColorLabel)
+          "&#9660;", Strings.t.RowLabel
+          Strings.t.KeysLeave, Strings.t.Leave ]
+        |> List.map (fun (k, l) -> hint k l)
         |> String.concat ""
     let note =
         if go then ""
@@ -195,12 +205,8 @@ let private renderLobby (devices: Input.Device[]) =
         else Strings.t.NeedReady
     el.innerHTML <-
         sprintf
-            "<div class=\"lobby\"><div class=\"title\"><h1>%s</h1><div class=\"sub\">%s</div></div><div class=\"modebar\">%s</div><div class=\"slots\">%s</div><div class=\"actions\"><div class=\"chip\"><div><em>%s</em><b>%s</b></div><div><em>%s</em><b>%s</b></div><div><em>&#9664; &#9654;</em><b>%s</b></div><div><em>&#9650; &#9660;</em><b>%s</b></div></div>%s</div><div class=\"note\">%s</div><div class=\"legends\">%s%s</div></div>"
-            Strings.t.TitleMain Strings.t.TitleSub mode slots
-            Strings.t.KeysJoin Strings.t.Join Strings.t.KeysLeave Strings.t.Leave
-            (if teamMode then Strings.t.TeamLabel else Strings.t.ColorLabel)
-            Strings.t.RowLabel
-            picks note
+            "<div class=\"lobby\"><div class=\"title\"><h1>%s</h1><div class=\"sub\">%s</div></div><div class=\"modebar\">%s</div><div class=\"slots\">%s</div><div class=\"hints\">%s</div><div class=\"buttons\">%s</div><div class=\"note\">%s</div><div class=\"legends\">%s%s</div></div>"
+            Strings.t.TitleMain Strings.t.TitleSub mode slots hints picks note
             (legend Strings.t.Keyboard Strings.t.KbLegend)
             (legend Strings.t.Gamepad Strings.t.PadLegend)
 
@@ -269,8 +275,8 @@ let private updateLobby () =
                 | 0 ->
                     teamMode <- not teamMode
                     applyMode ()
-                | 1 -> if canStart () then launch <- true
-                | _ -> options <- true
+                | 1 -> options <- true
+                | _ -> if canStart () then launch <- true
         else
             if (left || right) && not ready.[d.Slot] then
                 if teamMode then teams.[d.Slot] <- 3 - teams.[d.Slot]
