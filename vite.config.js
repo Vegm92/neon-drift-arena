@@ -24,7 +24,18 @@ const bakeTweaks = {
 const phonePad = {
   name: "phone-pad",
   configureServer(server) {
-    for (const ev of ["nda:pad", "nda:host"]) server.ws.on(ev, (data) => server.ws.send(ev, data));
+    let host = null;
+    const seen = new WeakSet();
+    server.ws.on("nda:pad", (data) => server.ws.send("nda:pad", data));
+    server.ws.on("nda:host", (data, client) => {
+      if (!seen.has(client)) {
+        seen.add(client);
+        client.socket.on("close", () => host === client && (host = null));
+        host = client;
+      }
+      host ??= client;
+      if (host === client) server.ws.send("nda:host", data);
+    });
     server.middlewares.use("/__pad-url", (_, res) => {
       const net = server.resolvedUrls?.network[0] ?? "";
       res.end(net && net + "pad.html");

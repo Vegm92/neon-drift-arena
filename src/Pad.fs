@@ -24,10 +24,15 @@ let mutable private phase = ""
 let mutable private card: obj = null
 let private root = document.getElementById "pad"
 
+let private flush () =
+    Input.hotSend "nda:pad" state
+    dirty <- false
+    lastSent <- JS.Constructors.Date.now ()
+
 let private set (k: string) (v: obj) =
     if state?(k) <> v then
         state?(k) <- v
-        dirty <- true
+        if k = "x" || k = "y" then dirty <- true else flush ()
 
 let private clearInputs () =
     for k in [ "x"; "y"; "fire"; "boost"; "special"; "start"; "back"; "left"; "right"; "up"; "down" ] do
@@ -36,7 +41,7 @@ let private clearInputs () =
 let private fullscreen () =
     try
         let p: JS.Promise<unit> = document.documentElement?requestFullscreen ()
-        p?``then``((fun () -> try window?screen?orientation?lock "landscape" |> ignore with _ -> ()), fun _ -> ()) |> ignore
+        p?``then``((fun () -> window?screen?orientation?lock("landscape")?``catch``(fun _ -> ()) |> ignore), fun _ -> ()) |> ignore
     with _ -> ()
 
 let private hold (el: Element) (key: string) =
@@ -156,11 +161,7 @@ let private render () =
     wire ()
 
 let private tick () =
-    let t = JS.Constructors.Date.now ()
-    if dirty || t - lastSent > heartbeat then
-        Input.hotSend "nda:pad" state
-        dirty <- false
-        lastSent <- t
+    if dirty || JS.Constructors.Date.now () - lastSent > heartbeat then flush ()
 
 Input.hotOn "nda:host" (fun m ->
     let p: string = m?phase
