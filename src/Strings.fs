@@ -1,0 +1,156 @@
+module Strings
+
+type Locale =
+    { Player: int -> string
+      Wins: string -> string
+      Draw: string
+      Rematch: string
+      TitleMain: string
+      TitleSub: string
+      Mode: string list
+      KbLegend: (string list * string) list
+      PadLegend: (string list * string) list
+      Gamepad: string
+      Join: string
+      Leave: string
+      KeysJoin: string
+      KeysLeave: string
+      KeysLaunch: string
+      RowLabel: string
+      TeamLabel: string
+      ColorLabel: string
+      Colors: string[]
+      ModeLabel: string
+      Ffa: string
+      Teams: string
+      Start: string
+      NeedPlayers: string
+      NeedReady: string
+      PressToJoin: string
+      Ready: string
+      NeedTwo: string
+      Paused: string
+      Resume: string
+      Quit: string
+      NavHint: string
+      Restart: string
+      Blue: string
+      Red: string
+      Team: string -> string
+      Tweaks: string
+      Reset: string
+      Settings: string
+      Controllers: string
+      Keyboard: string
+      Auto: string
+      SwapSticks: string
+      NoPads: string
+      WBlaster: string
+      WRail: string
+      WMines: string
+      WSwarm: string
+      WPulse: string
+      Loaded: string -> int -> string
+      FirstBlood: string
+      DoubleKill: string
+      RingOut: string
+      LastStock: string -> string
+      OnFire: string -> string
+      BestAim: string -> int -> string
+      MostKills: string -> int -> string
+      MostRings: string -> int -> string
+      NoCrates: string -> string
+      Tuning: string
+      Audio: string
+      Music: string
+      Sounds: string
+      On: string
+      Off: string
+      More: string
+      OptHint: string }
+
+let en =
+    { Player = fun i -> sprintf "P%d" (i + 1)
+      Wins = sprintf "%s WINS"
+      Draw = "DRAW"
+      Rematch = "REMATCH"
+      TitleMain = "NEON DRIFT"
+      TitleSub = "ARENA"
+      Mode = [ "STOCK BATTLE"; "3 LIVES"; "LAST SHIP FLYING WINS" ]
+      KbLegend =
+        [ [ "W"; "S" ], "THRUST / REVERSE"
+          [ "A"; "D" ], "TURN"
+          [ "Q"; "E" ], "STRAFE"
+          [ "SHIFT" ], "BOOST"
+          [ "SPACE" ], "FIRE"
+          [ "F" ], "SPECIAL"
+          [ "ENTER" ], "PAUSE"
+          [ "M" ], "MUTE" ]
+      PadLegend =
+        [ [ "L" ], "THRUST / STRAFE"
+          [ "R" ], "TURN"
+          [ "A"; "LT" ], "BOOST"
+          [ "RT" ], "FIRE"
+          [ "RB" ], "SPECIAL"
+          [ "START" ], "PAUSE"
+          [ "B" ], "BACK" ]
+      Gamepad = "GAMEPAD"
+      Join = "JOIN"
+      Leave = "LEAVE"
+      KeysJoin = "SPACE / A"
+      KeysLeave = "ESC / B"
+      KeysLaunch = "ENTER / START"
+      RowLabel = "SHIP / MENU"
+      TeamLabel = "TEAM"
+      ColorLabel = "COLOUR"
+      Colors = [| "CYAN"; "MAGENTA"; "LIME"; "AMBER" |]
+      ModeLabel = "MODE"
+      Ffa = "FREE FOR ALL"
+      Teams = "TEAMS"
+      Start = "START"
+      NeedPlayers = "NEED 2 PLAYERS"
+      NeedReady = "ALL PLAYERS MUST READY UP"
+      PressToJoin = "PRESS FIRE TO JOIN"
+      Ready = "READY"
+      NeedTwo = "NEED 2 OPPOSING SIDES"
+      Paused = "PAUSED"
+      Resume = "RESUME"
+      Quit = "QUIT TO LOBBY"
+      Restart = "RESTART MATCH"
+      Blue = "BLUE"
+      Red = "RED"
+      Team = sprintf "%s TEAM"
+      NavHint = "STICK / D-PAD / W S  ·  MOVE        A / SPACE / ENTER  ·  SELECT        B / ESC  ·  BACK"
+      Tweaks = "TWEAKS"
+      Reset = "RESET"
+      Settings = "SETTINGS"
+      Controllers = "CONTROLLERS"
+      Keyboard = "KEYBOARD"
+      Auto = "AUTO"
+      SwapSticks = "SWAP STICKS"
+      NoPads = "NO GAMEPADS DETECTED - PRESS A BUTTON"
+      WBlaster = "BLASTER"
+      WRail = "RAILGUN"
+      WMines = "MAG MINES"
+      WSwarm = "SEEKERS"
+      WPulse = "REPULSOR"
+      Loaded = fun n a -> sprintf "%s x%d" n a
+      FirstBlood = "FIRST BLOOD"
+      DoubleKill = "DOUBLE KILL"
+      RingOut = "RING OUT"
+      LastStock = sprintf "%s ON LAST STOCK"
+      OnFire = sprintf "%s IS ON FIRE"
+      BestAim = fun n p -> sprintf "%s LANDED %d%% OF SHOTS" n p
+      MostKills = fun n k -> sprintf "%s TOOK DOWN %d SHIPS" n k
+      MostRings = fun n r -> sprintf "%s FLEW OUT %d TIMES" n r
+      NoCrates = sprintf "%s NEVER OPENED A CRATE"
+      Tuning = "TUNING"
+      Audio = "AUDIO"
+      Music = "MUSIC"
+      Sounds = "SOUNDS"
+      On = "ON"
+      Off = "OFF"
+      More = "▼ MORE BELOW"
+      OptHint = "W S / STICK  ·  MOVE        A D / STICK  ·  ADJUST        SPACE / A  ·  TOGGLE        ESC / B  ·  BACK" }
+
+let t = en

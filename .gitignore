@@ -1,0 +1,12 @@
+node_modules/
+build/
+dist/
+bin/
+obj/
+.fable/
+CONTEXT.md
+REFERENCES.md
+PRD.md
+.claude/
+.playwright-mcp/
+.config/

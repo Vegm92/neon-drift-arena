@@ -1,0 +1,16 @@
+{
+  "name": "neon-drift-arena",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "dotnet fable watch src -o build --run npx vite",
+    "build": "dotnet fable src -o build && vite build",
+    "check": "dotnet run --project test"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}

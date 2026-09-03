@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../src/Vec.fs" />
+    <Compile Include="../src/Domain.fs" />
+    <Compile Include="../src/Sim.fs" />
+    <Compile Include="Check.fs" />
+  </ItemGroup>
+</Project>

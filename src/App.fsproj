@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <WarningLevel>3</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Vec.fs" />
+    <Compile Include="Domain.fs" />
+    <Compile Include="Strings.fs" />
+    <Compile Include="Sim.fs" />
+    <Compile Include="Input.fs" />
+    <Compile Include="Three.fs" />
+    <Compile Include="Render.fs" />
+    <Compile Include="Sfx.fs" />
+    <Compile Include="Settings.fs" />
+    <Compile Include="Menu.fs" />
+    <Compile Include="Main.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Fable.Core" Version="4.*" />
+    <PackageReference Include="Fable.Browser.Dom" Version="2.*" />
+  </ItemGroup>
+</Project>
