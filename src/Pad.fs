@@ -74,8 +74,8 @@ let private stick (zone: Element) =
     zone.addEventListener ("pointerdown", fun e ->
         if pid < 0. then
             pid <- e?pointerId
-            ox <- e?clientX
-            oy <- e?clientY
+            ox <- e?offsetX
+            oy <- e?offsetY
             try zone?setPointerCapture pid with _ -> ()
             place ring ox oy
             place knob ox oy
@@ -83,7 +83,7 @@ let private stick (zone: Element) =
             knob.classList.remove "hidden")
     zone.addEventListener ("pointermove", fun e ->
         if (e?pointerId: float) = pid then
-            let dx, dy = (e?clientX: float) - ox, (e?clientY: float) - oy
+            let dx, dy = (e?offsetX: float) - ox, (e?offsetY: float) - oy
             let mag = sqrt (dx * dx + dy * dy)
             let s = if mag > stickRadius then stickRadius / mag else 1.
             place knob (ox + dx * s) (oy + dy * s)
@@ -105,13 +105,13 @@ let private fireZone (zone: Element) =
     zone.addEventListener ("pointerdown", fun e ->
         if pid < 0. then
             pid <- e?pointerId
-            oy <- e?clientY
+            oy <- e?offsetY
             try zone?setPointerCapture pid with _ -> ()
             set "fire" true
             zone.classList.add "on")
     zone.addEventListener ("pointermove", fun e ->
         if (e?pointerId: float) = pid then
-            let boost = oy - (e?clientY: float) > boostDrag
+            let boost = oy - (e?offsetY: float) > boostDrag
             set "boost" boost
             zone.classList.toggle ("boost", boost) |> ignore)
     let up (e: Event) =
