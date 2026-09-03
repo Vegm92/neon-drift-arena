@@ -115,6 +115,7 @@ let rec frame (t: float) =
             world <- Sim.initial
             Menu.show ()
         | None -> ()
+        Render.syncArena view
         Render.draw view world [] dt
     elif countdown > 0. then
         let prev = ceil countdown |> int

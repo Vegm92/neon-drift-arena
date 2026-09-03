@@ -100,6 +100,8 @@ type Lib =
     abstract CircleGeometry: float * int -> BufferGeometry
     [<Emit("new $0.IcosahedronGeometry($1,$2)")>]
     abstract IcosahedronGeometry: float * int -> BufferGeometry
+    [<Emit("new $0.BoxGeometry($1,$2,$3)")>]
+    abstract BoxGeometry: float * float * float -> BufferGeometry
     [<Emit("new $0.PlaneGeometry($1,$2)")>]
     abstract PlaneGeometry: float * float -> BufferGeometry
     [<Emit("new $0.MeshBasicMaterial($1)")>]

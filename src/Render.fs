@@ -24,7 +24,8 @@ let private cells = [| 217., 40.; 790., 46.; 12., 452.; 502., 481.; 984., 474. |
 let private spriteOf (s: Ship) = if s.Team > 0 then s.Team - 1 else [| 0; 1; 3; 4 |].[playerColor.[s.Id]]
 
 type ShipView =
-    { Root: Object3D
+    { Shield: Mesh
+      Root: Object3D
       Body: Mesh
       Flame: Mesh
       Retro: Object3D
@@ -51,7 +52,9 @@ type View =
       Composer: Composer
       Bloom: Bloom
       Ships: ShipView[]
-      Pads: Mesh[]
+      mutable Pads: Mesh[]
+      mutable Rocks: Object3D[]
+      mutable Layout: int
       Bullets: Mesh[]
       Mines: Object3D[]
       Crates: Object3D[]
@@ -137,10 +140,14 @@ let private mkShip (scene: Object3D) i =
     let laser = three.Mesh((three.PlaneGeometry(400., 1.2) |> flat).translate (218., 2., 0.), glowMat hex 0.3)
     laser.visible <- false
     root.add laser
+    let shield = three.Mesh(three.RingGeometry(shipRadius + 5., shipRadius + 9., 6) |> flat, glowMat 0x3b8cff 0.9)
+    shield.visible <- false
+    root.add shield
     let trail = mkTrail hex
     scene.add root
     scene.add trail
-    { Root = root
+    { Shield = shield
+      Root = root
       Body = body
       Flame = flame
       Retro = retro
@@ -150,13 +157,24 @@ let private mkShip (scene: Object3D) i =
       History = ResizeArray() }
 
 let private padHex (p: Pad) =
-    if p.Kind = 1 then 0xff4d9d
-    elif p.Amount >= boostMax then 0xfff45c
-    else 0x00ff9c
+    match p.Kind with
+    | 1 -> 0x3bff9e
+    | 2 -> 0x3b8cff
+    | _ -> 0xfff45c
+
+let private padSpan (p: Pad) =
+    match p.Kind with
+    | 1 -> healRespawn
+    | 2 -> shieldRespawn
+    | _ -> padRespawn
 
 let private mkPad (scene: Object3D) (p: Pad) =
-    let inner = if p.Kind = 1 then padRadius - 12. else padRadius - 5.
-    let m = three.Mesh(three.RingGeometry(inner, padRadius, 40) |> flat, glowMat (padHex p) 1.)
+    let inner, seg =
+        match p.Kind with
+        | 1 -> padRadius - 12., 40
+        | 2 -> padRadius * 0.42, 6
+        | _ -> padRadius - 5., 40
+    let m = three.Mesh(three.RingGeometry(inner, padRadius, seg) |> flat, glowMat (padHex p) 1.)
     m.position.set (p.Pos.X, 0.5, p.Pos.Y)
     scene.add m
     m
@@ -171,10 +189,15 @@ let private mkMine (scene: Object3D) =
     root
 
 let private mkCrate (scene: Object3D) =
-    let g = three.IcosahedronGeometry(crateRadius, 0)
+    let side = crateRadius * 1.35
+    let g = three.BoxGeometry(side, side, side)
     let root = three.Group()
     root.add (three.Mesh(g, three.MeshBasicMaterial(box {| color = 0x0a0a1e |})))
     root.add (three.LineSegments(three.EdgesGeometry g, lineMat 0xfff45c 1.))
+    for axis in 0..2 do
+        let strap = three.LineSegments(three.EdgesGeometry(three.BoxGeometry(side * 1.02, side * 0.26, side * 1.02)), lineMat 0xfff45c 0.6)
+        strap.rotation.set ((if axis = 1 then Math.PI / 2. else 0.), 0., (if axis = 2 then Math.PI / 2. else 0.))
+        root.add strap
     root.add (three.Mesh(three.RingGeometry(crateRadius + 8., crateRadius + 11., 32) |> flat, glowMat 0xfff45c 0.7))
     scene.add root
     root
@@ -187,6 +210,7 @@ let private mkAsteroid (scene: Object3D) (a: Asteroid) =
     root.position.set (a.Pos.X, 0., a.Pos.Y)
     root.rotation.set (a.Pos.X * 0.01, a.Pos.Y * 0.01, 0.)
     scene.add root
+    root
 
 let private mkBullet (scene: Object3D) =
     let m = three.Mesh(three.PlaneGeometry(16., 3.) |> flat, glowMat 0xffffff 1.)
@@ -257,12 +281,22 @@ let private mkArena (scene: Object3D) =
         three.Points(stars, three.PointsMaterial(box {| color = 0x9fb3ff; size = 3.; transparent = true; opacity = 0.7 |}))
     )
 
+let syncArena (vw: View) =
+    if vw.Layout <> Sim.layout then
+        vw.Layout <- Sim.layout
+        for o in vw.Rocks do
+            vw.Scene.remove o
+        for m in vw.Pads do
+            vw.Scene.remove m
+        vw.Rocks <- Sim.asteroids |> Array.map (mkAsteroid vw.Scene)
+        vw.Pads <- Sim.initial.Pads |> Array.map (mkPad vw.Scene)
+
 let private mkPanel (hud: HTMLElement) i =
     let el = document.createElement "div"
     el.className <- sprintf "panel p%d off" i
     el.innerHTML <-
         sprintf
-            "<div class=\"name\" style=\"color:#%06x\">%s</div><div class=\"bar hp\"><i></i></div><div class=\"bar boost\"><i></i></div><div class=\"bar heat\"><i></i></div><div class=\"stocks\"></div><div class=\"wep\"></div>"
+            "<div class=\"name\" style=\"color:#%06x\">%s</div><div class=\"bar hp\"><i></i></div><div class=\"bar shield\"><i></i></div><div class=\"bar boost\"><i></i></div><div class=\"bar heat\"><i></i></div><div class=\"stocks\"></div><div class=\"wep\"></div>"
             colors.[i]
             (Strings.t.Player i)
     hud.appendChild el |> ignore
@@ -292,7 +326,6 @@ let create () =
     composer.addPass (renderPass (scene, camera))
     composer.addPass (box bloom)
     mkArena scene
-    Sim.asteroids |> Array.iter (mkAsteroid scene)
     let hud = document.getElementById "hud"
     let vw =
         { Scene = scene
@@ -301,7 +334,9 @@ let create () =
           Composer = composer
           Bloom = bloom
           Ships = Array.init 4 (mkShip scene)
-          Pads = Sim.initial.Pads |> Array.map (mkPad scene)
+          Pads = [||]
+          Rocks = [||]
+          Layout = -1
           Bullets = Array.init bulletPool (fun _ -> mkBullet scene)
           Mines = Array.init minePool (fun _ -> mkMine scene)
           Crates = Array.init 4 (fun _ -> mkCrate scene)
@@ -318,6 +353,7 @@ let create () =
           TintHex = "#ffffff"
           Cam = zero
           CamH = maxCamH }
+    syncArena vw
     window.addEventListener ("resize", fun _ -> resize vw)
     vw
 
@@ -435,6 +471,10 @@ let private drawShip t (vw: View) (sv: ShipView) (s: Ship) =
             sv.Laser.material.opacity <- 0.15 + 0.35 * c
             sv.Coil.scale.set (0.3 + c, 1., 0.3 + c)
             sv.Coil.material.opacity <- 0.4 + 0.6 * c
+        sv.Shield.visible <- s.Shield > 0.
+        if s.Shield > 0. then
+            sv.Shield.material.opacity <- 0.35 + 0.45 * (s.Shield / shieldAmount) + 0.2 * sin (t * 8.)
+            sv.Shield.rotation.z <- t * 0.9
         sv.Body.material.opacity <- if s.Invuln > 0. then 0.4 + 0.4 * sin (t * 30.) else 1.
         sv.Body.material.color.setHex (if s.Team > 0 then teamColors.[s.Team] else 0xffffff)
         let k = spriteOf s
@@ -473,7 +513,7 @@ let private drawPads (vw: View) (w: World) =
         (fun (m: Mesh) (p: Pad) ->
             let ready = p.RespawnIn <= 0.
             m.material.opacity <- if ready then 0.75 + 0.25 * sin (w.Time * 4.) else 0.12
-            let span = if p.Kind = 1 then healRespawn else padRespawn
+            let span = padSpan p
             let s = if ready then 1. else 1. - p.RespawnIn / span
             m.scale.set (s, 1., s))
         vw.Pads
@@ -576,6 +616,7 @@ let private drawHud (vw: View) (w: World) dt =
                 (if s.Locked > 0. then " cooked" else "")
         el.querySelector(".name")?style?color <- sprintf "#%06x" (shipColor s)
         el.querySelector(".hp i")?style?width <- sprintf "%.0f%%" (max 0. s.Hp / hpMax * 100.)
+        el.querySelector(".shield i")?style?width <- sprintf "%.0f%%" (s.Shield / shieldAmount * 100.)
         el.querySelector(".boost i")?style?width <- sprintf "%.0f%%" (s.Boost / boostMax * 100.)
         el.querySelector(".heat i")?style?width <- sprintf "%.0f%%" (s.Heat / heatMax * 100.)
         (el.querySelector ".stocks" :?> HTMLElement).textContent <- String.replicate (max 0 s.Stocks) "◆"
