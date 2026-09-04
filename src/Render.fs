@@ -15,6 +15,7 @@ let private shipColor (s: Ship) = if s.Team > 0 then teamColors.[s.Team] else co
 let private trailLen = 48
 let private bulletPool = 96
 let private minePool = 24
+let private rockPool = 8
 let private maxCamH = (arenaHalf + 100.) / tan (20. * Math.PI / 180.)
 let private minCamH = maxCamH * 0.75
 let private rnd = Random()
@@ -34,6 +35,7 @@ type ShipView =
       Tether: Mesh
       Bubble: Mesh
       Warn: Mesh
+      Mark: Mesh
       Trail: Mesh
       History: ResizeArray<V2> }
 
@@ -60,6 +62,7 @@ type View =
       mutable Layout: int
       Bullets: Mesh[]
       Mines: Object3D[]
+      Boulders: Object3D[]
       Crates: Object3D[]
       Panels: HTMLElement[]
       Tags: HTMLElement[]
@@ -161,6 +164,10 @@ let private mkShip (scene: Object3D) i =
     warn.position.y <- 3.
     warn.visible <- false
     scene.add warn
+    let mark = three.Mesh(three.Arc(30., 38., 20, -0.9, 1.8) |> flat, glowMat hex 0.9)
+    mark.position.y <- 3.
+    mark.visible <- false
+    scene.add mark
     let trail = mkTrail hex
     let tether = three.Mesh(three.PlaneGeometry(1., 4.) |> flat, glowMat hex 0.7)
     tether.visible <- false
@@ -177,6 +184,7 @@ let private mkShip (scene: Object3D) i =
       Tether = tether
       Bubble = bubble
       Warn = warn
+      Mark = mark
       Trail = trail
       History = ResizeArray() }
 
@@ -377,6 +385,7 @@ let create () =
           Layout = -1
           Bullets = Array.init bulletPool (fun _ -> mkBullet scene)
           Mines = Array.init minePool (fun _ -> mkMine scene)
+          Boulders = Array.init rockPool (fun _ -> mkAsteroid scene { Pos = zero; Radius = rockRadius })
           Crates = Array.init 4 (fun _ -> mkCrate scene)
           Panels = Array.init 4 (mkPanel hud)
           Tags = Array.init 4 (mkTag hud)
@@ -535,18 +544,14 @@ let private drawTether t (w: World) (sv: ShipView) (s: Ship) =
     | None -> ()
 
 let private drawShip t (vw: View) (sv: ShipView) (s: Ship) =
-    let ghost = Sim.ghost s
-    sv.Root.visible <- s.Alive || ghost
-    if ghost then
-        sv.Root.position.set (s.Pos.X, 0., s.Pos.Y)
-        sv.Root.rotation.y <- -s.Angle
-        sv.Flame.visible <- false
-        sv.Retro.visible <- false
-        sv.Coil.visible <- false
-        sv.Laser.visible <- false
-        sv.Bubble.visible <- false
-        sv.Shield.visible <- false
-        sv.Body.material.opacity <- if s.GhostCd <= 0. then 0.3 + 0.1 * sin (t * 6.) else 0.18
+    let launcher = Sim.launcher s
+    sv.Root.visible <- s.Alive
+    sv.Mark.visible <- launcher
+    if launcher then
+        sv.Mark.position.set (s.Pos.X, 3., s.Pos.Y)
+        sv.Mark.rotation.y <- -s.Angle
+        sv.Mark.material.color.setHex (shipColor s)
+        sv.Mark.material.opacity <- if s.LaunchCd <= 0. then 0.6 + 0.4 * sin (t * 6.) else 0.25
         sv.History.Clear()
     elif s.Alive then
         sv.Root.position.set (s.Pos.X, 0., s.Pos.Y)
@@ -608,6 +613,15 @@ let private threat (w: World) (me: Ship) =
             if foe b.Owner && along > 0. && along < 620. && len (rel - dir * along) < 60. then
                 Some(toward b.Pos (1. - along / 620.))
             else None)
+    let rocks =
+        w.Rocks
+        |> List.choose (fun r ->
+            let rel = me.Pos - r.Pos
+            let dir = norm r.Vel
+            let along = dot rel dir
+            if along > 0. && along < 700. && len (rel - dir * along) < r.Radius + 2. * shipRadius then
+                Some(toward r.Pos (1. - along / 700.))
+            else None)
     let mines =
         w.Mines
         |> List.choose (fun m ->
@@ -624,7 +638,7 @@ let private threat (w: World) (me: Ship) =
             if s.Alive && s.Charge > 0. && foe s.Id && dist < reach && abs (atan2 (sin rel) (cos rel)) < 0.35 then
                 Some(toward s.Pos (0.5 + 0.5 * min 1. (s.Charge / railCharge)))
             else None)
-    match bullets @ mines @ charging with
+    match bullets @ rocks @ mines @ charging with
     | [] -> None
     | ts -> Some(List.maxBy snd ts)
 
@@ -682,6 +696,18 @@ let private drawCrates (vw: View) (w: World) =
                 o.rotation.set (w.Time * 0.7, w.Time * 1.3, 0.))
         vw.Crates
         w.Crates
+
+let private drawRocks (vw: View) (w: World) =
+    let mutable k = 0
+    for r in w.Rocks do
+        if k < vw.Boulders.Length then
+            let o = vw.Boulders.[k]
+            o.visible <- true
+            o.position.set (r.Pos.X, 0., r.Pos.Y)
+            o.rotation.set (r.Life * 1.7, r.Life * 1.1, 0.)
+            k <- k + 1
+    for i in k .. vw.Boulders.Length - 1 do
+        vw.Boulders.[i].visible <- false
 
 let private drawMines (vw: View) (w: World) =
     let mutable k = 0
@@ -760,7 +786,7 @@ let private drawTags (vw: View) (w: World) =
     w.Ships
     |> Array.iteri (fun i s ->
         let el = vw.Tags.[i]
-        let show = (s.Alive && s.Invuln > 0.) || Sim.ghost s
+        let show = (s.Alive && s.Invuln > 0.) || Sim.launcher s
         el.hidden <- not show
         if show then
             let p = (three.Vector3(s.Pos.X, 0., s.Pos.Y)).project vw.Camera
@@ -768,7 +794,7 @@ let private drawTags (vw: View) (w: World) =
             let y = (1. - p.y) / 2. * window.innerHeight - 44.
             el?style?left <- sprintf "%.0fpx" (max 40. (min (window.innerWidth - 40.) x))
             el?style?top <- sprintf "%.0fpx" (max 40. (min (window.innerHeight - 40.) y))
-            el?style?opacity <- if Sim.ghost s then "0.55" else "1"
+            el?style?opacity <- if Sim.launcher s then "0.55" else "1"
             el?style?color <- sprintf "#%06x" (shipColor s))
 
 let private drawSpawns (vw: View) (w: World) =
@@ -792,6 +818,7 @@ let private icon (w: Weapon) ring =
             | Scatter -> "M8 32 L20 20 L28 40 L38 22 L46 42 L56 30"
             | Tractor -> "M8 32 L36 32 M36 32 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0 M56 20 L56 44"
             | Collision -> "M32 8 L36 26 L54 22 L40 34 L52 50 L34 42 L28 58 L26 40 L8 44 L22 32 L12 16 L28 24 Z"
+            | Rock -> "M20 12 L44 10 L56 28 L50 50 L26 54 L10 38 Z M26 30 L36 26 L40 36"
     sprintf "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"%s\"/></svg>" path
 
 let private feedLine (vw: View) (w: World) victim by wpn ring =
@@ -808,7 +835,8 @@ let private feedLine (vw: View) (w: World) victim by wpn ring =
 let private weaponLabel (s: Ship) =
     match s.Weapon with
     | Blaster
-    | Collision -> Strings.t.WBlaster
+    | Collision
+    | Rock -> Strings.t.WBlaster
     | Rail -> Strings.t.Loaded Strings.t.WRail s.Ammo
     | Mines -> Strings.t.Loaded Strings.t.WMines s.Ammo
     | Swarm -> Strings.t.Loaded Strings.t.WSwarm s.Ammo
@@ -846,7 +874,7 @@ let private drawHud (vw: View) (w: World) dt =
         el.querySelector(".heat i")?style?width <- sprintf "%.0f%%" (s.Heat / heatMax * 100.)
         (el.querySelector ".stocks" :?> HTMLElement).textContent <- String.replicate (max 0 s.Stocks) "◆"
         (el.querySelector ".wep" :?> HTMLElement).textContent <-
-            if Sim.ghost s then (if s.GhostCd <= 0. then Strings.t.GhostReady else Strings.t.GhostWait)
+            if Sim.launcher s then (if s.LaunchCd <= 0. then Strings.t.LaunchReady else Strings.t.LaunchWait)
             else weaponLabel s)
 
 let private drawTint (vw: View) dt =
@@ -894,6 +922,9 @@ let draw (vw: View) (w: World) (events: Event list) dt =
             spawnCone vw p 0xbff6ff 48 (scatterRange * 2.6) a (scatterCone * 1.2) 11.
             vw.Spike <- max vw.Spike 0.4
         | Latch(p, i) -> spawnRing vw p (shipColor w.Ships.[i]) 30. 3. 0.3
+        | Launch p ->
+            spawnBurst vw p 0xff9955 18 200.
+            spawnRing vw p 0xff9955 rockRadius 2.5 0.4
         | Explode(p, i, ring) ->
             let hex = shipColor w.Ships.[i]
             let sv = vw.Ships.[i]
@@ -919,6 +950,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
     drawPads vw w
     drawCrates vw w
     drawMines vw w
+    drawRocks vw w
     drawBullets vw w dt
     updateBursts vw dt
     updateFlashes vw dt

@@ -94,8 +94,11 @@ module Cfg =
     let shrinkMin = 0.45
     let introTime = 5.
     let seriesTo = 5
-    let mutable ghostSpeed = 240.
-    let mutable ghostCooldown = 8.
+    let mutable rockSpeed = 300.
+    let mutable rockRadius = 40.
+    let mutable rockCooldown = 6.
+    let mutable rockLife = 14.
+    let mutable rockDamage = 0.09
 
     let mutable padAimOn = 0.15
     let mutable padThrustOn = 0.75
@@ -148,8 +151,11 @@ module Cfg =
            "tractorPull", (fun () -> tractorPull), (fun x -> tractorPull <- x)
            "tractorTime", (fun () -> tractorTime), (fun x -> tractorTime <- x)
            "matchTime", (fun () -> matchTime), (fun x -> matchTime <- x)
-           "ghostSpeed", (fun () -> ghostSpeed), (fun x -> ghostSpeed <- x)
-           "ghostCooldown", (fun () -> ghostCooldown), (fun x -> ghostCooldown <- x)
+           "rockSpeed", (fun () -> rockSpeed), (fun x -> rockSpeed <- x)
+           "rockRadius", (fun () -> rockRadius), (fun x -> rockRadius <- x)
+           "rockCooldown", (fun () -> rockCooldown), (fun x -> rockCooldown <- x)
+           "rockLife", (fun () -> rockLife), (fun x -> rockLife <- x)
+           "rockDamage", (fun () -> rockDamage), (fun x -> rockDamage <- x)
            "shrinkTime", (fun () -> shrinkTime), (fun x -> shrinkTime <- x)
            "padAimOn", (fun () -> padAimOn), (fun x -> padAimOn <- x)
            "padThrustOn", (fun () -> padThrustOn), (fun x -> padThrustOn <- x) |]
@@ -181,6 +187,7 @@ type Weapon =
     | Scatter
     | Tractor
     | Collision
+    | Rock
 
 let crateTiers = [| Rail, 1; Pulse, 2; Scatter, 2; Tractor, 2; Mines, 3; Swarm, 3 |]
 let crateWeapons = crateTiers |> Array.collect (fun (w, n) -> Array.create n w)
@@ -195,6 +202,7 @@ let weaponAmmo w =
     | Scatter -> Cfg.scatterAmmo
     | Tractor -> Cfg.tractorAmmo
     | Collision -> 0
+    | Rock -> 0
 
 type Tether =
     | NoTether
@@ -232,7 +240,8 @@ type Ship =
       TowLeft: float
       LastHit: int
       LastWeapon: Weapon
-      GhostCd: float
+      LaunchCd: float
+      LaunchAngle: float
       Streak: int
       Shots: int
       Hits: int
@@ -249,6 +258,8 @@ type Bullet =
       Damage: float }
 
 type Mine = { Owner: int; Pos: V2; Vel: V2; Fuse: float }
+
+type Rock = { Owner: int; Pos: V2; Vel: V2; Radius: float; Life: float }
 
 type Pad = { Pos: V2; Amount: float; RespawnIn: float; Kind: int }
 
@@ -279,11 +290,13 @@ type Event =
     | Cooked of V2
     | Zap of V2 * float * int
     | Latch of V2 * int
+    | Launch of V2
 
 type World =
     { Ships: Ship[]
       Bullets: Bullet list
       Mines: Mine list
+      Rocks: Rock list
       Pads: Pad[]
       Crates: Crate[]
       Rng: int

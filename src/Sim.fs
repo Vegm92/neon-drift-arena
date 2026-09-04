@@ -43,7 +43,8 @@ let freshShip i =
       TowLeft = 0.
       LastHit = -1
       LastWeapon = Blaster
-      GhostCd = 0.
+      LaunchCd = 0.
+      LaunchAngle = atan2 p.Y p.X
       Streak = 0
       Shots = 0
       Hits = 0
@@ -222,6 +223,7 @@ let private build i =
     { Ships = Array.init 4 (fun i -> { freshShip i with Active = false; Alive = false; Stocks = 0 })
       Bullets = []
       Mines = []
+      Rocks = []
       Pads = l.Pads |> List.map (fun (p, a, k) -> { Pos = p; Amount = a; RespawnIn = 0.; Kind = k }) |> List.toArray
       Crates = [| 0; 2; 4; 6 |] |> Array.map (fun i -> { Pos = cratePositions.[i]; RespawnIn = 0. })
       Rng = 7
@@ -256,30 +258,33 @@ let private tag by wpn (s: Ship) = if s.Invuln > 0. then s else { s with LastHit
 
 let hurting (s: Ship) = s.Alive && s.Hp < hurtBelow
 
-let ghost (s: Ship) = s.Active && not s.Alive && s.Stocks <= 0
+let launcher (s: Ship) = s.Active && not s.Alive && s.Stocks <= 0
 
-let private stepGhost dt (inp: Input) (s: Ship) =
+let rim k angle =
+    let c, s = abs (cos angle), abs (sin angle)
+    let t = min (min (arenaHalf / max c 1e-9) (arenaHalf / max s 1e-9)) (diagLimit / (c + s))
+    ofAngle angle * (t * k)
+
+let private stepLauncher k dt (inp: Input) (s: Ship) =
     let angle =
         match inp.Aim with
         | Some a -> a
-        | None -> s.Angle + inp.Turn * turnRate * dt
-    let vel = if inp.Thrust || inp.Boost then ofAngle angle * ghostSpeed else zero
-    let p = s.Pos + vel * dt
-    let clamp x = max -arenaHalf (min arenaHalf x)
+        | None -> s.LaunchAngle + inp.Turn * turnRate * dt
     { s with
-        Angle = angle
-        Vel = vel
-        Pos = v (clamp p.X) (clamp p.Y)
-        GhostCd = max 0. (s.GhostCd - dt) }
+        LaunchAngle = angle
+        Angle = angle + Math.PI
+        Vel = zero
+        Pos = rim k angle
+        LaunchCd = max 0. (s.LaunchCd - dt) }
 
 let private slow (s: Ship) = if hurting s then hurtFactor else 1.
 
 let private join (inp: Input) (s: Ship) =
     if not s.Active && inp.Present then respawn s else s
 
-let private stepShip dt (inp: Input) (s: Ship) =
-    if ghost s then
-        stepGhost dt inp s
+let private stepShip k dt (inp: Input) (s: Ship) =
+    if launcher s then
+        stepLauncher k dt inp s
     elif not s.Alive then
         s
     else
@@ -354,7 +359,8 @@ let private special dt (inp: Input) (s: Ship) =
         let nose = s.Pos + dir * (shipRadius + 6.)
         match s.Weapon with
         | Blaster
-        | Collision -> s, [], [], []
+        | Collision
+        | Rock -> s, [], [], []
         | Rail ->
             if inp.Special then
                 let c = s.Charge + dt
@@ -419,19 +425,20 @@ let private special dt (inp: Input) (s: Ship) =
                 { s with Charge = 0. }, [], [], []
 
 let private fire dt (inp: Input) (s: Ship) =
-    if ghost s then
-        if inp.Fire && s.GhostCd <= 0. then
-            let m = { Owner = s.Id; Pos = s.Pos; Vel = zero; Fuse = mineFuse * 1.5 }
-            { s with GhostCd = ghostCooldown }, [], [ m ], [ MineLive s.Pos ]
+    if launcher s then
+        if inp.Fire && s.LaunchCd <= 0. then
+            let r = { Owner = s.Id; Pos = s.Pos; Vel = norm (zero - s.Pos) * rockSpeed; Radius = rockRadius; Life = rockLife }
+            { s with LaunchCd = rockCooldown }, [], [], [ r ], [ Launch s.Pos ]
         else
-            s, [], [], []
+            s, [], [], [], []
     else
     let s, shots, e1 = blaster inp s
     let s, more, mines, e2 = special dt inp s
-    s, shots @ more, mines, e1 @ e2
+    s, shots @ more, mines, [], e1 @ e2
 
-let private blocked (p: V2) =
+let private blocked (rocks: Rock list) (p: V2) =
     asteroids |> Array.exists (fun a -> len (a.Pos - p) < a.Radius)
+    || rocks |> List.exists (fun r -> len (r.Pos - p) < r.Radius)
 
 let private steer dt (ships: Ship[]) (b: Bullet) =
     if b.Kind <> 2 then
@@ -446,9 +453,20 @@ let private steer dt (ships: Ship[]) (b: Bullet) =
             { b with Vel = ofAngle (a0 + max -lim (min lim d)) * seekerSpeed }
         | None -> b
 
-let private stepBullet k dt (b: Bullet) =
+let private stepBullet k rocks dt (b: Bullet) =
     let b = { b with Pos = b.Pos + b.Vel * dt; Life = b.Life - dt }
-    if b.Life <= 0. || outOfBoundsAt k b.Pos || blocked b.Pos then None else Some b
+    if b.Life <= 0. || outOfBoundsAt k b.Pos || blocked rocks b.Pos then None else Some b
+
+let private stepRocks k dt (rocks: Rock list) =
+    let events = ResizeArray()
+    let live =
+        rocks
+        |> List.choose (fun r ->
+            let r = { r with Pos = r.Pos + r.Vel * dt; Life = r.Life - dt }
+            let hitRock = asteroids |> Array.exists (fun a -> len (a.Pos - r.Pos) < a.Radius + r.Radius)
+            if hitRock then events.Add(Bump r.Pos)
+            if r.Life <= 0. || hitRock || outOfBoundsAt k r.Pos then None else Some r)
+    live, List.ofSeq events
 
 let private segDist (a: V2) (b: V2) (p: V2) =
     let ab = b - a
@@ -555,7 +573,7 @@ let private stepMines k dt (ships: Ship[]) (mines: Mine list) =
                     events.Add(MineLive m.Pos)
                     Some { m with Fuse = mineFuse }
                 | _ -> Some m
-            elif m.Fuse <= dt || blocked m.Pos || outOfBoundsAt k m.Pos then
+            elif m.Fuse <= dt || blocked [] m.Pos || outOfBoundsAt k m.Pos then
                 blasts.Add(m.Pos, m.Owner)
                 events.Add(Blast m.Pos)
                 None
@@ -600,6 +618,21 @@ let private bump (events: ResizeArray<Event>) (sh: Ship) (a: Asteroid) =
 let private resolveAsteroids (ships: Ship[]) =
     let events = ResizeArray()
     let s = ships |> Array.map (fun sh -> if sh.Alive then Array.fold (bump events) sh asteroids else sh)
+    s, List.ofSeq events
+
+let private resolveRocks (ships: Ship[]) (rocks: Rock list) =
+    let events = ResizeArray()
+    let hit (sh: Ship) (r: Rock) =
+        let d = sh.Pos - r.Pos
+        if len d < r.Radius + shipRadius && len d > 1e-6 then
+            let n = norm d
+            let closing = min 0. (dot (sh.Vel - r.Vel) n)
+            let mark s = if side s <> side ships.[r.Owner] then tag r.Owner Rock s else s
+            let bumped = bump events sh { Pos = r.Pos; Radius = r.Radius }
+            { bumped with Vel = bumped.Vel + r.Vel * 0.5 } |> mark |> damage (abs closing * rockDamage)
+        else
+            sh
+    let s = ships |> Array.map (fun sh -> if sh.Alive then List.fold hit sh rocks else sh)
     s, List.ofSeq events
 
 let private resolveBullets (ships: Ship[]) (bullets: Bullet list) =
@@ -786,7 +819,11 @@ let private dodge (me: Ship) =
 let bot (w: World) i =
     let me = w.Ships.[i]
     let idle = { noInput with Present = true }
-    if not me.Alive then
+    if launcher me then
+        match nearest w.Ships i me.Pos with
+        | Some t -> { idle with Aim = Some(atan2 t.Pos.Y t.Pos.X); Fire = me.LaunchCd <= 0. }
+        | None -> idle
+    elif not me.Alive then
         idle
     else
         match nearest w.Ships i me.Pos with
@@ -848,11 +885,12 @@ let step dt (inputs: Input[]) (w: World) =
         let k = bounds w.Time
         let fired =
             w.Ships
-            |> Array.map (fun s -> join inputs.[s.Id] s |> stepShip dt inputs.[s.Id] |> fire dt inputs.[s.Id])
-        let ships = fired |> Array.map (fun (s, _, _, _) -> s)
-        let newBullets = fired |> Array.toList |> List.collect (fun (_, b, _, _) -> b)
-        let newMines = fired |> Array.toList |> List.collect (fun (_, _, m, _) -> m)
-        let shotEvents = fired |> Array.toList |> List.collect (fun (_, _, _, e) -> e)
+            |> Array.map (fun s -> join inputs.[s.Id] s |> stepShip k dt inputs.[s.Id] |> fire dt inputs.[s.Id])
+        let ships = fired |> Array.map (fun (s, _, _, _, _) -> s)
+        let newBullets = fired |> Array.toList |> List.collect (fun (_, b, _, _, _) -> b)
+        let newMines = fired |> Array.toList |> List.collect (fun (_, _, m, _, _) -> m)
+        let newRocks = fired |> Array.toList |> List.collect (fun (_, _, _, r, _) -> r)
+        let shotEvents = fired |> Array.toList |> List.collect (fun (_, _, _, _, e) -> e)
         let beams = shotEvents |> List.choose (function Beam(a, b, o) -> Some(a, b, o) | _ -> None)
         let waves = shotEvents |> List.choose (function Wave(p, a, o) -> Some(p, a, o) | _ -> None)
         let zaps = shotEvents |> List.choose (function Zap(p, a, o) -> Some(p, a, o) | _ -> None)
@@ -864,12 +902,14 @@ let step dt (inputs: Input[]) (w: World) =
         let bullets =
             newBullets @ w.Bullets
             |> List.map (steer dt ships)
-            |> List.choose (stepBullet k dt)
+            |> List.choose (stepBullet k w.Rocks dt)
         let ships, bullets, hits = resolveBullets ships bullets
         let mines, blasts, mineEvents = stepMines k dt ships (newMines @ w.Mines)
         let ships = resolveBlasts ships blasts
         let ships, rams = resolveRams ships
         let ships, bumps = resolveAsteroids ships
+        let rocks, rockEvents = stepRocks k dt (newRocks @ w.Rocks)
+        let ships, rockHits = resolveRocks ships rocks
         let ships, pads, picks = resolvePads (sudden w) dt ships w.Pads
         let ships, crates, rng, grabs = stepCrates dt w.Rng ships w.Crates
         let settled, deaths = ships |> Array.map (settle ships rng k dt) |> Array.unzip
@@ -881,6 +921,7 @@ let step dt (inputs: Input[]) (w: World) =
         { Ships = ships
           Bullets = bullets
           Mines = mines
+          Rocks = rocks
           Pads = pads
           Crates = crates
           Rng = rng
@@ -894,6 +935,8 @@ let step dt (inputs: Input[]) (w: World) =
             @ mineEvents
             @ rams
             @ bumps
+            @ rockEvents
+            @ rockHits
             @ picks
             @ grabs
             @ (kills |> List.map (fun (p, i, ring, _, _) -> Explode(p, i, ring)))

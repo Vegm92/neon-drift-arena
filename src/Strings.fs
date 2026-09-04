@@ -91,8 +91,8 @@ type Locale =
       Joins: string -> string
       CatchUp: string
       SeriesWin: string -> string
-      GhostReady: string
-      GhostWait: string
+      LaunchReady: string
+      LaunchWait: string
       Bot: string
       AddBot: string
       ClearBots: string
@@ -217,8 +217,8 @@ let en =
       Joins = sprintf "%s JOINS THE FIGHT"
       CatchUp = "CATCH-UP"
       SeriesWin = sprintf "%s TAKES THE SERIES"
-      GhostReady = "GHOST · FIRE DROPS A MINE"
-      GhostWait = "GHOST · RECHARGING"
+      LaunchReady = "LAUNCHER · FIRE HURLS A ROCK"
+      LaunchWait = "LAUNCHER · RELOADING"
       Bot = "BOT"
       AddBot = "ADD BOT"
       ClearBots = "CLEAR BOTS"

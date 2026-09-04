@@ -286,13 +286,19 @@ let main _ =
     check "bot swerves around a rock in its path" (match swerve.Aim with Some a -> abs a > 0.5 | None -> false)
     check "bot holds fire when a rock blocks the shot" (not swerve.Fire && swerve.Thrust)
 
-    let out = w0 |> place 0 zero 0. |> edit 0 (fun s -> { s with Alive = false; Stocks = 0 })
-    let drifting = run 12 (Array.init 4 (fun i -> if i = 0 then { present with Thrust = true } else present)) out
-    check "a ghost drifts with thrust" (ghost drifting.Ships.[0] && drifting.Ships.[0].Pos.X > 20.)
-    let dropped = out |> step dt firing
-    check "a ghost drops a live mine" (dropped.Mines.Length = 1 && dropped.Mines.Head.Fuse > 0. && dropped.Ships.[0].GhostCd > 0.)
-    check "ghost mines recharge slowly" ((run 10 firing dropped).Mines.Length = 1)
-    check "ghosts never win" ((step dt (all present) { out with Ships = out.Ships |> Array.mapi (fun i s -> if i = 1 then s else { s with Alive = false; Stocks = 0 }) }).Phase = Over(Some 1))
+    let out = w0 |> place 0 zero 0. |> edit 0 (fun s -> { s with Alive = false; Stocks = 0; LaunchAngle = 0. })
+    let turning = run 12 (Array.init 4 (fun i -> if i = 0 then { present with Turn = 1. } else present)) out
+    check "a launcher sits on the rim and turns with the stick" (launcher turning.Ships.[0] && turning.Ships.[0].LaunchAngle > 0.3 && abs (turning.Ships.[0].Pos.X - arenaHalf) < 1. && turning.Ships.[0].Pos.Y > 0.)
+    let hurled = out |> step dt firing
+    let rock = hurled.Rocks.Head
+    check "a launcher hurls a rock from the rim toward the centre" (hurled.Rocks.Length = 1 && rock.Pos.X > arenaHalf - 10. && rock.Vel.X < 0. && hurled.Ships.[0].LaunchCd > 0.)
+    check "the launcher reloads slowly" ((run 10 firing hurled).Rocks.Length = 1)
+    let struck = hurled |> place 1 zero 0. |> run 600 (all present)
+    check "a rolling rock stuns, hurts and credits the launcher" (struck.Ships.[1].Hp < hpMax && struck.Ships.[1].LastHit = 0 && struck.Ships.[1].LastWeapon = Rock)
+    let walled = hurled |> place 1 (v (arenaHalf - 400.) 0.) 0. |> step dt (Array.init 4 (fun i -> if i = 1 then { present with Fire = true } else present))
+    let shielded = run 60 (all present) walled
+    check "rocks stop bullets" (walled.Bullets.Length = 1 && shielded.Bullets.IsEmpty && shielded.Rocks.Length = 1)
+    check "launchers never win" ((step dt (all present) { out with Ships = out.Ships |> Array.mapi (fun i s -> if i = 1 then s else { s with Alive = false; Stocks = 0 }) }).Phase = Over(Some 1))
 
     practice <- true
     target <- 3

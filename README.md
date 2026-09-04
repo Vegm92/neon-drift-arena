@@ -38,8 +38,8 @@ The lobby opens on load. Each device presses Fire or A to claim one of the four 
 - 3 stocks each, 100 HP. Bullets deal 20 and knock the target back. Ramming exchanges momentum and deals damage proportional to closing speed.
 - The clock at the top counts down from 2:30. At zero it is SUDDEN DEATH: heal pads go dark and the border closes over 40 s to 45% of the arena, killing anything left outside.
 - A ship respawns at whichever of the two spawn points farthest from enemies the match seed picks, never at a camped corner. Its tag shows for the 1.5 s of spawn protection.
-- Out of stocks? You become a ghost: a faint ship that drifts at fixed speed (stick or W/A/D), passes through everything and drops a live mag mine on Fire every 8 s. Ghosts never win and are not in the camera frame.
-- The kill feed under the clock reads killer, weapon icon, victim; a ring-out shows the exit arrow. A red arc around your ship points at the nearest incoming bullet, seeker, live mine or a railgun/tractor charging at you, brighter the closer it is.
+- Out of stocks? You become a launcher: a chevron in your colour on the arena rim, moved around the edge with the stick (or A/D). Fire hurls a rolling rock from there straight at the centre every 6 s. Rocks bounce, stun and hurt every ship they touch, block bullets, shatter on asteroids and any takedown credits you in the feed. Launchers never win and are not in the camera frame.
+- The kill feed under the clock reads killer, weapon icon, victim; a ring-out shows the exit arrow. A red arc around your ship points at the nearest incoming bullet, rolling rock, seeker, live mine or a railgun/tractor charging at you, brighter the closer it is.
 - Bots chase the nearest enemy, fire when lined up, use whatever crate they grab, and steer clear of rocks and the closing border.
 - The blaster runs on heat, not a magazine: every shot adds heat, sustained fire hits 100 and locks the gun for 1.5 s while it vents.
 - Below 25 HP a ship smokes and runs 25% slower in every axis - turn, thrust, boost, strafe and top speed.
@@ -82,7 +82,7 @@ Every tunable in `Cfg` is a row in SETTINGS > TUNING, adjusted with left/right i
 
 ## Practice mode
 
-MODE in the lobby cycles FREE FOR ALL, TEAMS and PRACTICE. PRACTICE starts as soon as one player from any device - keyboard, gamepad or phone - has joined and pressed Start (no READY needed), and drops a passive target bot into the first free slot. Everyone lines up on the left facing the target, with a crate above the centre and a dormant mine below. Nobody loses stocks, so the range never ends until QUIT TO LOBBY. The crate reappears a second after every grab and hands out the weapons in order - RAILGUN, MAG MINES, SEEKERS, REPULSOR, SCATTER GUN, TRACTOR - so a pad can cycle through all of them. With a keyboard in the game, `0`–`6` arm it directly (0 = BLASTER), `K` kills the target, `T` jumps to sudden death and `R` resets the stage.
+MODE in the lobby cycles FREE FOR ALL, TEAMS and PRACTICE. PRACTICE starts as soon as one player from any device - keyboard, gamepad or phone - has joined and pressed Start (no READY needed), and drops a passive target bot into the first free slot. Everyone lines up on the left facing the target, with a crate above the centre and a dormant mine below. Nobody loses stocks, so the range never ends until QUIT TO LOBBY. The crate reappears a second after every grab and hands out the weapons in order - RAILGUN, MAG MINES, SEEKERS, REPULSOR, SCATTER GUN, TRACTOR - so a pad can cycle through all of them. With a keyboard in the game, `0`–`6` arm it directly (0 = BLASTER), `K` kills the target, `G` turns the keyboard player into a launcher, `T` jumps to sudden death and `R` resets the stage.
 
 ## Check the physics
 

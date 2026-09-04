@@ -233,6 +233,7 @@ window.addEventListener (
             match (e :?> Browser.Types.KeyboardEvent).code with
             | "KeyK" -> world <- { world with Ships = world.Ships |> Array.map (fun s -> if s.Id = Sim.target then { s with Hp = 0.; Invuln = 0. } else s) }
             | "KeyT" -> world <- { world with Time = Cfg.matchTime }
+            | "KeyG" -> world <- { world with Ships = world.Ships |> Array.map (fun s -> if s.Id = Input.keyboardSlot then { s with Alive = false; Stocks = 0 } else s) }
             | "KeyR" -> world <- Sim.stage world
             | code when code.StartsWith "Digit" && Input.keyboardSlot >= 0 ->
                 let k = int (code.Substring 5) - 1
