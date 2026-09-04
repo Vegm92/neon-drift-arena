@@ -14,10 +14,10 @@
   #pad::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,246,255,.08),transparent 60%),rgba(3,3,10,.82);pointer-events:none}
   @media (orientation:portrait){#pad{inset:auto;top:0;left:100vw;width:100vh;height:100vw;transform-origin:0 0;transform:rotate(90deg)}}
   .bar,.row2,.card{position:relative}
-  .corner{position:absolute;width:8%;height:18%;border:2px solid var(--mag);pointer-events:none;box-shadow:0 0 8px var(--mag)}
+  .corner{position:absolute;width:8%;height:18%;border:2px solid var(--mag);pointer-events:none;filter:drop-shadow(0 0 6px var(--mag))}
   .corner.tl{left:12px;top:12px;border-right:0;border-bottom:0}.corner.bl{left:12px;bottom:12px;border-right:0;border-top:0}
-  .corner.tr{right:12px;top:12px;border-left:0;border-bottom:0;border-color:var(--cyan);box-shadow:0 0 8px var(--cyan)}
-  .corner.br{right:12px;bottom:12px;border-left:0;border-top:0;border-color:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+  .corner.tr{right:12px;top:12px;border-left:0;border-bottom:0;border-color:var(--cyan);filter:drop-shadow(0 0 6px var(--cyan))}
+  .corner.br{right:12px;bottom:12px;border-left:0;border-top:0;border-color:var(--cyan);filter:drop-shadow(0 0 6px var(--cyan))}
   .bar{height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 12%;font-size:10px;font-weight:700}
   .bar.foot{height:30px;border-top:1px solid #122033;background:rgba(5,10,20,.8);font-size:8px;color:#7a94b3;font-weight:400}
   .bar .tag{border:1px solid #1e334f;padding:2px 10px;font-size:9px;letter-spacing:.32em;opacity:.8}
@@ -47,15 +47,15 @@
     clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);font-size:14px;box-shadow:0 0 16px rgba(255,43,214,.6)}
   .btn.fire.on{background:#ff5de1}
   .btn.menu{padding:2px 10px;font-size:14px;letter-spacing:0}
-  .card{flex:1;margin:44px 12%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}
-  .card b{font-size:26px;text-shadow:0 0 14px currentColor}
-  .card .art{width:min(30vh,160px);aspect-ratio:1;filter:drop-shadow(0 0 10px currentColor)}
-  .card .ship{display:block;width:100%;aspect-ratio:530/450;background:url(/ships.png) no-repeat;background-size:289.81% 227.56%}
+  .card{flex:1;margin:12px 10%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:min(16px,2.5vh);text-align:center}
+  .card b{font-size:min(26px,6vh);text-shadow:0 0 14px currentColor}
+  .card .art{width:min(28vh,160px);aspect-ratio:1;filter:drop-shadow(0 0 10px currentColor)}
+  .card .ship{display:block;width:100%;aspect-ratio:530/450;background-image:url(/ships.png);background-repeat:no-repeat;background-size:289.81% 227.56%}
   .k0{background-position:21.57% 6.97%}.k1{background-position:78.53% 8.01%}
   .k2{background-position:1.19% 78.75%}.k3{background-position:49.9% 83.8%;transform:rotate(180deg)}.k4{background-position:97.81% 82.58%}
   .t1{filter:hue-rotate(35deg)}.t2{filter:hue-rotate(50deg)}
   .row{display:flex;gap:14px;align-items:center}
-  .btn.big{--b:currentColor;padding:18px 36px;font-size:18px}
+  .btn.big{--b:currentColor;padding:min(18px,3vh) 36px;font-size:18px}
   .btn.ready{background:currentColor}
   .btn.ready span{color:#03030a}
   .title{font-size:22px;color:var(--cyan);text-shadow:0 0 18px var(--cyan)}
