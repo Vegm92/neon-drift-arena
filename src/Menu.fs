@@ -160,7 +160,11 @@ let padCard (key: string) : obj =
 
 let private qr () =
     if padUrl = "" then ""
-    else sprintf "<div class=\"legend qr\"><div class=\"lt\">%s</div>%s<div class=\"url\">%s</div></div>" Strings.t.ScanToJoin (qrToSvg padUrl) padUrl
+    else
+        let wasOpen = el.querySelector "details.qr[open]" |> isNull |> not
+        sprintf
+            "<details class=\"legend qr\"%s onpointerdown=\"this.open=!this.open\"><summary><div class=\"lt\">%s</div><div class=\"big\">%s<div class=\"url\">%s</div></div></summary></details>"
+            (if wasOpen then " open" else "") Strings.t.ScanToJoin (qrToSvg padUrl) padUrl
 
 let private plus =
     "<svg viewBox=\"0 0 100 100\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linejoin=\"round\"><path d=\"M50 8 L86 29 L86 71 L50 92 L14 71 L14 29 Z\"/><path d=\"M50 34 L50 66 M34 50 L66 50\" stroke-width=\"4\"/></svg>"
