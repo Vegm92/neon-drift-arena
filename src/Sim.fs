@@ -619,7 +619,7 @@ let private phase (ships: Ship[]) =
         Playing
 
 let reset (w: World) =
-    { initial with Ships = w.Ships |> Array.map (fun s -> if s.Active then { freshShip s.Id with Team = s.Team } else s) }
+    { initial with Ships = w.Ships |> Array.map (fun s -> if s.Active then { freshShip s.Id with Team = s.Team } else s); Rng = w.Rng }
 
 let step dt (inputs: Input[]) (w: World) =
     match w.Phase with

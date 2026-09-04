@@ -38,7 +38,7 @@ The lobby opens on load. Each device presses Fire or A to claim one of the four 
 - Below 25 HP a ship smokes and runs 25% slower in every axis - turn, thrust, boost, strafe and top speed.
 - Four heal pads sit at the far ends of the two lanes: +40 HP, 30 s respawn, ignored by a ship at full health.
 - The blaster is always on RT. Crate weapons are a **special** on RB, fired independently, so you never lose your gun.
-- Four weapon crates sit in the arena at all times, one per quadrant. Grabbing one hands out a random loadout and that crate reappears 10 s later on a free spot. Spend the ammo and the special is gone.
+- Four weapon crates sit in the arena at all times, one per quadrant. Grabbing one hands out a random loadout - MAG MINES and SEEKERS common (3/9 each), REPULSOR uncommon (2/9), RAILGUN rare (1/9) - and that crate reappears 10 s later on a free spot. Spend the ammo and the special is gone.
 
 | Weapon | Behaviour |
 |--------|-----------|

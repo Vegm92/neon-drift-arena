@@ -119,7 +119,7 @@ let rec frame (t: float) =
         Sfx.silence ()
         match Menu.update (masked ()) with
         | Some Menu.Rematch when Menu.screen = Menu.Lobby ->
-            world <- Sim.initial |> Sim.withTeams Menu.teams
+            world <- { Sim.initial with Rng = System.Random().Next 1000003 } |> Sim.withTeams Menu.teams
             go ()
         | Some Menu.Rematch
         | Some Menu.Restart ->

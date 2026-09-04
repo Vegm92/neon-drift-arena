@@ -147,7 +147,8 @@ type Weapon =
     | Swarm
     | Pulse
 
-let crateWeapons = [| Rail; Mines; Swarm; Pulse |]
+let crateTiers = [| Rail, 1; Pulse, 2; Mines, 3; Swarm, 3 |]
+let crateWeapons = crateTiers |> Array.collect (fun (w, n) -> Array.create n w)
 
 let weaponAmmo w =
     match w with
