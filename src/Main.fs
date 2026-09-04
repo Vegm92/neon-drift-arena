@@ -186,6 +186,7 @@ let rec frame (t: float) =
             if Menu.screen <> Menu.Pause then Settings.rollArena ()
             launch (Sim.reset (fun i -> Menu.joined.Contains i) world |> Sim.withTeams Menu.teams)
         | Some Menu.Resume -> go false
+        | Some Menu.Configure -> ()
         | Some Menu.Quit ->
             world <- Sim.initial
             Sim.target <- -1
