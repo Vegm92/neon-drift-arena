@@ -45,6 +45,7 @@ let freshShip i =
       LastWeapon = Blaster
       LaunchCd = 0.
       LaunchAngle = atan2 p.Y p.X
+      WarpCd = 0.
       Streak = 0
       Shots = 0
       Hits = 0
@@ -224,6 +225,8 @@ let private build i =
       Bullets = []
       Mines = []
       Rocks = []
+      Portals = []
+      PortalIn = portalEvery
       Pads = l.Pads |> List.map (fun (p, a, k) -> { Pos = p; Amount = a; RespawnIn = 0.; Kind = k }) |> List.toArray
       Crates = [| 0; 2; 4; 6 |] |> Array.map (fun i -> { Pos = cratePositions.[i]; RespawnIn = 0. })
       Rng = 7
@@ -246,6 +249,26 @@ let private outOfBoundsAt k (p: V2) =
     abs p.X > arenaHalf * k + killMargin
     || abs p.Y > arenaHalf * k + killMargin
     || abs p.X + abs p.Y > diagLimit * k + killMargin
+
+let private inside k margin (p: V2) =
+    abs p.X < arenaHalf * k - margin && abs p.Y < arenaHalf * k - margin && abs p.X + abs p.Y < diagLimit * k - margin
+
+let private freeSpot k (ships: Ship[]) (avoid: V2 list) rng =
+    let mutable r = rng
+    let mutable pick = zero
+    let mutable tries = 0
+    let clear (p: V2) =
+        inside k 120. p
+        && asteroids |> Array.forall (fun a -> len (a.Pos - p) > a.Radius + 90.)
+        && ships |> Array.forall (fun s -> not s.Alive || len (s.Pos - p) > 250.)
+        && avoid |> List.forall (fun q -> len (q - p) > 500.)
+    while tries < 40 && (tries = 0 || not (clear pick)) do
+        r <- nextRng r
+        let a = float (r % 360) * Math.PI / 180.
+        let d = 250. + float ((r / 360) % 900)
+        pick <- ofAngle a * d
+        tries <- tries + 1
+    pick, r
 
 let private damage amt (s: Ship) =
     if s.Invuln > 0. then
@@ -456,6 +479,41 @@ let private steer dt (ships: Ship[]) (b: Bullet) =
 let private stepBullet k rocks dt (b: Bullet) =
     let b = { b with Pos = b.Pos + b.Vel * dt; Life = b.Life - dt }
     if b.Life <= 0. || outOfBoundsAt k b.Pos || blocked rocks b.Pos then None else Some b
+
+let private stepPortals k dt sudden (ships: Ship[]) rng (w: World) =
+    let live = w.Portals |> List.choose (fun p -> if p.Life <= dt then None else Some { p with Life = p.Life - dt })
+    if w.PortalIn > dt || sudden then
+        live, max 0. (w.PortalIn - dt), rng, []
+    else
+        let a, r1 = freeSpot k ships [] rng
+        let b, r2 = freeSpot k ships [ a ] r1
+        { A = a; B = b; Life = portalLife } :: live, portalEvery, r2, [ PortalOpen(a, b) ]
+
+let private warpAt (portals: Portal list) (p: V2) (vel: V2) =
+    portals
+    |> List.tryPick (fun g ->
+        let jump (src: V2) (dst: V2) =
+            let dir = if len vel > 1e-6 then norm vel else norm (dst - src)
+            Some(dst + dir * (portalRadius + 4.))
+        if len (p - g.A) < portalRadius then jump g.A g.B
+        elif len (p - g.B) < portalRadius then jump g.B g.A
+        else None)
+
+let private resolveWarps dt (portals: Portal list) (ships: Ship[]) =
+    let events = ResizeArray()
+    let s =
+        ships
+        |> Array.map (fun sh ->
+            let sh = { sh with WarpCd = max 0. (sh.WarpCd - dt) }
+            if sh.Alive && sh.WarpCd <= 0. then
+                match warpAt portals sh.Pos sh.Vel with
+                | Some p ->
+                    events.Add(Warp sh.Pos)
+                    events.Add(Warp p)
+                    { sh with Pos = p; WarpCd = 0.5 }
+                | None -> sh
+            else sh)
+    s, List.ofSeq events
 
 let private stepRocks k dt (rocks: Rock list) =
     let events = ResizeArray()
@@ -903,15 +961,20 @@ let step dt (inputs: Input[]) (w: World) =
             newBullets @ w.Bullets
             |> List.map (steer dt ships)
             |> List.choose (stepBullet k w.Rocks dt)
+            |> List.map (fun b -> match warpAt w.Portals b.Pos b.Vel with Some p -> { b with Pos = p } | None -> b)
         let ships, bullets, hits = resolveBullets ships bullets
         let mines, blasts, mineEvents = stepMines k dt ships (newMines @ w.Mines)
+        let mines = mines |> List.map (fun m -> match warpAt w.Portals m.Pos m.Vel with Some p -> { m with Pos = p } | None -> m)
         let ships = resolveBlasts ships blasts
         let ships, rams = resolveRams ships
         let ships, bumps = resolveAsteroids ships
         let rocks, rockEvents = stepRocks k dt (newRocks @ w.Rocks)
+        let rocks = rocks |> List.map (fun r -> match warpAt w.Portals r.Pos r.Vel with Some p -> { r with Pos = p } | None -> r)
         let ships, rockHits = resolveRocks ships rocks
+        let ships, warps = resolveWarps dt w.Portals ships
         let ships, pads, picks = resolvePads (sudden w) dt ships w.Pads
         let ships, crates, rng, grabs = stepCrates dt w.Rng ships w.Crates
+        let portals, portalIn, rng, portalEvents = stepPortals k dt (sudden w) ships rng w
         let settled, deaths = ships |> Array.map (settle ships rng k dt) |> Array.unzip
         let ships = Array.copy settled
         let kills = deaths |> Array.toList |> List.choose id
@@ -922,6 +985,8 @@ let step dt (inputs: Input[]) (w: World) =
           Bullets = bullets
           Mines = mines
           Rocks = rocks
+          Portals = portals
+          PortalIn = portalIn
           Pads = pads
           Crates = crates
           Rng = rng
@@ -937,6 +1002,8 @@ let step dt (inputs: Input[]) (w: World) =
             @ bumps
             @ rockEvents
             @ rockHits
+            @ warps
+            @ portalEvents
             @ picks
             @ grabs
             @ (kills |> List.map (fun (p, i, ring, _, _) -> Explode(p, i, ring)))

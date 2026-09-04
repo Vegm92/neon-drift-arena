@@ -345,6 +345,8 @@ let play (events: Event list) =
             | Zap(p, _, _) -> zap p
             | Latch(p, _) -> latch p
             | Launch p -> bump p
+            | PortalOpen(p, _) -> mineLive p
+            | Warp p -> pickup p false
             | Explode(p, _, _) -> explode p
             | Downed _ -> ()
 

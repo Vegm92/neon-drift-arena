@@ -57,6 +57,7 @@ The lobby opens on load. Each device presses Fire or A to claim one of the four 
 | TRACTOR | Two charges. Hold RB to charge like the railgun; a faint bubble shows the reach (half a blaster shot). On full charge it latches the thing you are facing, enemy ships first, then asteroids. A ship gets dragged toward you for 1.4 s so you can ram it; a rock reels you in instead. |
 - Boost drains at 21/s and only refills from pads: eight ring pads give 26, the centre pad refills fully. Pads respawn 7 s after pickup. All pads sit inside two narrow lanes (a cross through the centre) walled by asteroids.
 - Asteroids block bullets and bounce ships; a bump stuns the ship for 0.6 s and sends it spinning.
+- Every 20 s a violet wormhole pair opens on two free spots for 12 s. Anything that crosses one ring - ships, bullets, seekers, mines, rocks - pops out of the other ring at the same speed and heading. A ship gets half a second before it can warp again. No new pairs open in sudden death.
 - Leaving the arena border by more than 60 units destroys the ship.
 - Firing recoils the shooter, so the blaster doubles as a reverse thruster.
 - Every sim event drives a synthesised voice — no audio files. Browsers keep audio suspended until a key or click, so a gamepad-only session stays silent until someone touches the keyboard or the window; the lobby's note line says so until sound is unlocked.

@@ -100,6 +100,10 @@ module Cfg =
     let mutable rockLife = 14.
     let mutable rockDamage = 0.09
 
+    let mutable portalEvery = 20.
+    let mutable portalLife = 12.
+    let mutable portalRadius = 45.
+
     let mutable padAimOn = 0.15
     let mutable padThrustOn = 0.75
 
@@ -156,6 +160,9 @@ module Cfg =
            "rockCooldown", (fun () -> rockCooldown), (fun x -> rockCooldown <- x)
            "rockLife", (fun () -> rockLife), (fun x -> rockLife <- x)
            "rockDamage", (fun () -> rockDamage), (fun x -> rockDamage <- x)
+           "portalEvery", (fun () -> portalEvery), (fun x -> portalEvery <- x)
+           "portalLife", (fun () -> portalLife), (fun x -> portalLife <- x)
+           "portalRadius", (fun () -> portalRadius), (fun x -> portalRadius <- x)
            "shrinkTime", (fun () -> shrinkTime), (fun x -> shrinkTime <- x)
            "padAimOn", (fun () -> padAimOn), (fun x -> padAimOn <- x)
            "padThrustOn", (fun () -> padThrustOn), (fun x -> padThrustOn <- x) |]
@@ -242,6 +249,7 @@ type Ship =
       LastWeapon: Weapon
       LaunchCd: float
       LaunchAngle: float
+      WarpCd: float
       Streak: int
       Shots: int
       Hits: int
@@ -260,6 +268,8 @@ type Bullet =
 type Mine = { Owner: int; Pos: V2; Vel: V2; Fuse: float }
 
 type Rock = { Owner: int; Pos: V2; Vel: V2; Radius: float; Life: float }
+
+type Portal = { A: V2; B: V2; Life: float }
 
 type Pad = { Pos: V2; Amount: float; RespawnIn: float; Kind: int }
 
@@ -291,12 +301,16 @@ type Event =
     | Zap of V2 * float * int
     | Latch of V2 * int
     | Launch of V2
+    | PortalOpen of V2 * V2
+    | Warp of V2
 
 type World =
     { Ships: Ship[]
       Bullets: Bullet list
       Mines: Mine list
       Rocks: Rock list
+      Portals: Portal list
+      PortalIn: float
       Pads: Pad[]
       Crates: Crate[]
       Rng: int

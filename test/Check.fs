@@ -298,6 +298,15 @@ let main _ =
     let walled = hurled |> place 1 (v (arenaHalf - 400.) 0.) 0. |> step dt (Array.init 4 (fun i -> if i = 1 then { present with Fire = true } else present))
     let shielded = run 60 (all present) walled
     check "rocks stop bullets" (walled.Bullets.Length = 1 && shielded.Bullets.IsEmpty && shielded.Rocks.Length = 1)
+    let gate = { A = v -500. 0.; B = v 500. 0.; Life = 5. }
+    let gated = { w0 with Portals = [ gate ] } |> place 0 (v -500. 0.) 0. |> edit 0 (fun s -> { s with Vel = v 200. 0. })
+    let warped = step dt (all present) gated
+    check "a wormhole moves a ship to the other end with its velocity" (warped.Ships.[0].Pos.X > 500. && warped.Ships.[0].Pos.X < 600. && warped.Ships.[0].Vel.X > 150.)
+    check "a ship cannot bounce straight back through" ((run 30 (all present) (warped |> place 0 (v 500. 0.) 0. |> edit 0 (fun s -> { s with Vel = v -200. 0. }))).Ships.[0].Pos.X > 400.)
+    let shotThrough = gated |> place 0 (v -700. 0.) 0. |> edit 0 (fun s -> { s with Vel = zero }) |> step dt firing |> run 45 (all present)
+    check "bullets ride wormholes" (shotThrough.Bullets |> List.exists (fun b -> b.Pos.X > 500.))
+    let opened = run (int (portalEvery / dt) + 2) (all present) w0
+    check "wormholes open on schedule, apart and inside the arena" (opened.Portals.Length = 1 && len (opened.Portals.Head.A - opened.Portals.Head.B) > 500. && abs opened.Portals.Head.A.X < arenaHalf && abs opened.Portals.Head.B.Y < arenaHalf)
     check "launchers never win" ((step dt (all present) { out with Ships = out.Ships |> Array.mapi (fun i s -> if i = 1 then s else { s with Alive = false; Stocks = 0 }) }).Phase = Over(Some 1))
 
     practice <- true

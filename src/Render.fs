@@ -16,6 +16,8 @@ let private trailLen = 48
 let private bulletPool = 96
 let private minePool = 24
 let private rockPool = 8
+let private portalPool = 2
+let private portalHex = 0xb36bff
 let private maxCamH = (arenaHalf + 100.) / tan (20. * Math.PI / 180.)
 let private minCamH = maxCamH * 0.75
 let private rnd = Random()
@@ -63,6 +65,7 @@ type View =
       Bullets: Mesh[]
       Mines: Object3D[]
       Boulders: Object3D[]
+      Gates: Mesh[]
       Crates: Object3D[]
       Panels: HTMLElement[]
       Tags: HTMLElement[]
@@ -244,6 +247,15 @@ let private mkAsteroid (scene: Object3D) (a: Asteroid) =
     scene.add root
     root
 
+let private mkGate (scene: Object3D) i =
+    let inner = i % 2 = 1
+    let r = if inner then portalRadius * 0.55 else portalRadius
+    let m = three.Mesh(three.RingGeometry(r - 4., r, (if inner then 6 else 40)) |> flat, glowMat portalHex 0.9)
+    m.position.y <- 2.
+    m.visible <- false
+    scene.add m
+    m
+
 let private mkBullet (scene: Object3D) =
     let m = three.Mesh(three.PlaneGeometry(16., 3.) |> flat, glowMat 0xffffff 1.)
     m.visible <- false
@@ -386,6 +398,7 @@ let create () =
           Bullets = Array.init bulletPool (fun _ -> mkBullet scene)
           Mines = Array.init minePool (fun _ -> mkMine scene)
           Boulders = Array.init rockPool (fun _ -> mkAsteroid scene { Pos = zero; Radius = rockRadius })
+          Gates = Array.init (portalPool * 4) (mkGate scene)
           Crates = Array.init 4 (fun _ -> mkCrate scene)
           Panels = Array.init 4 (mkPanel hud)
           Tags = Array.init 4 (mkTag hud)
@@ -709,6 +722,22 @@ let private drawRocks (vw: View) (w: World) =
     for i in k .. vw.Boulders.Length - 1 do
         vw.Boulders.[i].visible <- false
 
+let private drawPortals (vw: View) (w: World) =
+    let mutable k = 0
+    for g in w.Portals do
+        for e in [ g.A; g.B ] do
+            for inner in [ false; true ] do
+                if k < vw.Gates.Length then
+                    let m = vw.Gates.[k]
+                    m.visible <- true
+                    m.position.set (e.X, 2., e.Y)
+                    m.rotation.z <- (if inner then -2.4 else 0.8) * w.Time
+                    let fade = min 1. (g.Life / 1.5) * min 1. ((portalLife - g.Life) * 3.)
+                    m.material.opacity <- fade * (if inner then 0.9 else 0.55 + 0.25 * sin (w.Time * 5.))
+                    k <- k + 1
+    for i in k .. vw.Gates.Length - 1 do
+        vw.Gates.[i].visible <- false
+
 let private drawMines (vw: View) (w: World) =
     let mutable k = 0
     for m in w.Mines do
@@ -925,6 +954,11 @@ let draw (vw: View) (w: World) (events: Event list) dt =
         | Launch p ->
             spawnBurst vw p 0xff9955 18 200.
             spawnRing vw p 0xff9955 rockRadius 2.5 0.4
+        | PortalOpen(a, b) ->
+            for p in [ a; b ] do
+                spawnRing vw p portalHex portalRadius 3. 0.6
+                spawnBurst vw p portalHex 20 160.
+        | Warp p -> spawnBurst vw p portalHex 12 140.
         | Explode(p, i, ring) ->
             let hex = shipColor w.Ships.[i]
             let sv = vw.Ships.[i]
@@ -951,6 +985,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
     drawCrates vw w
     drawMines vw w
     drawRocks vw w
+    drawPortals vw w
     drawBullets vw w dt
     updateBursts vw dt
     updateFlashes vw dt
