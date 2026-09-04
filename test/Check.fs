@@ -32,6 +32,8 @@ let main _ =
 
     let w0 = step dt (all present) initial
     check "all four join" (w0.Ships |> Array.forall (fun s -> s.Active && s.Alive))
+    let aimed = w0 |> place 0 (spawnPos 0) 0. |> step dt (all { present with Aim = Some 3. })
+    check "aim turns toward the stick at turn rate" (abs (aimed.Ships.[0].Angle - turnRate * dt) < 1e-6)
 
     let w1 = step dt (all { present with Fire = true }) w0
     let s0 = w1.Ships.[0]

@@ -253,7 +253,10 @@ let private stepShip dt (inp: Input) (s: Ship) =
         let k = slow s
         let angle =
             match inp.Aim with
-            | Some a -> a
+            | Some a ->
+                let d = atan2 (sin (a - s.Angle)) (cos (a - s.Angle))
+                let lim = turnRate * k * dt
+                s.Angle + max -lim (min lim d) + s.Spin * dt
             | None -> s.Angle + (inp.Turn * turnRate * k + s.Spin) * dt
         let boosting = inp.Boost && s.Boost > 0.
         let thrusting = if boosting then 2. elif inp.Thrust || inp.Boost then 1. else 0.
