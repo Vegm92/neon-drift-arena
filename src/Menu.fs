@@ -184,7 +184,8 @@ let private opposed () =
     (joined |> Seq.exists (fun s -> teams.[s] = 1)) && (joined |> Seq.exists (fun s -> teams.[s] = 2))
 
 let private canStart () =
-    joined.Count >= (if practiceMode then 1 else 2) && allReady () && (not teamMode || opposed ())
+    if practiceMode then joined.Count >= 1
+    else joined.Count >= 2 && allReady () && (not teamMode || opposed ())
 
 let private modeName () =
     if practiceMode then Strings.t.Practice elif teamMode then Strings.t.Teams else Strings.t.Ffa
