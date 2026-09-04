@@ -81,6 +81,7 @@ type Locale =
       MostKills: string -> int -> string
       MostRings: string -> int -> string
       NoCrates: string -> string
+      SuddenDeath: string
       Tuning: string
       Audio: string
       Music: string
@@ -192,6 +193,7 @@ let en =
       MostKills = fun n k -> sprintf "%s TOOK DOWN %d SHIPS" n k
       MostRings = fun n r -> sprintf "%s FLEW OUT %d TIMES" n r
       NoCrates = sprintf "%s NEVER OPENED A CRATE"
+      SuddenDeath = "SUDDEN DEATH"
       Tuning = "TUNING"
       Audio = "AUDIO"
       Music = "MUSIC"

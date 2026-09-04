@@ -265,4 +265,14 @@ let main _ =
     check "kills are credited to the shooter" (shotDown.Ships.[0].Kills = 1 && shotDown.Ships.[0].Streak = 1)
     check "hits are counted for accuracy" (shotDown.Ships.[0].Hits > 0 && shotDown.Ships.[0].Shots > 0)
 
+    check "border is whole until the clock runs out" (bounds matchTime = 1. && bounds (matchTime + shrinkTime) = shrinkMin)
+    let late = { w0 with Time = matchTime + shrinkTime + 1. } |> place 0 (v (arenaHalf * 0.9) 0.) 0.
+    let closed = step dt (all present) late
+    check "sudden death border kills a ship at the old edge" (not closed.Ships.[0].Alive && closed.Ships.[0].Rings = 1)
+    let healPad = w0.Pads |> Array.findIndex (fun p -> p.Kind = 1)
+    let starving =
+        { w0 with Time = matchTime + 1. } |> place 0 w0.Pads.[healPad].Pos 0. |> edit 0 (fun s -> { s with Hp = 10. })
+        |> step dt (all present)
+    check "heal pads sleep in sudden death" (starving.Ships.[0].Hp = 10.)
+
     0

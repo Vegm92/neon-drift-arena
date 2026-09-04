@@ -24,6 +24,8 @@
   .panel.cooked .heat i{background:#fff45c;box-shadow:0 0 12px #fff45c}
   @keyframes sos{0%,100%{opacity:1}50%{opacity:.35}}
   .stocks{font-size:12px;letter-spacing:.3em;opacity:.85}
+  #clock{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-size:15px;letter-spacing:.3em;opacity:.8;text-shadow:0 0 10px currentColor}
+  #clock.sudden{color:#ff3b5c;animation:sos .7s steps(2,end) infinite}
   #vignette{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .06s linear}
   #menu .stats{font-size:11px;opacity:.75;white-space:pre-line;line-height:1.9;letter-spacing:.2em}
   #banner{position:fixed;left:0;right:0;top:40%;text-align:center;font-size:22px;letter-spacing:.35em;text-shadow:0 0 18px #fff;white-space:pre-line;line-height:2}
@@ -127,7 +129,7 @@
 </head>
 <body>
 <div id="vignette"></div>
-<div id="hud"></div>
+<div id="hud"><div id="clock"></div></div>
 <div id="banner" class="hidden"></div>
 <div id="menu"></div>
 <script type="module" src="/build/Main.js"></script>

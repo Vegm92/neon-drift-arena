@@ -21,6 +21,7 @@ let mutable ending = false
 let mutable shout = 0.
 let mutable shoutText = ""
 let mutable bled = false
+let mutable suddenSaid = false
 let private lowStock = Array.create 4 false
 let private hyped = Array.create 4 false
 let mutable endTitle = ""
@@ -38,6 +39,7 @@ let private go () =
     ending <- false
     shout <- 0.
     bled <- false
+    suddenSaid <- false
     Array.fill lowStock 0 4 false
     Array.fill hyped 0 4 false
     Menu.note <- ""
@@ -80,7 +82,10 @@ let private say text =
 
 let private announce (w: World) (events: Event list) =
     let deaths = events |> List.choose (function Explode(_, i, ring) -> Some(i, ring) | _ -> None)
-    if deaths.Length >= 2 then say Strings.t.DoubleKill
+    if Sim.sudden w && not suddenSaid then
+        suddenSaid <- true
+        say Strings.t.SuddenDeath
+    elif deaths.Length >= 2 then say Strings.t.DoubleKill
     elif not deaths.IsEmpty then
         let i, ring = deaths.Head
         if not bled then

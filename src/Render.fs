@@ -61,6 +61,8 @@ type View =
       Mines: Object3D[]
       Crates: Object3D[]
       Panels: HTMLElement[]
+      Border: Object3D
+      Clock: HTMLElement
       Banner: HTMLElement
       Vignette: HTMLElement
       mutable Bursts: Burst list
@@ -242,11 +244,14 @@ let private mkLoop (scene: Object3D) scale hex opacity y =
     let l = three.LineLoop(g, lineMat hex opacity)
     l.position.y <- y
     scene.add l
+    l
 
 let private mkArena (scene: Object3D) =
-    mkLoop scene 1. 0x00f6ff 1. 0.
-    mkLoop scene 0.985 0xff2bd6 0.35 0.
-    mkLoop scene 0.62 0x15294d 0.7 -0.5
+    let border = three.Group()
+    mkLoop border 1. 0x00f6ff 1. 0. |> ignore
+    mkLoop border 0.985 0xff2bd6 0.35 0. |> ignore
+    scene.add border
+    mkLoop scene 0.62 0x15294d 0.7 -0.5 |> ignore
     let grid = three.GridHelper(arenaHalf * 2., 27, 0x101a38, 0x0a0f22)
     grid.position.y <- -1.
     scene.add grid
@@ -292,6 +297,7 @@ let private mkArena (scene: Object3D) =
     scene.add (
         three.Points(stars, three.PointsMaterial(box {| color = 0x9fb3ff; size = 3.; transparent = true; opacity = 0.7 |}))
     )
+    border
 
 let syncArena (vw: View) =
     if vw.Layout <> Sim.layout then
@@ -337,7 +343,7 @@ let create () =
     let bloom = bloomPass (three.Vector2(w, h), 1.3, 0.5, 0.12)
     composer.addPass (renderPass (scene, camera))
     composer.addPass (box bloom)
-    mkArena scene
+    let border = mkArena scene
     let hud = document.getElementById "hud"
     let vw =
         { Scene = scene
@@ -353,6 +359,8 @@ let create () =
           Mines = Array.init minePool (fun _ -> mkMine scene)
           Crates = Array.init 4 (fun _ -> mkCrate scene)
           Panels = Array.init 4 (mkPanel hud)
+          Border = border
+          Clock = document.getElementById "clock"
           Banner = document.getElementById "banner"
           Vignette = document.getElementById "vignette"
           Bursts = []
@@ -563,10 +571,22 @@ let private drawSmoke (vw: View) (w: World) dt =
         else
             vw.Smoke.[i] <- 0.)
 
+let private drawBorder (vw: View) (w: World) =
+    let k = Sim.bounds w.Time
+    vw.Border.scale.set (k, 1., k)
+    let closing = Sim.sudden w && k > shrinkMin
+    (vw.Border.children.[0] :?> Mesh).material.color.setHex (if closing then 0xff3b5c else 0x00f6ff)
+    let left = max 0. (matchTime - w.Time)
+    vw.Clock.className <- if Sim.sudden w then "sudden" else ""
+    vw.Clock.textContent <-
+        if Sim.sudden w then Strings.t.SuddenDeath
+        else sprintf "%d:%02d" (int left / 60) (int left % 60)
+
 let private drawPads (vw: View) (w: World) =
+    let sudden = Sim.sudden w
     Array.iter2
         (fun (m: Mesh) (p: Pad) ->
-            let ready = p.RespawnIn <= 0.
+            let ready = p.RespawnIn <= 0. && not (sudden && p.Kind = 1)
             m.material.opacity <- if ready then 0.75 + 0.25 * sin (w.Time * 4.) else 0.12
             let span = padSpan p
             let s = if ready then 1. else 1. - p.RespawnIn / span
@@ -748,7 +768,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
     drawSmoke vw w dt
     Array.iter2 (drawShip w.Time vw) vw.Ships w.Ships
     Array.iter2 (drawTether w.Time w) vw.Ships w.Ships
-    Array.iter2 (drawTether w.Time w) vw.Ships w.Ships
+    drawBorder vw w
     drawPads vw w
     drawCrates vw w
     drawMines vw w

@@ -89,6 +89,11 @@ module Cfg =
     let mutable tractorTime = 1.4
     let tractorAmmo = 2
 
+    let mutable matchTime = 150.
+    let mutable shrinkTime = 40.
+    let shrinkMin = 0.45
+    let introTime = 5.
+
     let mutable padAimOn = 0.15
     let mutable padThrustOn = 0.75
 
@@ -139,6 +144,8 @@ module Cfg =
            "tractorCone", (fun () -> tractorCone), (fun x -> tractorCone <- x)
            "tractorPull", (fun () -> tractorPull), (fun x -> tractorPull <- x)
            "tractorTime", (fun () -> tractorTime), (fun x -> tractorTime <- x)
+           "matchTime", (fun () -> matchTime), (fun x -> matchTime <- x)
+           "shrinkTime", (fun () -> shrinkTime), (fun x -> shrinkTime <- x)
            "padAimOn", (fun () -> padAimOn), (fun x -> padAimOn <- x)
            "padThrustOn", (fun () -> padThrustOn), (fun x -> padThrustOn <- x) |]
 

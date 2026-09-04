@@ -226,10 +226,15 @@ let setLayout i =
     layout <- (i + layouts.Length) % layouts.Length
     initial <- build layout
 
-let private outOfBounds (p: V2) =
-    abs p.X > arenaHalf + killMargin
-    || abs p.Y > arenaHalf + killMargin
-    || abs p.X + abs p.Y > diagLimit + killMargin
+let bounds t =
+    if t <= matchTime then 1. else max shrinkMin (1. - (t - matchTime) / shrinkTime)
+
+let sudden (w: World) = w.Time > matchTime
+
+let private outOfBoundsAt k (p: V2) =
+    abs p.X > arenaHalf * k + killMargin
+    || abs p.Y > arenaHalf * k + killMargin
+    || abs p.X + abs p.Y > diagLimit * k + killMargin
 
 let private damage amt (s: Ship) =
     if s.Invuln > 0. then
@@ -406,9 +411,9 @@ let private steer dt (ships: Ship[]) (b: Bullet) =
             { b with Vel = ofAngle (a0 + max -lim (min lim d)) * seekerSpeed }
         | None -> b
 
-let private stepBullet dt (b: Bullet) =
+let private stepBullet k dt (b: Bullet) =
     let b = { b with Pos = b.Pos + b.Vel * dt; Life = b.Life - dt }
-    if b.Life <= 0. || outOfBounds b.Pos || blocked b.Pos then None else Some b
+    if b.Life <= 0. || outOfBoundsAt k b.Pos || blocked b.Pos then None else Some b
 
 let private segDist (a: V2) (b: V2) (p: V2) =
     let ab = b - a
@@ -502,7 +507,7 @@ let private resolveTows dt (ships: Ship[]) latches =
                 | _ -> drop ()
     s
 
-let private stepMines dt (ships: Ship[]) (mines: Mine list) =
+let private stepMines k dt (ships: Ship[]) (mines: Mine list) =
     let events = ResizeArray()
     let blasts = ResizeArray()
     let kept =
@@ -515,7 +520,7 @@ let private stepMines dt (ships: Ship[]) (mines: Mine list) =
                     events.Add(MineLive m.Pos)
                     Some { m with Fuse = mineFuse }
                 | _ -> Some m
-            elif m.Fuse <= dt || blocked m.Pos || outOfBounds m.Pos then
+            elif m.Fuse <= dt || blocked m.Pos || outOfBoundsAt k m.Pos then
                 blasts.Add(m.Pos, m.Owner)
                 events.Add(Blast m.Pos)
                 None
@@ -601,7 +606,7 @@ let private resolveRams (ships: Ship[]) =
                 if impulse > 0. then events.Add(Ram(a.Pos + d * 0.5))
     s, List.ofSeq events
 
-let private resolvePads dt (ships: Ship[]) (pads: Pad[]) =
+let private resolvePads sudden dt (ships: Ship[]) (pads: Pad[]) =
     let s = Array.copy ships
     let events = ResizeArray()
     let pads =
@@ -614,7 +619,7 @@ let private resolvePads dt (ships: Ship[]) (pads: Pad[]) =
                     sh.Alive
                     && len (sh.Pos - p.Pos) < padRadius + shipRadius
                     && (match p.Kind with
-                        | 1 -> sh.Hp < hpMax
+                        | 1 -> sh.Hp < hpMax && not sudden
                         | 2 -> sh.Shield <= 0.
                         | _ -> true)
                 match s |> Array.tryFindIndex wants with
@@ -664,9 +669,9 @@ let private stepCrates dt rng (ships: Ship[]) (crates: Crate[]) =
                 | None -> c)
     sh, out, r, List.ofSeq events
 
-let private settle dt (s: Ship) =
-    if s.Alive && (s.Hp <= 0. || outOfBounds s.Pos) then
-        let ring = outOfBounds s.Pos
+let private settle k dt (s: Ship) =
+    if s.Alive && (s.Hp <= 0. || outOfBoundsAt k s.Pos) then
+        let ring = outOfBoundsAt k s.Pos
         { s with
             Alive = false
             Stocks = s.Stocks - 1
@@ -697,6 +702,7 @@ let step dt (inputs: Input[]) (w: World) =
     match w.Phase with
     | Over _ when inputs |> Array.exists (fun i -> i.Start) -> reset w
     | _ ->
+        let k = bounds w.Time
         let fired =
             w.Ships
             |> Array.map (fun s -> join inputs.[s.Id] s |> stepShip dt inputs.[s.Id] |> fire dt inputs.[s.Id])
@@ -715,15 +721,15 @@ let step dt (inputs: Input[]) (w: World) =
         let bullets =
             newBullets @ w.Bullets
             |> List.map (steer dt ships)
-            |> List.choose (stepBullet dt)
+            |> List.choose (stepBullet k dt)
         let ships, bullets, hits = resolveBullets ships bullets
-        let mines, blasts, mineEvents = stepMines dt ships (newMines @ w.Mines)
+        let mines, blasts, mineEvents = stepMines k dt ships (newMines @ w.Mines)
         let ships = resolveBlasts ships blasts
         let ships, rams = resolveRams ships
         let ships, bumps = resolveAsteroids ships
-        let ships, pads, picks = resolvePads dt ships w.Pads
+        let ships, pads, picks = resolvePads (sudden w) dt ships w.Pads
         let ships, crates, rng, grabs = stepCrates dt w.Rng ships w.Crates
-        let settled, deaths = ships |> Array.map (settle dt) |> Array.unzip
+        let settled, deaths = ships |> Array.map (settle k dt) |> Array.unzip
         let ships = Array.copy settled
         let kills = deaths |> Array.toList |> List.choose id
         for (_, victim, _, by) in kills do

@@ -43,6 +43,7 @@ type Object3D =
     abstract rotation: Vector3
     abstract scale: Vector3
     abstract visible: bool with get, set
+    abstract children: Object3D[]
     abstract add: Object3D -> unit
     abstract remove: Object3D -> unit
     abstract lookAt: float * float * float -> unit
