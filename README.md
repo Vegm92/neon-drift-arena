@@ -19,7 +19,7 @@ Requires the .NET 10 SDK (Fable 5.15 ships as a net10.0 tool) and Node 18+.
 |------|--------|------|--------|--------|---------|-------|------|---------|---------|
 | P1 | Keyboard | A / D or arrows | Q / E | W / Up | S / Down | Shift | Space | F | Enter |
 | Any | Gamepad (slot from lobby or SETTINGS) | Right stick X | Left stick X | Left stick up | Left stick down | A / LT | RT | RB | Start |
-| Any | Phone (`pad.html`) | Left thumb direction | - | Left thumb past half deflection | - | Slide the fire thumb up | Right half of the screen | SPECIAL button | ☰ |
+| Any | Phone (`pad.html`) | Left thumb direction | - | Left thumb past half deflection | - | BOOST button | FIRE hex | SPECIAL button | ☰ |
 
 SWAP STICKS in SETTINGS > CONTROLLERS flips the stick roles per pad. `M` mutes everything, music included; SETTINGS > AUDIO sets MUSIC and SOUNDS levels (left/right steps 10%, Fire toggles OFF/100%).
 
@@ -29,7 +29,7 @@ The lobby opens on load. Each device presses Fire or A to claim one of the four 
 
 ## Play from your phone
 
-`npm run dev` serves the game on the LAN (`--host`). The lobby shows a QR code with the pad URL (`http://<lan-ip>:5173/pad.html`); the pause menu shows it again. A phone that opens it becomes a controller: JOIN, then ◀ ▶ picks the colour (or side in TEAMS), the big button readies up, BACK and START match the gamepad buttons. In play the left half is a floating stick — the ship points where the thumb points and thrusts once the thumb is past half deflection (`padAimOn` / `padThrustOn` in TUNING) — and the right half fires while touched; slide that thumb up to add boost. SPECIAL sits top-right, ☰ pauses. Pause and result menus turn the phone into ▲ ▼ OK BACK. A phone silent for 2 s drops out of the lobby. Messages travel over Vite's HMR WebSocket, so the pad only works under the dev server, not a static build.
+`npm run dev` serves the game on the LAN (`--host`). The lobby shows a QR code with the pad URL (`http://<lan-ip>:5173/pad.html`); the pause menu shows it again. A phone that opens it becomes a controller: JOIN, then ◀ ▶ picks the colour (or side in TEAMS), the big button readies up, BACK and START match the gamepad buttons. In play the left half is a floating stick — the ship points where the thumb points and thrusts once the thumb is past half deflection (`padAimOn` / `padThrustOn` in TUNING) — and the right panel holds the FIRE hex, BOOST and SPECIAL buttons (hold them); ☰ in the header pauses. Pause and result menus turn the phone into ▲ ▼ OK BACK. A phone silent for 2 s drops out of the lobby. Messages travel over Vite's HMR WebSocket, so the pad only works under the dev server, not a static build.
 
 ## Rules
 

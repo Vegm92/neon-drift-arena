@@ -6,7 +6,6 @@ open Fable.Core
 open Fable.Core.JsInterop
 
 let private stickRadius = 70.
-let private boostDrag = 60.
 let private heartbeat = 500.
 
 let private id =
@@ -84,8 +83,7 @@ let private stick (zone: Element) =
             try zone?setPointerCapture pid with _ -> ()
             place ring ox oy
             place knob ox oy
-            ring.classList.remove "hidden"
-            knob.classList.remove "hidden")
+            zone.classList.add "on")
     zone.addEventListener ("pointermove", fun e ->
         if (e?pointerId: float) = pid then
             let dx, dy = (e?offsetX: float) - ox, (e?offsetY: float) - oy
@@ -99,65 +97,55 @@ let private stick (zone: Element) =
             pid <- -1.
             set "x" 0.
             set "y" 0.
-            ring.classList.add "hidden"
-            knob.classList.add "hidden"
+            zone.classList.remove "on"
+            for el in [ ring; knob ] do
+                el?style?left <- ""
+                el?style?top <- ""
     zone.addEventListener ("pointerup", up)
     zone.addEventListener ("pointercancel", up)
 
-let private fireZone (zone: Element) =
-    let mutable pid = -1.
-    let mutable oy = 0.
-    zone.addEventListener ("pointerdown", fun e ->
-        if pid < 0. then
-            pid <- e?pointerId
-            oy <- e?offsetY
-            try zone?setPointerCapture pid with _ -> ()
-            set "fire" true
-            zone.classList.add "on")
-    zone.addEventListener ("pointermove", fun e ->
-        if (e?pointerId: float) = pid then
-            let boost = oy - (e?offsetY: float) > boostDrag
-            set "boost" boost
-            zone.classList.toggle ("boost", boost) |> ignore)
-    let up (e: Event) =
-        if (e?pointerId: float) = pid then
-            pid <- -1.
-            set "fire" false
-            set "boost" false
-            zone.classList.remove "on"
-            zone.classList.remove "boost"
-    zone.addEventListener ("pointerup", up)
-    zone.addEventListener ("pointercancel", up)
+let private corners = "<div class=\"corner tl\"></div><div class=\"corner tr\"></div><div class=\"corner bl\"></div><div class=\"corner br\"></div>"
+
+let private header =
+    sprintf "<div class=\"bar\"><span><b>%s</b> %s</span><span class=\"tag\">%s</span>%s</div>" Strings.t.TitleMain Strings.t.TitleSub Strings.t.PadBadge (button "menu" "start" "&#9776;")
+
+let private footer =
+    Strings.t.PhoneLegend
+    |> List.map (fun (keys, what) -> sprintf "<span>%s%s</span>" (keys |> List.map (sprintf "<i>%s</i>") |> String.concat "") what)
+    |> String.concat ""
+    |> sprintf "<div class=\"bar foot\">%s</div>"
 
 let private render () =
     clearInputs ()
     match phase with
     | "play" ->
         root.innerHTML <-
-            sprintf "<div class=\"zone\" id=\"stick\"><div class=\"ring hidden\"></div><div class=\"knob hidden\"></div></div><div class=\"zone fire\" id=\"fire\">%s<small>%s</small></div>%s%s"
-                Strings.t.PadFire Strings.t.PadBoostHint
+            sprintf "%s%s<div class=\"row2\"><div class=\"panel cyan zone\" id=\"stick\"><div class=\"ring\"></div><div class=\"knob\"></div><div class=\"lbl\">%s<small>%s</small></div></div><div class=\"mid\"></div><div class=\"panel mag acts\">%s%s%s</div></div>%s"
+                corners header Strings.t.PadMove Strings.t.PadMoveHint
                 (button "special" "special" Strings.t.PadSpecial)
-                (button "menu" "start" "&#9776;")
+                (button "boost" "boost" Strings.t.PadBoost)
+                (button "fire" "fire" Strings.t.PadFire)
+                footer
         stick (document.getElementById "stick")
-        fireZone (document.getElementById "fire")
     | "lobby" when isNullOrUndefined card ->
         root.innerHTML <-
-            sprintf "<div class=\"card\"><div class=\"title\">%s %s</div>%s</div>" Strings.t.TitleMain Strings.t.TitleSub (button "big" "fire" Strings.t.Join)
+            sprintf "%s<div class=\"card panel cyan\"><div class=\"title\">%s %s</div>%s</div>" corners Strings.t.TitleMain Strings.t.TitleSub (button "big" "fire" Strings.t.Join)
     | "lobby" ->
         let ready: bool = card?ready
         root.innerHTML <-
-            sprintf "<div class=\"card\" style=\"color:%s\"><b>%s</b><div class=\"art\">%s</div><div class=\"row\">%s%s%s</div><div class=\"row\">%s%s</div></div>"
-                (card?color: string) (card?name: string) (card?ship: string)
+            sprintf "%s<div class=\"card panel\" style=\"color:%s;--c:%s\"><b>%s</b><div class=\"art\">%s</div><div class=\"row\">%s%s%s</div><div class=\"row\">%s%s</div></div>"
+                corners (card?color: string) (card?color: string) (card?name: string) (card?ship: string)
                 (button "" "left" "&#9664;")
                 (button (if ready then "big ready" else "big") "fire" (if ready then Strings.t.Ready else (card?pick: string)))
                 (button "" "right" "&#9654;")
                 (button "" "back" Strings.t.PadBack) (button "" "start" Strings.t.Start)
     | "menu" ->
         root.innerHTML <-
-            sprintf "<div class=\"card\"><div class=\"row\">%s%s%s%s</div><div class=\"row\">%s%s</div></div>"
+            sprintf "%s<div class=\"card panel mag\"><div class=\"row\">%s%s%s%s</div><div class=\"row\">%s%s</div></div>"
+                corners
                 (button "" "left" "&#9664;") (button "" "up" "&#9650;") (button "" "down" "&#9660;") (button "" "right" "&#9654;")
                 (button "big" "fire" Strings.t.PadOk) (button "" "back" Strings.t.PadBack)
-    | _ -> root.innerHTML <- sprintf "<div class=\"card\"><div class=\"title\">%s</div></div>" Strings.t.PadConnecting
+    | _ -> root.innerHTML <- sprintf "%s<div class=\"card\"><div class=\"title\">%s</div></div>" corners Strings.t.PadConnecting
     wire ()
 
 let private tick () =

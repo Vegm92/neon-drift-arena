@@ -15,7 +15,10 @@ type Locale =
       ScanToJoin: string
       PadConnecting: string
       PadFire: string
-      PadBoostHint: string
+      PadBoost: string
+      PadMove: string
+      PadMoveHint: string
+      PadBadge: string
       PadSpecial: string
       PadOk: string
       PadBack: string
@@ -111,14 +114,17 @@ let en =
       ScanToJoin = "SCAN TO PLAY FROM YOUR PHONE"
       PadConnecting = "CONNECTING"
       PadFire = "FIRE"
-      PadBoostHint = "SLIDE UP TO BOOST"
+      PadBoost = "BOOST"
+      PadMove = "MOVE"
+      PadMoveHint = "AIM &#8226; PAST HALF = THRUST"
+      PadBadge = "MOBILE"
       PadSpecial = "SPECIAL"
       PadOk = "OK"
       PadBack = "BACK"
       PhoneLegend =
         [ [ "L" ], "AIM + THRUST"
-          [ "R" ], "FIRE"
-          [ "R ↑" ], "BOOST"
+          [ "RT" ], "FIRE"
+          [ "B" ], "BOOST"
           [ "SP" ], "SPECIAL"
           [ "☰" ], "PAUSE" ]
       Join = "JOIN"
