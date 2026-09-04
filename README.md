@@ -44,10 +44,10 @@ The lobby opens on load. Each device presses Fire or A to claim one of the four 
 |--------|-----------|
 | RAILGUN | Hold RB to charge 1 s, release fires a full-arena beam that pierces ships and asteroids. **One hit kills.** Heavy recoil, and letting go early loses the charge. |
 | MAG MINES | Drops a dormant orb behind you. An enemy inside 130 units arms it; it then chases them and detonates 1.5 s later, hurting anyone in the blast - you included. |
-| SEEKERS | One homing missile per RB press, not a volley. |
+| SEEKERS | One homing missile per RB press, not a volley. 34 damage, so a full salvo of three is a kill; chases for 12 s. |
 | REPULSOR | No damage: a forward cone of pure knockback. Ring-outs count as your kill. |
-| SCATTER GUN | Two shots of close-range electrical discharge: a short forward cone that knocks out every enemy in it for 1 s and chips 12 HP. |
-| TRACTOR | Two charges. Latches onto the nearest thing in reach, enemy ships first, then asteroids. A ship gets dragged toward you for 1.4 s so you can ram it; a rock reels you in instead. |
+| SCATTER GUN | Two shots of electrical discharge: a forward cone reaching half a blaster shot that knocks out every enemy in it for 1 s and chips 12 HP. |
+| TRACTOR | Two charges. Hold RB to charge like the railgun; a faint bubble shows the reach (half a blaster shot). On full charge it latches the thing you are facing, enemy ships first, then asteroids. A ship gets dragged toward you for 1.4 s so you can ram it; a rock reels you in instead. |
 - Boost drains at 21/s and only refills from pads: eight ring pads give 26, the centre pad refills fully. Pads respawn 7 s after pickup. All pads sit inside two narrow lanes (a cross through the centre) walled by asteroids.
 - Asteroids block bullets and bounce ships; a bump stuns the ship for 0.6 s and sends it spinning.
 - Leaving the arena border by more than 60 units destroys the ship.

@@ -233,8 +233,19 @@ let main _ =
     let towed =
         w0 |> place 0 zero 0. |> place 1 (v 300. 0.) 0.
         |> edit 0 (fun s -> { s with Weapon = Tractor; Ammo = 2 })
-        |> run 30 using
-    check "tractor latches the nearest enemy" (towed.Ships.[0].Tow = TowShip 1 && towed.Ships.[0].Ammo = 1)
+        |> run (int (railCharge / dt) + 20) using
+    check "tractor latches the enemy ahead after charging" (towed.Ships.[0].Tow = TowShip 1 && towed.Ships.[0].Ammo = 1)
+    let behind =
+        w0 |> place 0 zero 0. |> place 1 (v (-300.) 0.) 0.
+        |> edit 0 (fun s -> { s with Weapon = Tractor; Ammo = 2 })
+        |> run (int (railCharge / dt) + 2) using
+    check "tractor ignores what is behind" (behind.Ships.[0].Tow <> TowShip 1)
+    let early =
+        w0 |> place 0 zero 0. |> place 1 (v 300. 0.) 0.
+        |> edit 0 (fun s -> { s with Weapon = Tractor; Ammo = 2 })
+        |> run 30 using |> run 2 (all present)
+    check "tractor drops its charge when released" (early.Ships.[0].Charge = 0. && early.Ships.[0].Ammo = 2)
+    check "tractor reaches half a blaster shot" (tractorRange = bulletSpeed * bulletLife * 0.5)
     check "tractor pulls the enemy toward us" (towed.Ships.[1].Vel.X < -50. && abs towed.Ships.[0].Vel.X < 1e-6)
     let letGo = run (int (tractorTime / dt) + 2) (all present) towed
     check "tractor lets go after its time" (letGo.Ships.[0].Tow = NoTether)
@@ -242,7 +253,7 @@ let main _ =
         w0 |> place 0 (rock.Pos + v (-(rock.Radius + 300.)) 0.) 0. |> place 1 (v 1200. 1200.) 0.
         |> place 2 (v (-1200.) 1200.) 0. |> place 3 (v 1200. (-1200.)) 0.
         |> edit 0 (fun s -> { s with Weapon = Tractor; Ammo = 2 })
-        |> run 30 using
+        |> run (int (railCharge / dt) + 20) using
     check "tractor pulls us to a rock when no ship is near"
         ((match hooked.Ships.[0].Tow with TowRock _ -> true | _ -> false) && hooked.Ships.[0].Vel.X > 50.)
     let ringed = w0 |> place 0 (v (arenaHalf + killMargin + 1.) 0.) 0. |> step dt (all present)

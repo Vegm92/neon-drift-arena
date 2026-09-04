@@ -375,7 +375,15 @@ let private special dt (inp: Input) (s: Ship) =
                 { spend s with Vel = s.Vel - dir * recoil; Shots = s.Shots + 1 }, [], [], [ Zap(s.Pos, s.Angle, s.Id) ]
             else
                 s, [], [], []
-        | Tractor -> if press then s, [], [], [ Latch(s.Pos, s.Id) ] else s, [], [], []
+        | Tractor ->
+            if inp.Special && s.Tow = NoTether then
+                let c = s.Charge + dt
+                if c >= railCharge then
+                    { s with Charge = 0. }, [], [], [ Latch(s.Pos, s.Id) ]
+                else
+                    { s with Charge = c }, [], [], (if press then [ Charging s.Pos ] else [])
+            else
+                { s with Charge = 0. }, [], [], []
 
 let private fire dt (inp: Input) (s: Ship) =
     let s, shots, e1 = blaster inp s
@@ -459,14 +467,16 @@ let private resolveZaps (ships: Ship[]) zaps =
 
 let private acquire (s: Ship[]) owner =
     let me = s.[owner]
-    match nearest s owner me.Pos with
-    | Some t when len (t.Pos - me.Pos) < tractorRange -> TowShip t.Id
-    | _ ->
-        let rocks =
-            asteroids
-            |> Array.mapi (fun k a -> k, len (a.Pos - me.Pos) - a.Radius)
-            |> Array.filter (fun (_, d) -> d < tractorRange)
-        if rocks.Length = 0 then NoTether else TowRock(fst (Array.minBy snd rocks))
+    let ahead (p: V2) radius tow =
+        let d = p - me.Pos
+        let rel = atan2 d.Y d.X - me.Angle
+        let off = abs (atan2 (sin rel) (cos rel))
+        if len d - radius < tractorRange && off < tractorCone then Some(off, tow) else None
+    let ships = s |> Array.choose (fun t -> if t.Alive && side t <> side me then ahead t.Pos 0. (TowShip t.Id) else None)
+    let rocks = asteroids |> Array.mapi (fun k a -> ahead a.Pos a.Radius (TowRock k)) |> Array.choose id
+    match (if ships.Length > 0 then ships else rocks) with
+    | [||] -> NoTether
+    | found -> snd (Array.minBy fst found)
 
 let private resolveTows dt (ships: Ship[]) latches =
     let s = Array.copy ships

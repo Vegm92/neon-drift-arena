@@ -68,8 +68,8 @@ module Cfg =
 
     let mutable seekerSpeed = 290.
     let mutable seekerTurn = 3.4
-    let mutable seekerDamage = 14.
-    let seekerLife = 4.
+    let mutable seekerDamage = 34.
+    let seekerLife = 12.
     let swarmAmmo = 3
 
     let mutable pulseRange = 340.
@@ -77,13 +77,14 @@ module Cfg =
     let mutable pulseForce = 430.
     let pulseAmmo = 3
 
-    let mutable scatterRange = 170.
+    let mutable scatterRange = bulletSpeed * bulletLife * 0.5
     let mutable scatterCone = 0.7
     let mutable scatterDamage = 12.
     let mutable scatterStun = 1.
     let scatterAmmo = 2
 
-    let mutable tractorRange = 520.
+    let mutable tractorRange = bulletSpeed * bulletLife * 0.5
+    let mutable tractorCone = 0.9
     let mutable tractorPull = 900.
     let mutable tractorTime = 1.4
     let tractorAmmo = 2
@@ -135,6 +136,7 @@ module Cfg =
            "scatterDamage", (fun () -> scatterDamage), (fun x -> scatterDamage <- x)
            "scatterStun", (fun () -> scatterStun), (fun x -> scatterStun <- x)
            "tractorRange", (fun () -> tractorRange), (fun x -> tractorRange <- x)
+           "tractorCone", (fun () -> tractorCone), (fun x -> tractorCone <- x)
            "tractorPull", (fun () -> tractorPull), (fun x -> tractorPull <- x)
            "tractorTime", (fun () -> tractorTime), (fun x -> tractorTime <- x)
            "padAimOn", (fun () -> padAimOn), (fun x -> padAimOn <- x)

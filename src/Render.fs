@@ -32,6 +32,7 @@ type ShipView =
       Coil: Mesh
       Laser: Mesh
       Tether: Mesh
+      Bubble: Mesh
       Trail: Mesh
       History: ResizeArray<V2> }
 
@@ -67,6 +68,7 @@ type View =
       Hp: float[]
       Shake: float[]
       Smoke: float[]
+      mutable Puff: float
       mutable Spike: float
       mutable Tint: float
       mutable TintHex: string
@@ -141,6 +143,10 @@ let private mkShip (scene: Object3D) i =
     let laser = three.Mesh((three.PlaneGeometry(400., 1.2) |> flat).translate (218., 2., 0.), glowMat hex 0.3)
     laser.visible <- false
     root.add laser
+    let bubble = three.Mesh(three.RingGeometry(0.985, 1., 64) |> flat, glowMat hex 0.2)
+    bubble.position.y <- 2.
+    bubble.visible <- false
+    root.add bubble
     let shield = three.Mesh(three.RingGeometry(shipRadius + 5., shipRadius + 9., 6) |> flat, glowMat 0x3b8cff 0.9)
     shield.visible <- false
     root.add shield
@@ -158,6 +164,7 @@ let private mkShip (scene: Object3D) i =
       Coil = coil
       Laser = laser
       Tether = tether
+      Bubble = bubble
       Trail = trail
       History = ResizeArray() }
 
@@ -353,6 +360,7 @@ let create () =
           Hp = Array.create 4 hpMax
           Shake = Array.zeroCreate 4
           Smoke = Array.zeroCreate 4
+          Puff = 0.
           Spike = 0.
           Tint = 0.
           TintHex = "#ffffff"
@@ -362,7 +370,7 @@ let create () =
     window.addEventListener ("resize", fun _ -> resize vw)
     vw
 
-let private spawnCone (vw: View) (p: V2) hex n speed dir spread =
+let private spawnCone (vw: View) (p: V2) hex n speed dir spread size =
     let g = three.BufferGeometry()
     g.setAttribute (
         "position",
@@ -385,18 +393,38 @@ let private spawnCone (vw: View) (p: V2) hex n speed dir spread =
         three.Points(
             g,
             three.PointsMaterial(
-                box {| color = hex; size = 7.; transparent = true; opacity = 1.; blending = three.AdditiveBlending |}
+                box {| color = hex; size = size; transparent = true; opacity = 1.; blending = three.AdditiveBlending |}
             )
         )
     vw.Scene.add pts
     vw.Bursts <- { Points = pts; Vel = vel; Life = 1. } :: vw.Bursts
 
 let private spawnBurst (vw: View) (p: V2) hex n speed =
-    spawnCone vw p hex n speed 0. Math.PI
+    spawnCone vw p hex n speed 0. Math.PI 7.
 
 let private addFlash (vw: View) (m: Mesh) grow span =
     vw.Scene.add m
     vw.Flashes <- { Obj = m; Grow = grow; Span = span; Life = span } :: vw.Flashes
+
+let private spawnBolts (vw: View) (p: V2) hex dir spread range =
+    for _ in 1..6 do
+        let a = dir + (rnd.NextDouble() - 0.5) * 2. * spread
+        let reach = range * (0.45 + 0.55 * rnd.NextDouble())
+        let axis = ofAngle a
+        let across = ofAngle (a + Math.PI / 2.)
+        let steps = 6
+        let mutable last = p
+        for k in 1..steps do
+            let t = float k / float steps
+            let sway = (rnd.NextDouble() - 0.5) * reach * (if k = steps then 0.12 else 0.25)
+            let next = p + axis * (reach * t) + across * sway
+            let d = next - last
+            let m = three.Mesh(three.PlaneGeometry(len d, 2.5) |> flat, glowMat hex 1.)
+            let mid = (last + next) * 0.5
+            m.position.set (mid.X, 5., mid.Y)
+            m.rotation.y <- -(atan2 d.Y d.X)
+            addFlash vw m 0. (0.1 + rnd.NextDouble() * 0.12)
+            last <- next
 
 let private spawnRing (vw: View) (p: V2) hex r grow span =
     let m = three.Mesh(three.RingGeometry(r * 0.86, r, 44) |> flat, glowMat hex 1.)
@@ -485,9 +513,14 @@ let private drawShip t (vw: View) (sv: ShipView) (s: Ship) =
         sv.Retro.visible <- s.Reversing
         let r = 0.8 + 0.3 * sin (t * 50.)
         sv.Retro.scale.set (r, 1., r)
-        sv.Coil.visible <- s.Charge > 0.
-        sv.Laser.visible <- s.Charge > 0.
-        if s.Charge > 0. then
+        let railing = s.Weapon = Rail && s.Charge > 0.
+        sv.Coil.visible <- railing
+        sv.Laser.visible <- railing
+        sv.Bubble.visible <- s.Weapon = Tractor && s.Charge > 0.
+        if sv.Bubble.visible then
+            sv.Bubble.scale.set (tractorRange, 1., tractorRange)
+            sv.Bubble.material.opacity <- 0.06 + 0.14 * min 1. (s.Charge / railCharge)
+        if railing then
             let c = min 1. (s.Charge / railCharge)
             sv.Laser.material.color.setHex (shipColor s)
             sv.Laser.material.opacity <- 0.15 + 0.35 * c
@@ -526,7 +559,7 @@ let private drawSmoke (vw: View) (w: World) dt =
             vw.Smoke.[i] <- vw.Smoke.[i] + dt
             if vw.Smoke.[i] > 0.07 then
                 vw.Smoke.[i] <- 0.
-                spawnCone vw s.Pos 0x5a3020 3 40. (atan2 -s.Vel.Y -s.Vel.X) 0.9
+                spawnCone vw s.Pos 0x5a3020 3 40. (atan2 -s.Vel.Y -s.Vel.X) 0.9 7.
         else
             vw.Smoke.[i] <- 0.)
 
@@ -567,9 +600,14 @@ let private drawMines (vw: View) (w: World) =
     for i in k .. vw.Mines.Length - 1 do
         vw.Mines.[i].visible <- false
 
-let private drawBullets (vw: View) (w: World) =
+let private drawBullets (vw: View) (w: World) dt =
+    vw.Puff <- vw.Puff + dt
+    let puff = vw.Puff > 0.05
+    if puff then vw.Puff <- 0.
     let mutable k = 0
     for b in w.Bullets do
+        if puff && b.Kind = 2 then
+            spawnCone vw b.Pos 0xd8d8d8 4 70. (atan2 -b.Vel.Y -b.Vel.X) 0.7 18.
         if k < vw.Bullets.Length then
             let m = vw.Bullets.[k]
             m.visible <- true
@@ -681,14 +719,15 @@ let draw (vw: View) (w: World) (events: Event list) dt =
             spawnRing vw p 0xff6a2b mineBlast 1.3 0.45
             vw.Spike <- max vw.Spike 0.8
         | Wave(p, a, i) ->
-            spawnCone vw p (shipColor w.Ships.[i]) 34 pulseRange a pulseCone
+            spawnCone vw p (shipColor w.Ships.[i]) 34 pulseRange a pulseCone 7.
             spawnRing vw p 0xbfe6ff 120. 2.2 0.4
         | Cooked p ->
             spawnBurst vw p 0xff7b2b 18 120.
             spawnRing vw p 0xff7b2b 26. 2.2 0.5
         | Zap(p, a, _) ->
-            spawnCone vw p 0x9df3ff 40 scatterRange a scatterCone
-            spawnRing vw p 0xffffff 40. 2.6 0.2
+            spawnBolts vw p 0x9df3ff a (scatterCone * 1.3) (scatterRange * 1.3)
+            spawnCone vw p 0xbff6ff 48 (scatterRange * 2.6) a (scatterCone * 1.2) 11.
+            vw.Spike <- max vw.Spike 0.4
         | Latch(p, i) -> spawnRing vw p (shipColor w.Ships.[i]) 30. 3. 0.3
         | Explode(p, i, ring) ->
             let hex = shipColor w.Ships.[i]
@@ -699,8 +738,8 @@ let draw (vw: View) (w: World) (events: Event list) dt =
                     atan2 d.Y d.X
                 else
                     rnd.NextDouble() * Math.PI * 2.
-            spawnCone vw p hex 46 340. dir 0.8
-            spawnCone vw p 0xffffff 22 180. dir Math.PI
+            spawnCone vw p hex 46 340. dir 0.8 7.
+            spawnCone vw p 0xffffff 22 180. dir Math.PI 7.
             spawnRing vw p hex 40. 3.2 0.6
             vw.Spike <- max vw.Spike 1.
             vw.Tint <- 1.
@@ -713,7 +752,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
     drawPads vw w
     drawCrates vw w
     drawMines vw w
-    drawBullets vw w
+    drawBullets vw w dt
     updateBursts vw dt
     updateFlashes vw dt
     frameCamera vw w dt
