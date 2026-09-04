@@ -278,6 +278,14 @@ let main _ =
     let turned = bot (duel |> place 1 (v 0. 300.) 0.) 0
     check "bot steers toward its target and holds fire" (turned.Aim = Some (System.Math.PI / 2.) && not turned.Fire && turned.Thrust)
 
+    let out = w0 |> place 0 zero 0. |> edit 0 (fun s -> { s with Alive = false; Stocks = 0 })
+    let drifting = run 12 (Array.init 4 (fun i -> if i = 0 then { present with Thrust = true } else present)) out
+    check "a ghost drifts with thrust" (ghost drifting.Ships.[0] && drifting.Ships.[0].Pos.X > 20.)
+    let dropped = out |> step dt firing
+    check "a ghost drops a live mine" (dropped.Mines.Length = 1 && dropped.Mines.Head.Fuse > 0. && dropped.Ships.[0].GhostCd > 0.)
+    check "ghost mines recharge slowly" ((run 10 firing dropped).Mines.Length = 1)
+    check "ghosts never win" ((step dt (all present) { out with Ships = out.Ships |> Array.mapi (fun i s -> if i = 1 then s else { s with Alive = false; Stocks = 0 }) }).Phase = Over(Some 1))
+
     check "border is whole until the clock runs out" (bounds matchTime = 1. && bounds (matchTime + shrinkTime) = shrinkMin)
     let late = { w0 with Time = matchTime + shrinkTime + 1. } |> place 0 (v (arenaHalf * 0.9) 0.) 0.
     let closed = step dt (all present) late

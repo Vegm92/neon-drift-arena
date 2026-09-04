@@ -43,6 +43,7 @@ let freshShip i =
       TowLeft = 0.
       LastHit = -1
       LastWeapon = Blaster
+      GhostCd = 0.
       Streak = 0
       Shots = 0
       Hits = 0
@@ -248,13 +249,31 @@ let private tag by wpn (s: Ship) = if s.Invuln > 0. then s else { s with LastHit
 
 let hurting (s: Ship) = s.Alive && s.Hp < hurtBelow
 
+let ghost (s: Ship) = s.Active && not s.Alive && s.Stocks <= 0
+
+let private stepGhost dt (inp: Input) (s: Ship) =
+    let angle =
+        match inp.Aim with
+        | Some a -> a
+        | None -> s.Angle + inp.Turn * turnRate * dt
+    let vel = if inp.Thrust || inp.Boost then ofAngle angle * ghostSpeed else zero
+    let p = s.Pos + vel * dt
+    let clamp x = max -arenaHalf (min arenaHalf x)
+    { s with
+        Angle = angle
+        Vel = vel
+        Pos = v (clamp p.X) (clamp p.Y)
+        GhostCd = max 0. (s.GhostCd - dt) }
+
 let private slow (s: Ship) = if hurting s then hurtFactor else 1.
 
 let private join (inp: Input) (s: Ship) =
     if not s.Active && inp.Present then respawn s else s
 
 let private stepShip dt (inp: Input) (s: Ship) =
-    if not s.Alive then
+    if ghost s then
+        stepGhost dt inp s
+    elif not s.Alive then
         s
     else
         let inp = if s.Stun > 0. then noInput else inp
@@ -393,6 +412,13 @@ let private special dt (inp: Input) (s: Ship) =
                 { s with Charge = 0. }, [], [], []
 
 let private fire dt (inp: Input) (s: Ship) =
+    if ghost s then
+        if inp.Fire && s.GhostCd <= 0. then
+            let m = { Owner = s.Id; Pos = s.Pos; Vel = zero; Fuse = mineFuse * 1.5 }
+            { s with GhostCd = ghostCooldown }, [], [ m ], [ MineLive s.Pos ]
+        else
+            s, [], [], []
+    else
     let s, shots, e1 = blaster inp s
     let s, more, mines, e2 = special dt inp s
     s, shots @ more, mines, e1 @ e2

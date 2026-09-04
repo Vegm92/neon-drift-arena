@@ -93,6 +93,8 @@ module Cfg =
     let mutable shrinkTime = 40.
     let shrinkMin = 0.45
     let introTime = 5.
+    let mutable ghostSpeed = 240.
+    let mutable ghostCooldown = 8.
 
     let mutable padAimOn = 0.15
     let mutable padThrustOn = 0.75
@@ -145,6 +147,8 @@ module Cfg =
            "tractorPull", (fun () -> tractorPull), (fun x -> tractorPull <- x)
            "tractorTime", (fun () -> tractorTime), (fun x -> tractorTime <- x)
            "matchTime", (fun () -> matchTime), (fun x -> matchTime <- x)
+           "ghostSpeed", (fun () -> ghostSpeed), (fun x -> ghostSpeed <- x)
+           "ghostCooldown", (fun () -> ghostCooldown), (fun x -> ghostCooldown <- x)
            "shrinkTime", (fun () -> shrinkTime), (fun x -> shrinkTime <- x)
            "padAimOn", (fun () -> padAimOn), (fun x -> padAimOn <- x)
            "padThrustOn", (fun () -> padThrustOn), (fun x -> padThrustOn <- x) |]
@@ -227,6 +231,7 @@ type Ship =
       TowLeft: float
       LastHit: int
       LastWeapon: Weapon
+      GhostCd: float
       Streak: int
       Shots: int
       Hits: int

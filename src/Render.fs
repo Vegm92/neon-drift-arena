@@ -535,8 +535,20 @@ let private drawTether t (w: World) (sv: ShipView) (s: Ship) =
     | None -> ()
 
 let private drawShip t (vw: View) (sv: ShipView) (s: Ship) =
-    sv.Root.visible <- s.Alive
-    if s.Alive then
+    let ghost = Sim.ghost s
+    sv.Root.visible <- s.Alive || ghost
+    if ghost then
+        sv.Root.position.set (s.Pos.X, 0., s.Pos.Y)
+        sv.Root.rotation.y <- -s.Angle
+        sv.Flame.visible <- false
+        sv.Retro.visible <- false
+        sv.Coil.visible <- false
+        sv.Laser.visible <- false
+        sv.Bubble.visible <- false
+        sv.Shield.visible <- false
+        sv.Body.material.opacity <- if s.GhostCd <= 0. then 0.3 + 0.1 * sin (t * 6.) else 0.18
+        sv.History.Clear()
+    elif s.Alive then
         sv.Root.position.set (s.Pos.X, 0., s.Pos.Y)
         sv.Root.rotation.y <- -s.Angle
         sv.Flame.visible <- s.Thrusting > 0.
@@ -748,12 +760,15 @@ let private drawTags (vw: View) (w: World) =
     w.Ships
     |> Array.iteri (fun i s ->
         let el = vw.Tags.[i]
-        let show = s.Alive && s.Invuln > 0.
+        let show = (s.Alive && s.Invuln > 0.) || Sim.ghost s
         el.hidden <- not show
         if show then
             let p = (three.Vector3(s.Pos.X, 0., s.Pos.Y)).project vw.Camera
-            el?style?left <- sprintf "%.0fpx" ((p.x + 1.) / 2. * window.innerWidth)
-            el?style?top <- sprintf "%.0fpx" ((1. - p.y) / 2. * window.innerHeight - 44.)
+            let x = (p.x + 1.) / 2. * window.innerWidth
+            let y = (1. - p.y) / 2. * window.innerHeight - 44.
+            el?style?left <- sprintf "%.0fpx" (max 40. (min (window.innerWidth - 40.) x))
+            el?style?top <- sprintf "%.0fpx" (max 40. (min (window.innerHeight - 40.) y))
+            el?style?opacity <- if Sim.ghost s then "0.55" else "1"
             el?style?color <- sprintf "#%06x" (shipColor s))
 
 let private drawSpawns (vw: View) (w: World) =
@@ -830,7 +845,9 @@ let private drawHud (vw: View) (w: World) dt =
         el.querySelector(".boost i")?style?width <- sprintf "%.0f%%" (s.Boost / boostMax * 100.)
         el.querySelector(".heat i")?style?width <- sprintf "%.0f%%" (s.Heat / heatMax * 100.)
         (el.querySelector ".stocks" :?> HTMLElement).textContent <- String.replicate (max 0 s.Stocks) "◆"
-        (el.querySelector ".wep" :?> HTMLElement).textContent <- weaponLabel s)
+        (el.querySelector ".wep" :?> HTMLElement).textContent <-
+            if Sim.ghost s then (if s.GhostCd <= 0. then Strings.t.GhostReady else Strings.t.GhostWait)
+            else weaponLabel s)
 
 let private drawTint (vw: View) dt =
     vw.Tint <- max 0. (vw.Tint - dt * 1.6)
