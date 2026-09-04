@@ -79,6 +79,8 @@ type Locale =
       WBlaster: string
       WRail: string
       WMines: string
+      WContact: string
+      WMissile: string
       WSwarm: string
       WPulse: string
       WScatter: string
@@ -234,6 +236,8 @@ let en =
       WBlaster = "BLASTER"
       WRail = "RAILGUN"
       WMines = "MAG MINES"
+      WContact = "CONTACT MINES"
+      WMissile = "MISSILE"
       WSwarm = "SEEKERS"
       WPulse = "REPULSOR"
       WScatter = "SCATTER GUN"

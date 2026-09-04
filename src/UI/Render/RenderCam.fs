@@ -20,7 +20,7 @@ let flyby (vw: View) dt =
     let seg = int u
     let a, b = stop seg, stop (seg + 1)
     vw.Cam <- a + (b - a) * smooth (u - float seg)
-    vw.CamH <- minCamH * 0.5
+    vw.CamH <- minCamH () * 0.5
 
 let frameCamera (vw: View) (w: World) dt =
     let alive = w.Ships |> Array.filter (fun s -> s.Alive)
@@ -36,8 +36,8 @@ let frameCamera (vw: View) (w: World) dt =
     let t = tan (20. * Math.PI / 180.)
     let hY = ((hi.Y - lo.Y) / 2. + pad) / t
     let hX = ((hi.X - lo.X) / 2. + pad) / (t * vw.Camera.aspect)
-    let h = max hX hY |> max minCamH |> min maxCamH
-    let zoomed = (maxCamH - h) / (maxCamH - minCamH)
+    let h = max hX hY |> max (minCamH ()) |> min (maxCamH ())
+    let zoomed = (maxCamH () - h) / (maxCamH () - minCamH ())
     let center = center * zoomed
     let k = 1. - exp (-4. * dt)
     if vw.Intro > introTime * 0.2 then

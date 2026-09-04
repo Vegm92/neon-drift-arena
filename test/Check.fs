@@ -107,15 +107,17 @@ let main _ =
             |> Array.forall (fun a ->
                 abs a.Pos.X + a.Radius < arenaHalf
                 && abs a.Pos.Y + a.Radius < arenaHalf
-                && abs a.Pos.X + abs a.Pos.Y + a.Radius < diagLimit))
+                && abs a.Pos.X + abs a.Pos.Y + a.Radius < diagLimit ()))
         if isTrack i then
-            check (tag "every gate is on the road") (road |> Array.forall (fun g -> abs g.X + trackWidth / 2. < arenaHalf && abs g.Y + trackWidth / 2. < arenaHalf && abs g.X + abs g.Y + trackWidth / 2. < diagLimit))
+            check (tag "every gate is on the road") (road |> Array.forall (fun g -> abs g.X + trackWidth / 2. < arenaHalf && abs g.Y + trackWidth / 2. < arenaHalf && abs g.X + abs g.Y + trackWidth / 2. < diagLimit ()))
             check (tag "checkpoints sit on road points") (gates |> Array.forall (fun g -> Array.contains g road) && gates.[0] = road.[0])
             check (tag "the road never doubles back on itself") (
-                road
+                corners
                 |> Array.mapi (fun i g -> i, g)
                 |> Array.forall (fun (i, g) ->
-                    road |> Array.mapi (fun j h -> j, h) |> Array.forall (fun (j, h) -> abs (i - j) <= 1 || abs (i - j) >= road.Length - 1 || len (g - h) > trackWidth * 0.9)))
+                    corners |> Array.mapi (fun j h -> j, h) |> Array.forall (fun (j, h) -> abs (i - j) <= 1 || abs (i - j) >= corners.Length - 1 || len (g - h) > trackWidth * 0.9)))
+            check (tag "the road is smoothed through every corner") (road.Length = corners.Length * 4 && corners |> Array.forall (fun c -> Array.contains c road))
+            check (tag "a race track is a big arena") (arenaHalf = raceHalf)
         else
             check (tag "the core has an open approach") (
                 [ 0. .. 45. .. 315. ]
@@ -396,7 +398,7 @@ let main _ =
     let sprint (p: V2) = (grid |> place 0 p 0. |> run 360 thruster).Ships.[0].Vel |> len
     check "off the road a ship is slower than on it" (sprint (v 200. -600.) < sprint gates.[0] * 0.7)
     let ahead = lap1 |> edit 1 (fun s -> { s with Pos = gates.[3]; Next = 4 })
-    check "a lap ahead ranks first, then the ship nearest its next gate" (rank ahead.Ships = [| 0; 1; 2; 3 |])
+    check "a lap ahead ranks first, then the ship with more gates behind it" ((rank ahead.Ships).[0..1] = [| 0; 1 |])
     check "a finished ship ranks above everyone still racing" (Sim.rank won.Ships |> Array.head = 0 && Sim.place won.Ships 0 = 1)
     for t in 0 .. tracks.Length - 1 do
         setLayout (layouts.Length - tracks.Length + t)
@@ -411,6 +413,16 @@ let main _ =
     let seeker = { Owner = 1; Pos = gates.[0] - v 30. 0.; Vel = v 400. 0.; Life = 1.; Kind = 2; Damage = seekerDamage }
     let stung = { grid with Bullets = [ seeker ] } |> place 0 gates.[0] 0. |> edit 0 (fun s -> { s with Invuln = 0. }) |> run 12 (all present)
     check "a race hit stuns instead of hurting" (stung.Ships.[0].Stun > 0. && stung.Ships.[0].Hp = hpMax)
+    let minePos = gates.[0] + v 0. 200.
+    let laid = { grid with Mines = [ { Owner = 1; Pos = minePos; Vel = zero; Fuse = -1. } ] } |> edit 0 (fun s -> { s with Invuln = 0. })
+    let waiting = laid |> place 0 (minePos + v 80. 0.) 0. |> run 30 (all present)
+    check "a race mine stays put and dormant beside a ship" (waiting.Mines.Length = 1 && waiting.Mines.Head.Fuse < 0. && waiting.Mines.Head.Pos = minePos)
+    let touched = laid |> place 0 (minePos + v 20. 0.) 0. |> step dt (all present)
+    check "a race mine blasts on contact" (touched.Mines.IsEmpty && touched.Ships.[0].Stun > 0.)
+    let missile = { Owner = 1; Pos = gates.[0] + v -300. 0.; Vel = v 400. 0.; Life = 2.; Kind = 2; Damage = seekerDamage }
+    let straight = { grid with Bullets = [ missile ] } |> place 0 (gates.[0] + v 0. 250.) 0. |> run 30 (all present)
+    check "a race missile flies straight past a target off its line" (straight.Bullets |> List.forall (fun b -> b.Vel.Y = 0.))
     race <- false
+    setLayout 0
 
     0

@@ -45,6 +45,8 @@ let private weaponLabel (s: Ship) =
     | Rock
     | Singularity -> Strings.t.WBlaster
     | Rail -> Strings.t.Loaded Strings.t.WRail s.Ammo
+    | Mines when Sim.race -> Strings.t.Loaded Strings.t.WContact s.Ammo
+    | Swarm when Sim.race -> Strings.t.Loaded Strings.t.WMissile s.Ammo
     | Mines -> Strings.t.Loaded Strings.t.WMines s.Ammo
     | Swarm -> Strings.t.Loaded Strings.t.WSwarm s.Ammo
     | Pulse -> Strings.t.Loaded Strings.t.WPulse s.Ammo

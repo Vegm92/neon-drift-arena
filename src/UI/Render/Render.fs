@@ -27,7 +27,7 @@ let create () =
     let bloom = bloomPass (three.Vector2(w, h), 1.3, 0.5, 0.12)
     composer.addPass (renderPass (scene, camera))
     composer.addPass (box bloom)
-    let border, spawns = mkArena scene
+    let border, spawns, frame = mkArena scene
     let hole, horizon, halo = mkHole scene
     let hud = document.getElementById "hud"
     let vw =
@@ -55,6 +55,8 @@ let create () =
           Spawns = spawns
           Intro = 0.
           Border = border
+          Frame = frame
+          Size = arenaHalf
           Clock = document.getElementById "clock"
           Feed = document.getElementById "feed"
           Banner = document.getElementById "banner"
@@ -69,7 +71,7 @@ let create () =
           Tint = 0.
           TintHex = "#ffffff"
           Cam = zero
-          CamH = maxCamH }
+          CamH = maxCamH () }
     syncArena vw
     window.addEventListener ("resize", fun _ -> resize vw)
     vw

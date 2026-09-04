@@ -74,7 +74,7 @@ let edgeHit (a: V2) (d: V2) =
         [ for sx in [ 1.; -1. ] do
               for sy in [ 1.; -1. ] do
                   let dd = sx * d.X + sy * d.Y
-                  if dd > 1e-6 then yield (diagLimit - (sx * a.X + sy * a.Y)) / dd ]
+                  if dd > 1e-6 then yield (diagLimit () - (sx * a.X + sy * a.Y)) / dd ]
         |> function
             | [] -> 1e9
             | ts -> List.min ts

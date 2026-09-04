@@ -6,8 +6,10 @@ type Layout = Qwerty | Azerty
 let mutable layout = Qwerty
 
 module Cfg =
-    let arenaHalf = 1350.
-    let diagLimit = arenaHalf * 1.62
+    let mutable arenaHalf = 1350.
+    let arenaDefault = 1350.
+    let raceHalf = 1800.
+    let diagLimit () = arenaHalf * 1.62
     let killMargin = 60.
     let shipRadius = 18.
     let mutable turnRate = 4.2

@@ -7,6 +7,7 @@ open Domain.Cfg
 
 let mutable race = false
 let mutable road: V2[] = [||]
+let mutable corners: V2[] = [||]
 let mutable gates: V2[] = [||]
 let mutable gateEvery = 1
 let mutable trackWidth = 0.
@@ -33,7 +34,7 @@ let spawnPos i =
         let side = v -dir.Y dir.X
         road.[0] + dir * (80. + 90. * float (i / 2)) + side * (if i % 2 = 0 then -60. else 60.)
     else
-        let a = (diagLimit - 320.) / 2.
+        let a = (diagLimit () - 320.) / 2.
         match i with
         | 0 -> v (-a) (-a)
         | 1 -> v a (-a)
@@ -118,7 +119,8 @@ type Layout =
     { Rocks: (V2 * float) list
       Pads: (V2 * float * int) list
       Crates: V2 list
-      Track: (V2 list * float * int) option }
+      Track: (V2 list * float * int) option
+      Size: float }
 
 let private polar r deg =
     let a = deg * Math.PI / 180.
@@ -179,7 +181,8 @@ let private arenas =
            quad (fun sx sy ->
                [ v (sx * arenaHalf * 0.35) (sy * arenaHalf * 0.35)
                  v (sx * arenaHalf * 0.75) (sy * arenaHalf * 0.75) ])
-         Track = None }
+         Track = None
+         Size = arenaDefault }
 
        { Rocks =
            [ yield! spin (fun a ->
@@ -199,7 +202,8 @@ let private arenas =
                  v (sx * d * 0.45) (sy * d * 0.45), padRefill, 0 ])
            @ heals (arenaHalf * 0.86)
          Crates = spin (fun a -> [ turn (v (arenaHalf * 0.32) 0.) a; turn (v (arenaHalf * 0.85) 0.) a ])
-         Track = None }
+         Track = None
+         Size = arenaDefault }
 
        { Rocks =
            spin (fun a ->
@@ -210,7 +214,8 @@ let private arenas =
            :: spin (fun a -> [ turn (polar 560. -24.) a, padRefill, 0; turn (polar 900. -30.) a, padRefill, 0 ])
            @ spin (fun a -> [ turn (polar (arenaHalf * 0.86) -8.) a, healAmount, 1 ])
          Crates = spin (fun a -> [ turn (polar 700. 68.) a; turn (polar 1080. 50.) a ])
-         Track = None }
+         Track = None
+         Size = arenaDefault }
 
        { Rocks =
            [ for sy in [ 1.; -1. ] do
@@ -236,7 +241,8 @@ let private arenas =
              v 0. (arenaHalf * 0.88), healAmount, 1
              v 0. (-(arenaHalf * 0.88)), healAmount, 1 ]
          Crates = quad (fun sx sy -> [ v (sx * 640.) (sy * 640.); v (sx * 1060.) (sy * 260.) ])
-         Track = None }
+         Track = None
+         Size = arenaDefault }
 
        { Rocks =
            [ for k in 0..19 do
@@ -247,7 +253,8 @@ let private arenas =
            :: quad (fun sx sy -> [ v (sx * 300.) (sy * 300.), padRefill, 0; v (sx * 520.) (sy * 520.), padRefill, 0 ])
            @ heals (arenaHalf * 0.9)
          Crates = spin (fun a -> [ turn (v 1080. 0.) a; turn (v 560. 0.) a ])
-         Track = None } |]
+         Track = None
+         Size = arenaDefault } |]
 
 let private grandPrix =
     [ v -900. -1000.; v -400. -1000.; v 100. -1000.; v 600. -1000.; v 900. -920.; v 1050. -700.; v 1050. -400.
@@ -281,7 +288,8 @@ let tracks =
              v 1050. -400., healAmount, 1
              v -1150. 550., healAmount, 1 ]
          Crates = [ v 600. -1000.; v 750. 400.; v -550. 650.; v -550. -350. ]
-         Track = Some(grandPrix, 280., 3) }
+         Track = Some(grandPrix, 280., 3)
+         Size = arenaDefault }
 
        { Rocks = [ v 400. -50., 50.; v 400. 500., 46.; v -700. -50., 44. ]
          Pads =
@@ -294,7 +302,8 @@ let tracks =
              v -1180. -50., healAmount, 1
              v 650. -350., healAmount, 1 ]
          Crates = [ v -200. -850.; v 1200. -600.; v -300. 0.; v 1200. 500. ]
-         Track = Some(hairpin, 260., 3) }
+         Track = Some(hairpin, 260., 3)
+         Size = arenaDefault }
 
        { Rocks = [ v 0. 450., 46.; v 0. -450., 46. ]
          Pads =
@@ -307,9 +316,26 @@ let tracks =
              v 750. 480., healAmount, 1
              v -750. -480., healAmount, 1 ]
          Crates = [ v 750. -480.; v -750. 480.; v 1050. 300.; v -1050. -300. ]
-         Track = Some(figureEight, 300., 2) } |]
+         Track = Some(figureEight, 300., 2)
+         Size = arenaDefault } |]
 
-let layouts = Array.append arenas tracks
+let private grow k (l: Layout) =
+    { Rocks = l.Rocks |> List.map (fun (p, r) -> p * k, r)
+      Pads = l.Pads |> List.map (fun (p, a, kind) -> p * k, a, kind)
+      Crates = l.Crates |> List.map (fun p -> p * k)
+      Track = l.Track |> Option.map (fun (r, w, e) -> List.map (fun (p: V2) -> p * k) r, w * 1.15, e)
+      Size = raceHalf }
+
+let private smoothLoop (pts: V2[]) =
+    let n = pts.Length
+    [| for i in 0 .. n - 1 do
+           let p0, p1, p2, p3 = pts.[(i + n - 1) % n], pts.[i], pts.[(i + 1) % n], pts.[(i + 2) % n]
+           for j in 0..3 do
+               let t = float j / 4.
+               let t2, t3 = t * t, t * t * t
+               yield (p0 * (-t3 + 2. * t2 - t) + p1 * (3. * t3 - 5. * t2 + 2.) + p2 * (-3. * t3 + 4. * t2 + t) + p3 * (t3 - t2)) * 0.5 |]
+
+let layouts = Array.append arenas (tracks |> Array.map (grow (raceHalf / arenaDefault)))
 let isTrack i = layouts.[i].Track.IsSome
 
 let mutable layout = 0
@@ -328,9 +354,11 @@ let private build i =
     let l = layouts.[i]
     asteroids <- l.Rocks |> List.map (fun (p, r) -> { Pos = p; Radius = r }) |> List.toArray
     cratePositions <- l.Crates |> List.toArray
-    road <- l.Track |> Option.map (fun (r, _, _) -> List.toArray r) |> Option.defaultValue [||]
-    gates <- l.Track |> Option.map (fun (r, _, k) -> [| for i in 0 .. k .. r.Length - 1 -> road.[i] |]) |> Option.defaultValue [||]
-    gateEvery <- l.Track |> Option.map (fun (_, _, k) -> k) |> Option.defaultValue 1
+    arenaHalf <- l.Size
+    corners <- l.Track |> Option.map (fun (r, _, _) -> List.toArray r) |> Option.defaultValue [||]
+    road <- if corners.Length > 0 then smoothLoop corners else [||]
+    gateEvery <- l.Track |> Option.map (fun (_, _, k) -> k * 4) |> Option.defaultValue 1
+    gates <- [| for i in 0 .. gateEvery .. road.Length - 1 -> road.[i] |]
     trackWidth <- l.Track |> Option.map (fun (_, w, _) -> w) |> Option.defaultValue 0.
     { Ships = Array.init 4 (fun i -> { freshShip i with Active = false; Alive = false; Stocks = 0 })
       Bullets = []
@@ -362,10 +390,10 @@ let sudden (w: World) = not race && w.Time > matchTime
 let private outOfBoundsAt k (p: V2) =
     abs p.X > arenaHalf * k + killMargin
     || abs p.Y > arenaHalf * k + killMargin
-    || abs p.X + abs p.Y > diagLimit * k + killMargin
+    || abs p.X + abs p.Y > diagLimit () * k + killMargin
 
 let private inside k margin (p: V2) =
-    abs p.X < arenaHalf * k - margin && abs p.Y < arenaHalf * k - margin && abs p.X + abs p.Y < diagLimit * k - margin
+    abs p.X < arenaHalf * k - margin && abs p.Y < arenaHalf * k - margin && abs p.X + abs p.Y < diagLimit () * k - margin
 
 let private freeSpot k (ships: Ship[]) (avoid: V2 list) rng =
     let mutable r = rng
@@ -401,7 +429,7 @@ let launcher (s: Ship) = s.Active && not s.Alive && s.Stocks <= 0
 
 let rim k angle =
     let c, s = abs (cos angle), abs (sin angle)
-    let t = min (min (arenaHalf / max c 1e-9) (arenaHalf / max s 1e-9)) (diagLimit / (c + s))
+    let t = min (min (arenaHalf / max c 1e-9) (arenaHalf / max s 1e-9)) (diagLimit () / (c + s))
     ofAngle angle * (t * k)
 
 let private stepLauncher k dt (inp: Input) (s: Ship) =
@@ -529,7 +557,7 @@ let private special dt (inp: Input) (s: Ship) =
                 let m =
                     { Owner = s.Id
                       Pos = s.Pos - dir * (shipRadius + 10.)
-                      Vel = s.Vel * 0.4
+                      Vel = (if race then zero else s.Vel * 0.4)
                       Fuse = -1. }
                 spend s, [], [ m ], [ MineSet m.Pos ]
             else
@@ -592,6 +620,7 @@ let private steer dt (ships: Ship[]) (b: Bullet) =
         b
     else
         match nearest ships b.Owner b.Pos with
+        | Some _ when race -> b
         | Some t ->
             let a0 = atan2 b.Vel.Y b.Vel.X
             let a1 = atan2 (t.Pos.Y - b.Pos.Y) (t.Pos.X - b.Pos.X)
@@ -764,7 +793,14 @@ let private stepMines k dt (ships: Ship[]) (mines: Mine list) =
         mines
         |> List.choose (fun m ->
             let near = nearest ships m.Owner m.Pos
-            if m.Fuse < 0. then
+            if race then
+                match near with
+                | Some t when len (t.Pos - m.Pos) < mineRadius + shipRadius ->
+                    blasts.Add(m.Pos, m.Owner)
+                    events.Add(Blast m.Pos)
+                    None
+                | _ -> Some m
+            elif m.Fuse < 0. then
                 match near with
                 | Some t when len (t.Pos - m.Pos) < mineMagnet ->
                     events.Add(MineLive m.Pos)

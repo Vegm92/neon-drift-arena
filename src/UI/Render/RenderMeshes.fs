@@ -188,7 +188,7 @@ let mkBullet (scene: Object3D) =
 
 let private octagon (scale: float) =
     let a = arenaHalf * scale
-    let c = (diagLimit - arenaHalf) * scale
+    let c = (diagLimit () - arenaHalf) * scale
     [| for x, y in [ a, c; c, a; -c, a; -a, c; -a, -c; -c, -a; c, -a; a, -c ] do
            yield! [ x; 0.; y ] |]
 
@@ -200,13 +200,14 @@ let private mkLoop (scene: Object3D) scale hex opacity y =
     scene.add l
     l
 
-let mkArena (scene: Object3D) =
+let mkFrame (scene: Object3D) =
+    let frame = three.Group()
     let border = three.Group()
     mkLoop border 1. 0x00f6ff 1. 0. |> ignore
     mkLoop border 0.985 0xff2bd6 0.35 0. |> ignore
-    scene.add border
-    mkLoop scene 0.62 0x15294d 0.7 -0.5 |> ignore
-    let cut = diagLimit - arenaHalf
+    frame.add border
+    mkLoop frame 0.62 0x15294d 0.7 -0.5 |> ignore
+    let cut = diagLimit () - arenaHalf
     for sx in [ 1.; -1. ] do
         for sy in [ 1.; -1. ] do
             let g = three.BufferGeometry()
@@ -221,20 +222,25 @@ let mkArena (scene: Object3D) =
             )
             let m = three.Mesh(g, three.MeshBasicMaterial(box {| color = 0x000000 |}))
             m.position.y <- -0.9
-            scene.add m
+            frame.add m
     let core = three.Group()
     core.add (three.Mesh(three.RingGeometry(96., 100., 6) |> flat, glowMat 0xfff45c 0.8))
     core.add (three.Mesh(three.RingGeometry(150., 152., 48) |> flat, glowMat 0x00f6ff 0.35))
     core.position.y <- -0.5
-    scene.add core
+    frame.add core
     let spawns =
         Array.init 4 (fun i ->
             let p = Sim.spawnPos i
             let m = three.Mesh(three.RingGeometry(120., 124., 8) |> flat, glowMat colors.[i] 0.5)
             m.position.set (p.X, -0.5, p.Y)
             m.rotation.z <- Math.PI / 8.
-            scene.add m
+            frame.add m
             m)
+    scene.add frame
+    border, spawns, frame
+
+let mkArena (scene: Object3D) =
+    let border, spawns, frame = mkFrame scene
     let n = 1500
     let stars = three.BufferGeometry()
     stars.setAttribute (
@@ -250,7 +256,7 @@ let mkArena (scene: Object3D) =
     scene.add (
         three.Points(stars, three.PointsMaterial(box {| color = 0x9fb3ff; size = 3.; transparent = true; opacity = 0.7 |}))
     )
-    border, spawns
+    border, spawns, frame
 
 let private mkRoad (scene: Object3D) =
     let g = Sim.road
@@ -289,6 +295,13 @@ let private mkMark (scene: Object3D) i (p: V2) =
 let syncArena (vw: View) =
     if vw.Layout <> Sim.layout then
         vw.Layout <- Sim.layout
+        if vw.Size <> arenaHalf then
+            vw.Size <- arenaHalf
+            vw.Scene.remove vw.Frame
+            let border, spawns, frame = mkFrame vw.Scene
+            vw.Border <- border
+            vw.Spawns <- spawns
+            vw.Frame <- frame
         vw.Road |> Option.iter vw.Scene.remove
         vw.Road <- if Sim.road.Length > 1 then Some(mkRoad vw.Scene) else None
         for m in vw.Marks do
