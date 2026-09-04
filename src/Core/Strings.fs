@@ -86,6 +86,20 @@ type Locale =
       MostKills: string -> int -> string
       MostRings: string -> int -> string
       NoCrates: string -> string
+      HudHull: string
+      HudShield: string
+      HudBoost: string
+      HudHeat: string
+      HudOver: string
+      ColKills: string
+      ColAccuracy: string
+      ColCrates: string
+      ColRings: string
+      ColStocks: string
+      AwardKills: string
+      AwardAim: string
+      AwardRings: string
+      AwardCrates: string
       SuddenDeath: string
       SoundHint: string
       Joins: string -> string
@@ -220,6 +234,20 @@ let en =
       MostKills = fun n k -> sprintf "%s TOOK DOWN %d SHIPS" n k
       MostRings = fun n r -> sprintf "%s FLEW OUT %d TIMES" n r
       NoCrates = sprintf "%s NEVER OPENED A CRATE"
+      HudHull = "HULL"
+      HudShield = "SHIELD"
+      HudBoost = "BOOST"
+      HudHeat = "HEAT"
+      HudOver = "OVER"
+      ColKills = "KILLS"
+      ColAccuracy = "ACCURACY"
+      ColCrates = "CRATES"
+      ColRings = "RINGS"
+      ColStocks = "STOCKS"
+      AwardKills = "MOST KILLS"
+      AwardAim = "BEST AIM"
+      AwardRings = "RING-OUTS"
+      AwardCrates = "EMPTY HANDED"
       SuddenDeath = "SUDDEN DEATH"
       SoundHint = "TAP ANY KEY OR CLICK THE SCREEN FOR SOUND"
       Joins = sprintf "%s JOINS THE FIGHT"

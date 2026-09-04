@@ -69,17 +69,23 @@ let drawHud (vw: View) (w: World) dt =
                 (1. + k * 0.09)
         el.className <-
             sprintf
-                "panel p%d%s%s%s"
+                "panel p%d%s%s%s%s"
                 i
+                (if i % 2 = 1 then " r" else "")
                 (if s.Active then "" else " off")
                 (if Sim.hurting s then " hurt" else "")
                 (if s.Locked > 0. then " cooked" else "")
-        el.querySelector(".name")?style?color <- sprintf "#%06x" (shipColor s)
-        el.querySelector(".hp i")?style?width <- sprintf "%.0f%%" (max 0. s.Hp / hpMax * 100.)
-        el.querySelector(".shield i")?style?width <- sprintf "%.0f%%" (s.Shield / shieldAmount * 100.)
-        el.querySelector(".boost i")?style?width <- sprintf "%.0f%%" (s.Boost / boostMax * 100.)
-        el.querySelector(".heat i")?style?width <- sprintf "%.0f%%" (s.Heat / heatMax * 100.)
-        (el.querySelector ".stocks" :?> HTMLElement).textContent <- String.replicate (max 0 s.Stocks) "◆"
+        el?style?color <- sprintf "#%06x" (shipColor s)
+        let gauge cls (v: float) (max': float) (readout: string) =
+            el.querySelector(cls + " i")?style?width <- sprintf "%.0f%%" (max 0. v / max' * 100.)
+            (el.querySelector (cls + "-v") :?> HTMLElement).textContent <- readout
+        gauge ".hp" s.Hp hpMax (sprintf "%.0f" (max 0. s.Hp))
+        gauge ".shield" s.Shield shieldAmount (sprintf "%.0f" (s.Shield / shieldAmount * 100.))
+        gauge ".boost" s.Boost boostMax (sprintf "%.0f" (s.Boost / boostMax * 100.))
+        gauge ".heat" s.Heat heatMax (if s.Locked > 0. then Strings.t.HudOver else sprintf "%.0f" (s.Heat / heatMax * 100.))
+        let pips = String.concat "" [ for k in 1 .. stocks -> if k <= s.Stocks then "<i></i>" else "<i class=\"gone\"></i>" ]
+        let pipEl = el.querySelector ".stocks" :?> HTMLElement
+        if pipEl.innerHTML <> pips then pipEl.innerHTML <- pips
         (el.querySelector ".wep" :?> HTMLElement).textContent <-
             if Sim.launcher s then (if s.LaunchCd <= 0. then Strings.t.LaunchReady else Strings.t.LaunchWait)
             else weaponLabel s)

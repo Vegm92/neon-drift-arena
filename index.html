@@ -14,21 +14,35 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   canvas{display:block}
   #hud{position:fixed;inset:0;pointer-events:none}
-  .panel{position:absolute;width:150px;opacity:.9}
+  .panel{position:absolute;width:172px;box-sizing:border-box;padding:10px 11px;border:1px solid #1f2540;
+    border-left:3px solid currentColor;background:linear-gradient(90deg,rgba(8,14,26,.92),rgba(13,20,38,.55));
+    box-shadow:0 0 26px -10px currentColor}
+  .panel.r{border-left:1px solid #1f2540;border-right:3px solid currentColor;text-align:right}
   .panel.p0{left:18px;top:14px}.panel.p1{right:18px;top:14px}.panel.p2{left:18px;bottom:14px}.panel.p3{right:18px;bottom:14px}
-  .panel.off{opacity:.18}
-  .name{font-size:13px;letter-spacing:.2em;margin-bottom:5px;text-shadow:0 0 8px currentColor}
-  .bar{height:5px;background:#0d1020;border:1px solid #1f2540;margin-bottom:4px}
+  .panel.off{opacity:.2;box-shadow:none}
+  .panel .top{display:flex;align-items:center;gap:8px}
+  .panel.r .top{flex-direction:row-reverse}
+  .panel .top svg{width:15px;height:15px;flex-shrink:0;filter:drop-shadow(0 0 6px currentColor)}
+  .name{font-size:14px;font-weight:700;letter-spacing:.16em;text-shadow:0 0 12px currentColor}
+  .stocks{display:flex;gap:4px;margin-left:auto}
+  .panel.r .stocks{margin-left:0;margin-right:auto}
+  .stocks i{width:7px;height:7px;background:currentColor;box-shadow:0 0 7px currentColor;
+    clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+  .stocks i.gone{background:#1f2540;box-shadow:none}
+  .gauges{display:flex;flex-direction:column;gap:5px;margin-top:9px}
+  .lbl{display:flex;justify-content:space-between;gap:8px;font-size:8px;letter-spacing:.26em;color:#cfe;opacity:.5}
+  .panel.r .lbl{flex-direction:row-reverse}
+  .bar{height:5px;background:#0d1020;border:1px solid #1f2540}
   .bar i{display:block;height:100%;width:100%;transition:width .08s linear}
+  .panel.r .bar i{margin-left:auto}
   .hp i{background:#ff3b5c;box-shadow:0 0 8px #ff3b5c}
   .shield i{background:#3b8cff;box-shadow:0 0 8px #3b8cff}
   .boost i{background:#00f6ff;box-shadow:0 0 8px #00f6ff}
   .heat i{background:#ff7b2b;box-shadow:0 0 8px #ff7b2b}
-  .wep{font-size:10px;letter-spacing:.18em;opacity:.75;margin-top:3px}
+  .wep{margin-top:9px;padding-top:7px;border-top:1px solid #1f2540;font-size:9px;letter-spacing:.18em;color:#cfe;opacity:.72}
   .panel.hurt .name{animation:sos .7s steps(2,end) infinite}
   .panel.cooked .heat i{background:#fff45c;box-shadow:0 0 12px #fff45c}
   @keyframes sos{0%,100%{opacity:1}50%{opacity:.35}}
-  .stocks{font-size:12px;letter-spacing:.3em;opacity:.85}
   #clock{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-size:15px;letter-spacing:.3em;opacity:.8;text-shadow:0 0 10px currentColor}
   #clock.sudden{color:#ff3b5c;animation:sos .7s steps(2,end) infinite}
   .tag{position:absolute;transform:translateX(-50%);font-size:15px;font-weight:700;letter-spacing:.25em;text-shadow:0 0 10px currentColor,0 0 2px #000}
@@ -38,7 +52,33 @@
   #feed svg{width:22px;height:22px;color:#cfe;filter:drop-shadow(0 0 4px #cfe)}
   @keyframes feed{0%,70%{opacity:1}100%{opacity:0}}
   #vignette{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .06s linear}
-  #menu .stats{font-size:11px;opacity:.75;white-space:pre-line;line-height:1.9;letter-spacing:.2em}
+  #menu .stats{width:min(920px,92vw);display:flex;flex-direction:column;gap:14px;letter-spacing:normal}
+  #menu .stats:empty{display:none}
+  #menu .stats .table{display:flex;flex-direction:column;gap:6px}
+  #menu .stats .hdr,#menu .stats .line{display:grid;grid-template-columns:34px 1fr 56px 132px 56px 56px 74px;gap:14px}
+  #menu .stats .hdr{padding:0 12px;font-size:9px;letter-spacing:.28em;color:#ff2bd6;opacity:.85}
+  #menu .stats .hdr span{text-align:right}
+  #menu .stats .line{align-items:center;padding:11px 12px;border:1px solid #1f2540;border-left:3px solid currentColor;
+    background:linear-gradient(90deg,rgba(8,14,26,.9),rgba(13,20,38,.5));font-size:13px;letter-spacing:.12em}
+  #menu .stats .line.lead{box-shadow:0 0 24px -8px currentColor,0 0 30px -14px currentColor inset}
+  #menu .stats .line.out{filter:brightness(.66)}
+  #menu .stats .pos{font-size:15px;font-weight:700;opacity:.5;text-align:center}
+  #menu .stats .who{display:flex;align-items:center;gap:12px}
+  #menu .stats .who svg{width:24px;height:24px;filter:drop-shadow(0 0 6px currentColor)}
+  #menu .stats .who b{font-size:17px;font-weight:700;letter-spacing:.14em;text-shadow:0 0 12px currentColor}
+  #menu .stats .num{text-align:right;font-weight:700;color:#cfe}
+  #menu .stats .num.big{font-size:19px;color:inherit;text-shadow:0 0 14px currentColor}
+  #menu .stats .acc{display:flex;align-items:center;gap:10px}
+  #menu .stats .acc .bar{flex-grow:1}
+  #menu .stats .acc .bar i{background:currentColor;box-shadow:0 0 8px currentColor}
+  #menu .stats .acc span{font-size:11px;color:#cfe;opacity:.75;min-width:3.2em;text-align:right}
+  #menu .stats .stocks{justify-content:flex-end;margin-left:0}
+  #menu .stats .stocks i{width:9px;height:9px}
+  #menu .stats .awards{display:flex;flex-direction:column;gap:8px;padding:14px 16px;border:1px solid #26405e;
+    border-radius:6px;background:rgba(8,14,26,.5)}
+  #menu .stats .award{display:flex;align-items:center;gap:12px;font-size:12px;letter-spacing:.18em}
+  #menu .stats .award b{min-width:128px;font-size:9px;font-weight:400;letter-spacing:.3em;text-shadow:0 0 12px currentColor}
+  #menu .stats .award span{color:#cfe;opacity:.8}
   #banner{position:fixed;left:0;right:0;top:40%;text-align:center;font-size:22px;letter-spacing:.35em;text-shadow:0 0 18px #fff;white-space:pre-line;line-height:2}
   #banner.hidden{display:none}
   #tut{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;z-index:8;
@@ -61,7 +101,6 @@
   #menu .lobby .buttons.col .item{width:min(360px,80vw)}
   #menu .lobby .tally{display:flex;gap:18px;font-size:13px;letter-spacing:.2em}
   #menu .lobby .tally i{font-style:normal;font-weight:700;text-shadow:0 0 10px currentColor}
-  #menu .lobby .stats{white-space:pre-line;line-height:1.9;letter-spacing:.2em;opacity:.75;font-size:12px;color:#cfe}
   #menu h1{font-size:34px;margin:0;text-shadow:0 0 24px #00f6ff,0 0 48px #ff2bd6}
   #menu .mode{font-size:12px;opacity:.8}
   #menu .lobby{display:flex;flex-direction:column;align-items:center;gap:clamp(6px,1.4vh,18px);width:min(1360px,94vw);max-height:96vh;letter-spacing:normal}
