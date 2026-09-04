@@ -278,6 +278,13 @@ let main _ =
     check "bot fires at the ship ahead" (b.Fire && b.Aim = Some 0. && not b.Thrust)
     let turned = bot (duel |> place 1 (v 0. 300.) 0.) 0
     check "bot steers toward its target and holds fire" (turned.Aim = Some (System.Math.PI / 2.) && not turned.Fire && turned.Thrust)
+    let crossing = bot (duel |> edit 1 (fun s -> { s with Vel = v 0. 200. })) 0
+    check "bot leads a moving target" (match crossing.Aim with Some a -> a > 0.15 && a < 0.6 | None -> false)
+    let rock = asteroids.[0]
+    let rolling = duel |> place 0 (rock.Pos - v (rock.Radius + 150.) 0.) 0. |> edit 0 (fun s -> { s with Vel = v 200. 0. }) |> place 1 (rock.Pos + v (rock.Radius + 300.) 0.) 0.
+    let swerve = bot rolling 0
+    check "bot swerves around a rock in its path" (match swerve.Aim with Some a -> abs a > 0.5 | None -> false)
+    check "bot holds fire when a rock blocks the shot" (not swerve.Fire && swerve.Thrust)
 
     let out = w0 |> place 0 zero 0. |> edit 0 (fun s -> { s with Alive = false; Stocks = 0 })
     let drifting = run 12 (Array.init 4 (fun i -> if i = 0 then { present with Thrust = true } else present)) out

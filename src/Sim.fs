@@ -752,6 +752,37 @@ let private phase (ships: Ship[]) =
     else
         Playing
 
+let private lead (me: Ship) (t: Ship) =
+    if me.Weapon = Rail then
+        t.Pos
+    else
+        let rel = t.Vel - me.Vel * 0.5
+        let speed = if me.Weapon = Swarm then seekerSpeed else bulletSpeed
+        Seq.fold (fun (p: V2) _ -> t.Pos + rel * (len (p - me.Pos) / speed)) t.Pos (seq { 1..3 })
+
+let private rockBetween (from: V2) (target: V2) =
+    let d = target - from
+    let l = len d
+    let dir = norm d
+    asteroids
+    |> Array.exists (fun a ->
+        let rel = a.Pos - from
+        let along = max 0. (min l (dot rel dir))
+        len (rel - dir * along) < a.Radius)
+
+let private dodge (me: Ship) =
+    let dir = if len me.Vel > 40. then norm me.Vel else ofAngle me.Angle
+    let look = 180. + len me.Vel * 0.9
+    asteroids
+    |> Array.choose (fun a ->
+        let rel = a.Pos - me.Pos
+        let along = dot rel dir
+        let side = dir.X * rel.Y - dir.Y * rel.X
+        if along > 0. && along < look + a.Radius && abs side < a.Radius + 2.5 * shipRadius then Some(along, side) else None)
+    |> Array.sortBy fst
+    |> Array.tryHead
+    |> Option.map (fun (_, side) -> atan2 dir.Y dir.X - (if side >= 0. then 1. else -1.) * 0.9)
+
 let bot (w: World) i =
     let me = w.Ships.[i]
     let idle = { noInput with Present = true }
@@ -761,24 +792,23 @@ let bot (w: World) i =
         match nearest w.Ships i me.Pos with
         | None -> idle
         | Some t ->
-            let d = t.Pos - me.Pos
-            let dist = len d
+            let dist = len (t.Pos - me.Pos)
             let k = bounds w.Time
-            let ahead = me.Pos + ofAngle me.Angle * 140.
+            let shot = lead me t
+            let d = shot - me.Pos
+            let dodging = dodge me
             let aim =
                 if abs me.Pos.X > arenaHalf * k - 220. || abs me.Pos.Y > arenaHalf * k - 220. then
                     atan2 -me.Pos.Y -me.Pos.X
                 else
-                    match asteroids |> Array.tryFind (fun a -> len (a.Pos - ahead) < a.Radius + 50.) with
-                    | Some a -> atan2 (me.Pos.Y - a.Pos.Y) (me.Pos.X - a.Pos.X)
-                    | None -> atan2 d.Y d.X
+                    defaultArg dodging (atan2 d.Y d.X)
             let off = abs (atan2 (sin (aim - me.Angle)) (cos (aim - me.Angle)))
-            let facing = off < 0.25
+            let facing = off < 0.25 && dodging.IsNone && not (rockBetween me.Pos shot)
             let hold = me.Weapon = Rail || me.Weapon = Tractor
             { idle with
                 Aim = Some aim
                 Steer = true
-                Thrust = dist > 320. || off > 0.6
+                Thrust = dodging.IsSome || dist > 320. || off > 0.6
                 Boost = dist > 900. && me.Boost > 40.
                 Fire = facing && dist < 650.
                 Special = facing && dist < 520. && me.Weapon <> Blaster && (hold || int (w.Time * 2.) % 2 = 0) }
