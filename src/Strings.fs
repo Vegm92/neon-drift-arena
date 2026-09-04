@@ -117,7 +117,7 @@ let en =
       PadFire = "FIRE"
       PadBoost = "BOOST"
       PadMove = "MOVE"
-      PadMoveHint = "TURN &#8226; PAST HALF = THRUST"
+      PadMoveHint = "TURN &#8226; PUSH OUT = THRUST"
       PadBadge = "MOBILE"
       PadStrafe = "STRAFE"
       PadSpecial = "SPECIAL"

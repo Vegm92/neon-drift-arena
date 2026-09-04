@@ -253,6 +253,7 @@ let private stepShip dt (inp: Input) (s: Ship) =
         let k = slow s
         let angle =
             match inp.Aim with
+            | Some a when not inp.Steer -> a
             | Some a ->
                 let d = atan2 (sin (a - s.Angle)) (cos (a - s.Angle))
                 let lim = turnRate * k * dt

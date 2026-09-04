@@ -78,7 +78,7 @@ module Cfg =
     let pulseAmmo = 3
 
     let mutable padAimOn = 0.15
-    let mutable padThrustOn = 0.5
+    let mutable padThrustOn = 0.75
 
     let tunables: (string * (unit -> float) * (float -> unit))[] =
         [| "turnRate", (fun () -> turnRate), (fun x -> turnRate <- x)
@@ -126,6 +126,7 @@ type Input =
     { Turn: float
       Aim: float option
       Absolute: bool
+      Steer: bool
       Strafe: float
       Thrust: bool
       Reverse: bool
@@ -137,7 +138,7 @@ type Input =
       Present: bool }
 
 let noInput =
-    { Turn = 0.; Aim = None; Absolute = false; Strafe = 0.; Thrust = false; Reverse = false; Boost = false; Fire = false; Special = false; Start = false; Back = false; Present = false }
+    { Turn = 0.; Aim = None; Absolute = false; Steer = false; Strafe = 0.; Thrust = false; Reverse = false; Boost = false; Fire = false; Special = false; Start = false; Back = false; Present = false }
 
 type Weapon =
     | Blaster

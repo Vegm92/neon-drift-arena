@@ -53,6 +53,7 @@ let private key k = keys.Contains k
 let private keyboard () =
     { Aim = None
       Absolute = false
+      Steer = false
       Turn =
         (if key "ArrowRight" || key "KeyD" then 1. else 0.)
         - (if key "ArrowLeft" || key "KeyA" then 1. else 0.)
@@ -89,6 +90,7 @@ let private gamepad (gp: obj) =
     { Turn = (if pressed 15 then 1. elif pressed 14 then -1. else axis turn)
       Aim = if pr.Absolute && ax * ax + ay * ay > 0.25 then Some (atan2 ay ax) else None
       Absolute = pr.Absolute
+      Steer = false
       Strafe = axis move
       Thrust = axis (move + 1) < -0.3 || pressed 12
       Reverse = axis (move + 1) > 0.3 || pressed 13
@@ -107,6 +109,7 @@ let private phone (m: obj) =
     { Turn = (if flag "right" then 1. elif flag "left" then -1. else 0.)
       Aim = if mag > Cfg.padAimOn then Some (atan2 y x) else None
       Absolute = true
+      Steer = true
       Strafe = num "s"
       Thrust = mag > Cfg.padThrustOn || flag "up"
       Reverse = flag "down"
