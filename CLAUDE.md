@@ -10,7 +10,7 @@ Fable 5 (F# → JS) + Vite + Three.js couch brawler. Read `README.md` for rules,
 
 ## Constraints
 
-- `Sim.fs`, `Domain.fs`, `Vec.fs` stay free of Fable/browser dependencies so `test/Check.fsproj` can compile them on plain .NET.
+- `Core/Vec.fs`, `Core/Domain.fs`, `Core/Sim.fs` stay free of Fable/browser dependencies so `test/Check.fsproj` can compile them on plain .NET.
 - All tunables live in `Domain.Cfg`. Keep `2 * arenaHalf / maxSpeed` inside 8–10 s.
 - No internet networking, no inventories; LAN phone pads ride the Vite dev socket (`pad.html`, dev server only). UI is the lobby overlay (`Menu.fs`), the SETTINGS panel, the four corner panels and one banner.
 - User-facing strings go through `Strings.fs`.

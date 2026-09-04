@@ -4,9 +4,9 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="../src/Vec.fs" />
-    <Compile Include="../src/Domain.fs" />
-    <Compile Include="../src/Sim.fs" />
+    <Compile Include="../src/Core/Vec.fs" />
+    <Compile Include="../src/Core/Domain.fs" />
+    <Compile Include="../src/Core/Sim.fs" />
     <Compile Include="Check.fs" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
-const domain = new URL("src/Domain.fs", import.meta.url);
+const domain = new URL("src/Core/Domain.fs", import.meta.url);
 
 const bakeTweaks = {
   name: "bake-tweaks",

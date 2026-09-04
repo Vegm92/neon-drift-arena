@@ -69,17 +69,29 @@ Every tunable in `Cfg` is a row in SETTINGS > TUNING, adjusted with left/right i
 
 | File | Responsibility |
 |------|----------------|
-| `src/Vec.fs` | 2D vector struct and helpers |
-| `src/Domain.fs` | Tunables (`Cfg`), input, ship, bullet, pad, world records |
-| `src/Sim.fs` | Pure fixed-step simulation: movement, firing, bullets, rams, pads, deaths, match phase |
-| `src/Input.fs` | Keyboard + Gamepad API → `Input[]` for the four slots |
-| `src/Three.fs` | Minimal Three.js bindings used by the renderer |
-| `src/Sfx.fs` | WebAudio synth: arcade square/noise voices, shimmer delay bus, stereo pan, boost engine drone; music player (`public/music/menu.mp3` loops in menus, `battle1..3.mp3` shuffle in play) |
-| `src/Render.fs` | Scene, ship meshes, asteroids, trails, bursts, ring/beam flashes, bloom spike, HUD shake, dynamic camera, DOM HUD |
-| `src/Settings.fs` | Settings model: rows for controller slots, swap sticks (`nda-pads`) and `Cfg.tunables` (`nda-tweaks`), plus their persistence |
-| `src/Menu.fs` | Lobby, settings, pause and result overlays: join/leave/launch by device, owns the `joined` slot set, renders the phone QR (`src/qr.js`) |
-| `src/Pad.fs` | Phone controller page (`pad.html`): lobby card, floating stick, fire/boost zone, menu buttons; talks to the host over the HMR socket |
+| **Core** (pure .NET, no browser deps) | |
+| `src/Core/Vec.fs` | 2D vector struct and helpers |
+| `src/Core/Domain.fs` | Tunables (`Cfg`), input, ship, bullet, pad, world records |
+| `src/Core/Strings.fs` | All user-facing strings and locale |
+| `src/Core/Sim.fs` | Pure fixed-step simulation: movement, firing, bullets, rams, pads, deaths, match phase |
+| **Platform** (browser bindings) | |
+| `src/Platform/Input.fs` | Keyboard + Gamepad API → `Input[]` for the four slots |
+| `src/Platform/Three.fs` | Minimal Three.js bindings used by the renderer |
+| `src/Platform/Sfx.fs` | WebAudio synth: arcade square/noise voices, shimmer delay bus, stereo pan, boost engine drone; music player (`public/music/menu.mp3` loops in menus, `battle1..3.mp3` shuffle in play) |
+| **UI** (browser-dependent screens) | |
+| `src/UI/Render/RenderTypes.fs` | Render types, constants, shared material helpers |
+| `src/UI/Render/RenderMeshes.fs` | Mesh factories (`mkShip`, `mkPad`, `mkArena`...) and `syncArena` |
+| `src/UI/Render/RenderFx.fs` | Particle effects: bursts, rings, bolts, beams, flashes |
+| `src/UI/Render/RenderEnt.fs` | Per-entity draw functions (ships, pads, crates, bullets, portals, holes) |
+| `src/UI/Render/RenderHud.fs` | DOM HUD: panels, kill feed, weapon icons, tags, tint, bloom |
+| `src/UI/Render/RenderCam.fs` | Camera framing, intro flyby, resize |
+| `src/UI/Render/Render.fs` | `create()`, `draw()` orchestrator, event → effect dispatch |
+| `src/UI/Settings.fs` | Settings model: rows for controller slots, swap sticks (`nda-pads`) and `Cfg.tunables` (`nda-tweaks`), plus their persistence |
+| `src/UI/Menu.fs` | Lobby, settings, pause and result overlays: join/leave/launch by device, owns the `joined` slot set, renders the phone QR (`src/qr.js`) |
+| `src/UI/Pad.fs` | Phone controller page (`pad.html`): lobby card, floating stick, fire/boost zone, menu buttons; talks to the host over the HMR socket |
+| **Entry point** | |
 | `src/Main.fs` | requestAnimationFrame loop with a 120 Hz accumulator |
+| **Test** | |
 | `test/Check.fs` | Headless .NET run of the simulation with assertions |
 
 ## Practice mode

@@ -1,0 +1,118 @@
+module RenderHud
+
+open System
+open Browser
+open Browser.Types
+open Fable.Core.JsInterop
+open Vec
+open Domain
+open Domain.Cfg
+open Three
+open RenderTypes
+
+let private icon (w: Weapon) ring =
+    let path =
+        if ring then "M8 32 L48 32 M34 18 L48 32 L34 46"
+        else
+            match w with
+            | Blaster -> "M10 32 L38 32 M42 32 L54 32"
+            | Rail -> "M4 32 L60 32 M46 24 L46 40"
+            | Mines -> "M32 14 L32 50 M14 32 L50 32 M19 19 L45 45 M45 19 L19 45 M32 32 m-9 0 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0"
+            | Swarm -> "M10 40 L40 22 M40 22 L30 22 M40 22 L40 32 M22 46 L52 28"
+            | Pulse -> "M24 16 a20 20 0 0 1 0 32 M36 10 a28 28 0 0 1 0 44 M10 32 L18 32"
+            | Scatter -> "M8 32 L20 20 L28 40 L38 22 L46 42 L56 30"
+            | Tractor -> "M8 32 L36 32 M36 32 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0 M56 20 L56 44"
+            | Collision -> "M32 8 L36 26 L54 22 L40 34 L52 50 L34 42 L28 58 L26 40 L8 44 L22 32 L12 16 L28 24 Z"
+            | Rock -> "M20 12 L44 10 L56 28 L50 50 L26 54 L10 38 Z M26 30 L36 26 L40 36"
+            | Singularity -> "M32 32 m-22 0 a22 22 0 1 0 44 0 a22 22 0 1 0 -44 0 M32 32 m-9 0 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0 M10 32 L4 32 M54 32 L60 32"
+    sprintf "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"%s\"/></svg>" path
+
+let feedLine (vw: View) (w: World) victim by wpn ring =
+    let tag i = sprintf "<b style=\"color:#%06x\">%s</b>" (shipColor w.Ships.[i]) (Strings.t.Player i)
+    let line = document.createElement "div"
+    line.innerHTML <-
+        if by >= 0 && by <> victim then tag by + icon wpn ring + tag victim
+        else tag victim + icon wpn (ring || wpn <> Singularity)
+    vw.Feed?prepend line
+    while vw.Feed.children.length > 4 do
+        vw.Feed?lastElementChild?remove ()
+    window.setTimeout ((fun () -> line.remove ()), 5000) |> ignore
+
+let private weaponLabel (s: Ship) =
+    match s.Weapon with
+    | Blaster
+    | Collision
+    | Rock
+    | Singularity -> Strings.t.WBlaster
+    | Rail -> Strings.t.Loaded Strings.t.WRail s.Ammo
+    | Mines -> Strings.t.Loaded Strings.t.WMines s.Ammo
+    | Swarm -> Strings.t.Loaded Strings.t.WSwarm s.Ammo
+    | Pulse -> Strings.t.Loaded Strings.t.WPulse s.Ammo
+    | Scatter -> Strings.t.Loaded Strings.t.WScatter s.Ammo
+    | Tractor -> Strings.t.Loaded Strings.t.WTractor s.Ammo
+
+let drawHud (vw: View) (w: World) dt =
+    w.Ships
+    |> Array.iteri (fun i s ->
+        let el = vw.Panels.[i]
+        if s.Alive && s.Hp < vw.Hp.[i] then
+            vw.Shake.[i] <- min 1. (vw.Shake.[i] + (vw.Hp.[i] - s.Hp) / 40.)
+        vw.Hp.[i] <- if s.Alive then s.Hp else hpMax
+        vw.Shake.[i] <- max 0. (vw.Shake.[i] - dt * 3.4)
+        let k = vw.Shake.[i]
+        let jolt = k * 9.
+        el?style?transform <-
+            sprintf
+                "translate(%.1fpx,%.1fpx) scale(%.3f)"
+                ((rnd.NextDouble() - 0.5) * jolt)
+                ((rnd.NextDouble() - 0.5) * jolt)
+                (1. + k * 0.09)
+        el.className <-
+            sprintf
+                "panel p%d%s%s%s"
+                i
+                (if s.Active then "" else " off")
+                (if Sim.hurting s then " hurt" else "")
+                (if s.Locked > 0. then " cooked" else "")
+        el.querySelector(".name")?style?color <- sprintf "#%06x" (shipColor s)
+        el.querySelector(".hp i")?style?width <- sprintf "%.0f%%" (max 0. s.Hp / hpMax * 100.)
+        el.querySelector(".shield i")?style?width <- sprintf "%.0f%%" (s.Shield / shieldAmount * 100.)
+        el.querySelector(".boost i")?style?width <- sprintf "%.0f%%" (s.Boost / boostMax * 100.)
+        el.querySelector(".heat i")?style?width <- sprintf "%.0f%%" (s.Heat / heatMax * 100.)
+        (el.querySelector ".stocks" :?> HTMLElement).textContent <- String.replicate (max 0 s.Stocks) "◆"
+        (el.querySelector ".wep" :?> HTMLElement).textContent <-
+            if Sim.launcher s then (if s.LaunchCd <= 0. then Strings.t.LaunchReady else Strings.t.LaunchWait)
+            else weaponLabel s)
+
+let drawTint (vw: View) dt =
+    vw.Tint <- max 0. (vw.Tint - dt * 1.6)
+    vw.Vignette?style?opacity <- string vw.Tint
+    if vw.Tint > 0. then
+        vw.Vignette?style?boxShadow <- sprintf "inset 0 0 220px 60px %s" vw.TintHex
+
+let drawPost (vw: View) dt =
+    vw.Spike <- max 0. (vw.Spike - dt * 2.6)
+    vw.Bloom.strength <- 1.3 + vw.Spike * 1.7
+
+let drawTags (vw: View) (w: World) =
+    w.Ships
+    |> Array.iteri (fun i s ->
+        let el = vw.Tags.[i]
+        let show = (s.Alive && s.Invuln > 0.) || Sim.launcher s
+        el.hidden <- not show
+        if show then
+            let p = (three.Vector3(s.Pos.X, 0., s.Pos.Y)).project vw.Camera
+            let x = (p.x + 1.) / 2. * window.innerWidth
+            let y = (1. - p.y) / 2. * window.innerHeight - 44.
+            el?style?left <- sprintf "%.0fpx" (max 40. (min (window.innerWidth - 40.) x))
+            el?style?top <- sprintf "%.0fpx" (max 40. (min (window.innerHeight - 40.) y))
+            el?style?opacity <- if Sim.launcher s then "0.55" else "1"
+            el?style?color <- sprintf "#%06x" (shipColor s))
+
+let drawSpawns (vw: View) (w: World) =
+    Array.iter2
+        (fun (m: Mesh) (s: Ship) ->
+            m.visible <- s.Active
+            m.material.color.setHex (shipColor s))
+        vw.Spawns
+        w.Ships

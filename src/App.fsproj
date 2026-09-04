@@ -5,17 +5,27 @@
     <WarningLevel>3</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Vec.fs" />
-    <Compile Include="Domain.fs" />
-    <Compile Include="Strings.fs" />
-    <Compile Include="Sim.fs" />
-    <Compile Include="Input.fs" />
-    <Compile Include="Three.fs" />
-    <Compile Include="Render.fs" />
-    <Compile Include="Sfx.fs" />
-    <Compile Include="Settings.fs" />
-    <Compile Include="Menu.fs" />
-    <Compile Include="Pad.fs" />
+    <!-- Core: pure .NET, no browser deps (shared with test project) -->
+    <Compile Include="Core\Vec.fs" />
+    <Compile Include="Core\Domain.fs" />
+    <Compile Include="Core\Strings.fs" />
+    <Compile Include="Core\Sim.fs" />
+    <!-- Platform: thin browser bindings -->
+    <Compile Include="Platform\Input.fs" />
+    <Compile Include="Platform\Three.fs" />
+    <Compile Include="Platform\Sfx.fs" />
+    <!-- UI: browser-dependent game screens -->
+    <Compile Include="UI\Render\RenderTypes.fs" />
+    <Compile Include="UI\Render\RenderMeshes.fs" />
+    <Compile Include="UI\Render\RenderFx.fs" />
+    <Compile Include="UI\Render\RenderEnt.fs" />
+    <Compile Include="UI\Render\RenderHud.fs" />
+    <Compile Include="UI\Render\RenderCam.fs" />
+    <Compile Include="UI\Render\Render.fs" />
+    <Compile Include="UI\Settings.fs" />
+    <Compile Include="UI\Menu.fs" />
+    <Compile Include="UI\Pad.fs" />
+    <!-- Entry point -->
     <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>
