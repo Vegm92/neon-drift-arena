@@ -9,6 +9,38 @@ Settings.init ()
 Sfx.init ()
 let view = Render.create ()
 let banner = document.getElementById "banner"
+document.getElementById("loader").className <- "done"
+
+let tutKey = "nda-tut"
+let tutEl = document.getElementById "tut"
+let mutable tutShown = false
+
+let showTutorial () =
+    if window.localStorage.getItem tutKey = null then
+        let keys move turn fire boost spec pause =
+            sprintf "<div class=\"row\"><div class=\"keys\"><i>%s</i><i>%s</i></div><div class=\"lbl\">%s</div></div>" move turn Strings.t.TutTurn
+            + sprintf "<div class=\"row\"><div class=\"keys\"><i>%s</i></div><div class=\"lbl\">%s</div></div>" fire Strings.t.TutFire
+            + sprintf "<div class=\"row\"><div class=\"keys\"><i>%s</i></div><div class=\"lbl\">%s</div></div>" boost Strings.t.TutBoost
+            + sprintf "<div class=\"row\"><div class=\"keys\"><i>%s</i></div><div class=\"lbl\">%s</div></div>" spec Strings.t.TutSpecial
+            + sprintf "<div class=\"row\"><div class=\"keys\"><i>%s</i></div><div class=\"lbl\">%s</div></div>" pause Strings.t.TutPause
+        let movement =
+            if Domain.layout = Azerty then "Z", "S"
+            else "W", "S"
+        let rows =
+            sprintf "<div class=\"row\"><div class=\"keys\"><i>%s</i><i>%s</i></div><div class=\"lbl\">%s</div></div>" (fst movement) (snd movement) Strings.t.TutThrust
+            + keys "" "" "SPACE" "SHIFT" "F" "ENTER"
+        tutEl.innerHTML <- sprintf "<h2>%s</h2><div class=\"rows\">%s</div><div class=\"skip\">%s</div>" Strings.t.TutTitle rows Strings.t.TutSkip
+        tutEl.className <- ""
+        tutShown <- true
+
+let hideTutorial () =
+    if tutShown then
+        window.localStorage.setItem (tutKey, "1")
+        tutEl.className <- "hidden"
+        tutShown <- false
+
+showTutorial ()
+
 let mutable world = Sim.initial
 let mutable last = 0.
 let mutable lastHost = 0.
@@ -224,7 +256,15 @@ let rec frame (t: float) =
         | Playing when pause -> Menu.pause ()
         | Playing -> ()
         Render.draw view world events dt
-    window.requestAnimationFrame frame |> ignore
+window.addEventListener ("keydown", fun _ -> hideTutorial ())
+window.addEventListener ("pointerdown", fun _ -> hideTutorial ())
+window.addEventListener (
+    "visibilitychange",
+    fun _ ->
+        if document.hidden && not (Menu.visible ()) && world.Phase = Playing then
+            Menu.pause ()
+)
+window.requestAnimationFrame frame |> ignore
 
 window.addEventListener (
     "keydown",
@@ -241,5 +281,3 @@ window.addEventListener (
                 elif k >= 0 && k < Sim.arsenal.Length then world <- Sim.arm Input.keyboardSlot Sim.arsenal.[k] world
             | _ -> ()
 )
-
-window.requestAnimationFrame frame |> ignore

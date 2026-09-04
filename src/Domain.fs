@@ -2,6 +2,9 @@ module Domain
 
 open Vec
 
+type Layout = Qwerty | Azerty
+let mutable layout = Qwerty
+
 module Cfg =
     let arenaHalf = 1350.
     let diagLimit = arenaHalf * 1.62
@@ -104,6 +107,11 @@ module Cfg =
     let mutable portalLife = 12.
     let mutable portalRadius = 45.
 
+    let mutable holeEvery = 35.
+    let mutable holeLife = 15.
+    let mutable holeG = 9e6
+    let mutable holeCore = 30.
+
     let mutable padAimOn = 0.15
     let mutable padThrustOn = 0.75
 
@@ -163,6 +171,10 @@ module Cfg =
            "portalEvery", (fun () -> portalEvery), (fun x -> portalEvery <- x)
            "portalLife", (fun () -> portalLife), (fun x -> portalLife <- x)
            "portalRadius", (fun () -> portalRadius), (fun x -> portalRadius <- x)
+           "holeEvery", (fun () -> holeEvery), (fun x -> holeEvery <- x)
+           "holeLife", (fun () -> holeLife), (fun x -> holeLife <- x)
+           "holeG", (fun () -> holeG), (fun x -> holeG <- x)
+           "holeCore", (fun () -> holeCore), (fun x -> holeCore <- x)
            "shrinkTime", (fun () -> shrinkTime), (fun x -> shrinkTime <- x)
            "padAimOn", (fun () -> padAimOn), (fun x -> padAimOn <- x)
            "padThrustOn", (fun () -> padThrustOn), (fun x -> padThrustOn <- x) |]
@@ -195,6 +207,7 @@ type Weapon =
     | Tractor
     | Collision
     | Rock
+    | Singularity
 
 let crateTiers = [| Rail, 1; Pulse, 2; Scatter, 2; Tractor, 2; Mines, 3; Swarm, 3 |]
 let crateWeapons = crateTiers |> Array.collect (fun (w, n) -> Array.create n w)
@@ -210,6 +223,7 @@ let weaponAmmo w =
     | Tractor -> Cfg.tractorAmmo
     | Collision -> 0
     | Rock -> 0
+    | Singularity -> 0
 
 type Tether =
     | NoTether
@@ -271,6 +285,8 @@ type Rock = { Owner: int; Pos: V2; Vel: V2; Radius: float; Life: float }
 
 type Portal = { A: V2; B: V2; Life: float }
 
+type Hole = { Pos: V2; Life: float }
+
 type Pad = { Pos: V2; Amount: float; RespawnIn: float; Kind: int }
 
 type Crate = { Pos: V2; RespawnIn: float }
@@ -303,6 +319,7 @@ type Event =
     | Launch of V2
     | PortalOpen of V2 * V2
     | Warp of V2
+    | HoleOpen of V2
 
 type World =
     { Ships: Ship[]
@@ -311,6 +328,8 @@ type World =
       Rocks: Rock list
       Portals: Portal list
       PortalIn: float
+      Hole: Hole option
+      HoleIn: float
       Pads: Pad[]
       Crates: Crate[]
       Rng: int

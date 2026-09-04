@@ -347,6 +347,7 @@ let play (events: Event list) =
             | Launch p -> bump p
             | PortalOpen(p, _) -> mineLive p
             | Warp p -> pickup p false
+            | HoleOpen p -> blast p
             | Explode(p, _, _) -> explode p
             | Downed _ -> ()
 
@@ -372,6 +373,11 @@ let init () =
             if (e :?> KeyboardEvent).key = "m" then
                 muted <- not muted
                 apply ()
+    )
+    window.addEventListener (
+        "visibilitychange",
+        fun _ ->
+            if not document.hidden then ready () |> ignore
     )
     match window.localStorage.getItem audioKey with
     | null -> ()

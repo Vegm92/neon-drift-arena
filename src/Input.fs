@@ -33,16 +33,27 @@ let private phoneTimeout = 2000.
 
 let private keys = HashSet<string>()
 let mutable private keyboardSeen = false
-let private captured = set [ "Space"; "ArrowUp"; "ArrowDown"; "ArrowLeft"; "ArrowRight" ]
+let private captured = set [ "Space"; "ArrowUp"; "ArrowDown"; "ArrowLeft"; "ArrowRight"; "Escape"; "Enter"; "Tab" ]
+
+let private detectLayout () =
+    let kb: obj = window?navigator?keyboard
+    if isNullOrUndefined kb then ()
+    else
+        kb?getLayoutMap ()?``then`` (fun (m: obj) ->
+            let w: string = m?get ("KeyW")
+            if not (isNullOrUndefined w) && w = "z" then Domain.layout <- Azerty
+        ) |> ignore
 
 let init () =
+    detectLayout ()
     window.addEventListener (
         "keydown",
         fun e ->
-            let code = (e :?> KeyboardEvent).code
-            keys.Add code |> ignore
+            let ke = e :?> KeyboardEvent
+            keys.Add ke.code |> ignore
             keyboardSeen <- true
-            if captured.Contains code then e.preventDefault ()
+            if captured.Contains ke.code then e.preventDefault ()
+            if ke.ctrlKey && ke.code = "KeyW" then e.preventDefault ()
     )
     window.addEventListener ("keyup", fun e -> keys.Remove (e :?> KeyboardEvent).code |> ignore)
     window.addEventListener ("blur", fun _ -> keys.Clear())

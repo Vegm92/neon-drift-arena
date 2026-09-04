@@ -7,6 +7,11 @@
 <link rel="icon" href="data:,">
 <style>
   html,body{margin:0;height:100%;background:#03030a;overflow:hidden;font-family:ui-monospace,Consolas,monospace;color:#cfe}
+  #loader{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:10;background:#03030a}
+  #loader.done{display:none}
+  #loader .ring{width:48px;height:48px;border:3px solid #1f2540;border-top-color:#00f6ff;border-radius:50%;animation:spin .8s linear infinite}
+  #loader .txt{font-size:12px;letter-spacing:.3em;opacity:.6}
+  @keyframes spin{to{transform:rotate(360deg)}}
   canvas{display:block}
   #hud{position:fixed;inset:0;pointer-events:none}
   .panel{position:absolute;width:150px;opacity:.9}
@@ -36,6 +41,18 @@
   #menu .stats{font-size:11px;opacity:.75;white-space:pre-line;line-height:1.9;letter-spacing:.2em}
   #banner{position:fixed;left:0;right:0;top:40%;text-align:center;font-size:22px;letter-spacing:.35em;text-shadow:0 0 18px #fff;white-space:pre-line;line-height:2}
   #banner.hidden{display:none}
+  #tut{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;z-index:8;
+    background:rgba(3,3,10,.88);letter-spacing:.2em;text-align:center;animation:fadein .4s ease}
+  #tut.hidden{display:none}
+  #tut h2{font-size:clamp(18px,4vh,32px);margin:0;text-shadow:0 0 14px #00f6ff;color:#fff}
+  #tut .rows{display:flex;flex-direction:column;gap:14px;font-size:clamp(11px,1.8vh,16px)}
+  #tut .row{display:flex;align-items:center;gap:14px;justify-content:center}
+  #tut .keys{display:flex;gap:5px}
+  #tut .keys i{font-style:normal;padding:3px 10px;border:1px solid #3a557a;border-radius:4px;background:rgba(255,255,255,.06);
+    font-size:clamp(10px,1.5vh,14px);min-width:1.6em;text-align:center}
+  #tut .lbl{opacity:.75;min-width:120px;text-align:left}
+  #tut .skip{margin-top:8px;font-size:clamp(10px,1.4vh,13px);opacity:.45;letter-spacing:.3em}
+  @keyframes fadein{from{opacity:0}to{opacity:1}}
   #menu{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;letter-spacing:.3em;text-align:center;
     background:linear-gradient(rgba(3,3,10,.78),rgba(3,3,10,.9)),url(/backdrop.jpg) center/cover no-repeat #03030a}
   #menu.hidden{display:none}
@@ -136,9 +153,11 @@
 </style>
 </head>
 <body>
+<div id="loader"><div class="ring"></div><div class="txt">LOADING</div></div>
 <div id="vignette"></div>
 <div id="hud"><div id="clock"></div><div id="feed"></div></div>
 <div id="banner" class="hidden"></div>
+<div id="tut" class="hidden"></div>
 <div id="menu"></div>
 <script type="module" src="/build/Main.js"></script>
 </body>

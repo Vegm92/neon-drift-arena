@@ -103,7 +103,15 @@ type Locale =
       On: string
       Off: string
       More: string
-      OptHint: string }
+      OptHint: string
+      TutTitle: string
+      TutThrust: string
+      TutTurn: string
+      TutFire: string
+      TutBoost: string
+      TutSpecial: string
+      TutPause: string
+      TutSkip: string }
 
 let en =
     { Player = fun i -> sprintf "P%d" (i + 1)
@@ -229,6 +237,46 @@ let en =
       On = "ON"
       Off = "OFF"
       More = "▼ MORE BELOW"
-      OptHint = "W S / STICK  ·  MOVE        A D / STICK  ·  ADJUST        SPACE / A  ·  TOGGLE        ESC / B  ·  BACK" }
+      OptHint = "W S / STICK  ·  MOVE        A D / STICK  ·  ADJUST        SPACE / A  ·  TOGGLE        ESC / B  ·  BACK"
+      TutTitle = "HOW TO PLAY"
+      TutThrust = "THRUST / REVERSE"
+      TutTurn = "TURN"
+      TutFire = "FIRE"
+      TutBoost = "BOOST"
+      TutSpecial = "SPECIAL"
+      TutPause = "PAUSE"
+      TutSkip = "PRESS ANY KEY OR CLICK TO START" }
+
+let optHint () =
+    if Domain.layout = Domain.Azerty then
+        "Z S / STICK  ·  MOVE        Q D / STICK  ·  ADJUST        SPACE / A  ·  TOGGLE        ESC / B  ·  BACK"
+    else
+        "W S / STICK  ·  MOVE        A D / STICK  ·  ADJUST        SPACE / A  ·  TOGGLE        ESC / B  ·  BACK"
+
+let kbLegend () =
+    if Domain.layout = Domain.Azerty then
+        [ [ "Z"; "S" ], "THRUST / REVERSE"
+          [ "Q"; "D" ], "TURN"
+          [ "W"; "E" ], "STRAFE"
+          [ "SHIFT" ], "BOOST"
+          [ "SPACE" ], "FIRE"
+          [ "F" ], "SPECIAL"
+          [ "ENTER" ], "PAUSE"
+          [ "M" ], "MUTE" ]
+    else
+        [ [ "W"; "S" ], "THRUST / REVERSE"
+          [ "A"; "D" ], "TURN"
+          [ "Q"; "E" ], "STRAFE"
+          [ "SHIFT" ], "BOOST"
+          [ "SPACE" ], "FIRE"
+          [ "F" ], "SPECIAL"
+          [ "ENTER" ], "PAUSE"
+          [ "M" ], "MUTE" ]
+
+let kbHint () =
+    if Domain.layout = Domain.Azerty then
+        "Z S / STICK", "MOVE"
+    else
+        "W S / STICK", "MOVE"
 
 let t = en

@@ -294,7 +294,7 @@ let private renderLobby (devices: Input.Device[]) =
         sprintf
             "<div class=\"lobby\"><div class=\"title\"><h1>%s</h1><div class=\"sub\">%s</div></div><div class=\"modebar\">%s</div><div class=\"slots\">%s</div><div class=\"hints\">%s</div><div class=\"buttons\">%s</div><div class=\"note\">%s</div><div class=\"legends\">%s%s%s%s</div></div>"
             Strings.t.TitleMain Strings.t.TitleSub mode slots hints picks note
-            (legend Strings.t.Keyboard Strings.t.KbLegend)
+            (legend Strings.t.Keyboard (Strings.kbLegend ()))
             (legend Strings.t.Gamepad Strings.t.PadLegend)
             (legend Strings.t.Phone Strings.t.PhoneLegend)
             (qr ())
@@ -346,7 +346,7 @@ let private renderOptions () =
         sprintf "<h1>%s</h1><div class=\"rows\">%s</div><div class=\"hint\">%s%s</div>"
             Strings.t.Settings rows
             (if top + window' < n then Strings.t.More + "\n" else "")
-            Strings.t.OptHint
+            (Strings.optHint ())
 
 let private openOptions () =
     optBack <- screen
