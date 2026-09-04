@@ -118,6 +118,12 @@ let drawTags (vw: View) (w: World) =
             el?style?opacity <- if Sim.launcher s then "0.55" else "1"
             el?style?color <- sprintf "#%06x" (shipColor s))
 
+let drawMarks (vw: View) (w: World) =
+    vw.Marks
+    |> Array.iteri (fun i m ->
+        let wanted = w.Ships |> Array.exists (fun s -> s.Active && s.Alive && s.Next = i)
+        m.material.opacity <- if wanted then 0.6 + 0.3 * sin (w.Time * 6.) else 0.18)
+
 let drawSpawns (vw: View) (w: World) =
     Array.iter2
         (fun (m: Mesh) (s: Ship) ->

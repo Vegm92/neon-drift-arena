@@ -78,6 +78,7 @@ type View =
       mutable Pads: Mesh[]
       mutable Rocks: Object3D[]
       mutable Road: Object3D option
+      mutable Marks: Mesh[]
       mutable Layout: int
       Bullets: Mesh[]
       Mines: Object3D[]

@@ -206,9 +206,6 @@ let mkArena (scene: Object3D) =
     mkLoop border 0.985 0xff2bd6 0.35 0. |> ignore
     scene.add border
     mkLoop scene 0.62 0x15294d 0.7 -0.5 |> ignore
-    let grid = three.GridHelper(arenaHalf * 2., 27, 0x101a38, 0x0a0f22)
-    grid.position.y <- -1.
-    scene.add grid
     let cut = diagLimit - arenaHalf
     for sx in [ 1.; -1. ] do
         for sy in [ 1.; -1. ] do
@@ -256,7 +253,7 @@ let mkArena (scene: Object3D) =
     border, spawns
 
 let private mkRoad (scene: Object3D) =
-    let g = Sim.gates
+    let g = Sim.road
     let n = g.Length
     let half = Sim.trackWidth / 2.
     let edge (side: float) =
@@ -283,11 +280,20 @@ let private mkRoad (scene: Object3D) =
     scene.add road
     road
 
+let private mkMark (scene: Object3D) i (p: V2) =
+    let m = three.Mesh(three.RingGeometry(gateRadius - 6., gateRadius, 48) |> flat, glowMat (if i = 0 then 0xfff45c else portalHex) 0.2)
+    m.position.set (p.X, 1.5, p.Y)
+    scene.add m
+    m
+
 let syncArena (vw: View) =
     if vw.Layout <> Sim.layout then
         vw.Layout <- Sim.layout
         vw.Road |> Option.iter vw.Scene.remove
-        vw.Road <- if Sim.gates.Length > 1 then Some(mkRoad vw.Scene) else None
+        vw.Road <- if Sim.road.Length > 1 then Some(mkRoad vw.Scene) else None
+        for m in vw.Marks do
+            vw.Scene.remove m
+        vw.Marks <- Sim.gates |> Array.mapi (mkMark vw.Scene)
         for o in vw.Rocks do
             vw.Scene.remove o
         for m in vw.Pads do

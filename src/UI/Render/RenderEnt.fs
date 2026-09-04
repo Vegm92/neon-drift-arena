@@ -128,17 +128,19 @@ let private threat (w: World) (me: Ship) =
         | Some h when len (h.Pos - me.Pos) < holeCore * 12. -> [ toward h.Pos (1. - len (h.Pos - me.Pos) / (holeCore * 12.)) ]
         | _ -> []
     match bullets @ rocks @ mines @ charging @ hole with
+    | [] when Sim.race -> Some(toward Sim.gates.[me.Next] 0.5, true)
     | [] -> None
-    | ts -> Some(List.maxBy snd ts)
+    | ts -> Some(List.maxBy snd ts, false)
 
 let drawWarn t (w: World) (sv: ShipView) (s: Ship) =
     let hit = if s.Alive then threat w s else None
     sv.Warn.visible <- hit.IsSome
     match hit with
-    | Some(a, f) ->
+    | Some((a, f), guide) ->
         sv.Warn.position.set (s.Pos.X, 3., s.Pos.Y)
         sv.Warn.rotation.y <- -a
-        sv.Warn.material.opacity <- (0.25 + 0.75 * f) * (0.7 + 0.3 * sin (t * 18.))
+        sv.Warn.material.color.setHex (if guide then portalHex else 0xff3b5c)
+        sv.Warn.material.opacity <- if guide then 0.7 else (0.25 + 0.75 * f) * (0.7 + 0.3 * sin (t * 18.))
     | None -> ()
 
 let drawSmoke (vw: View) (w: World) dt =

@@ -109,12 +109,13 @@ let main _ =
                 && abs a.Pos.Y + a.Radius < arenaHalf
                 && abs a.Pos.X + abs a.Pos.Y + a.Radius < diagLimit))
         if isTrack i then
-            check (tag "every gate is on the road") (gates |> Array.forall (fun g -> abs g.X + trackWidth / 2. < arenaHalf && abs g.Y + trackWidth / 2. < arenaHalf && abs g.X + abs g.Y + trackWidth / 2. < diagLimit))
+            check (tag "every gate is on the road") (road |> Array.forall (fun g -> abs g.X + trackWidth / 2. < arenaHalf && abs g.Y + trackWidth / 2. < arenaHalf && abs g.X + abs g.Y + trackWidth / 2. < diagLimit))
+            check (tag "checkpoints sit on road points") (gates |> Array.forall (fun g -> Array.contains g road) && gates.[0] = road.[0])
             check (tag "the road never doubles back on itself") (
-                gates
+                road
                 |> Array.mapi (fun i g -> i, g)
                 |> Array.forall (fun (i, g) ->
-                    gates |> Array.mapi (fun j h -> j, h) |> Array.forall (fun (j, h) -> abs (i - j) <= 1 || abs (i - j) >= gates.Length - 1 || len (g - h) > trackWidth * 0.9)))
+                    road |> Array.mapi (fun j h -> j, h) |> Array.forall (fun (j, h) -> abs (i - j) <= 1 || abs (i - j) >= road.Length - 1 || len (g - h) > trackWidth * 0.9)))
         else
             check (tag "the core has an open approach") (
                 [ 0. .. 45. .. 315. ]
@@ -393,14 +394,16 @@ let main _ =
     let flag = run (int (raceGrace / dt) + 2) (all present) won
     check "the race ends for everyone after the grace period" (flag.Phase = Over(Some 0))
     let sprint (p: V2) = (grid |> place 0 p 0. |> run 360 thruster).Ships.[0].Vel |> len
-    check "off the road a ship is slower than on it" (sprint (gates.[0] + v 0. -400.) < sprint gates.[0] * 0.7)
+    check "off the road a ship is slower than on it" (sprint (v 200. -600.) < sprint gates.[0] * 0.7)
     let ahead = lap1 |> edit 1 (fun s -> { s with Pos = gates.[3]; Next = 4 })
     check "a lap ahead ranks first, then the ship nearest its next gate" (rank ahead.Ships = [| 0; 1; 2; 3 |])
     check "a finished ship ranks above everyone still racing" (Sim.rank won.Ships |> Array.head = 0 && Sim.place won.Ships 0 = 1)
-    let racer = { grid with Ships = grid.Ships |> Array.map (fun s -> if s.Id = 1 then { s with Pos = gates.[3] + v 0. 60.; Angle = 0.; Vel = zero; Next = 4 } else s) }
-    let bots = Array.init 4 (fun i -> if i = 1 then bot racer 1 else present)
-    let steered = run 60 bots racer
-    check "a race bot thrusts toward its next gate" (len (steered.Ships.[1].Pos - gates.[4]) < len (racer.Ships.[1].Pos - gates.[4]))
+    for t in 0 .. tracks.Length - 1 do
+        setLayout (layouts.Length - tracks.Length + t)
+        let solo = { initial with Ships = initial.Ships |> Array.mapi (fun i s -> if i = 1 then { freshShip 1 with Invuln = 0. } else s) }
+        let lapped = Seq.fold (fun w _ -> step dt (Array.init 4 (fun i -> if i = 1 then bot w 1 else noInput)) w) solo (seq { 1 .. 120 * 90 })
+        check (sprintf "track %d: a lone bot laps the circuit within 90 s" t) (lapped.Ships.[1].Laps >= 1)
+    setLayout (layouts |> Array.findIndex (fun l -> l.Track.IsSome))
     let quiet = grid |> place 0 gates.[0] 0. |> step dt shooter
     check "the blaster stays silent in a race" (quiet.Bullets.IsEmpty)
     let crated = grid |> place 0 grid.Crates.[0].Pos 0. |> step dt (all present)

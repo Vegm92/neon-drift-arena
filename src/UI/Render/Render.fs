@@ -40,6 +40,7 @@ let create () =
           Pads = [||]
           Rocks = [||]
           Road = None
+          Marks = [||]
           Layout = -1
           Bullets = Array.init bulletPool (fun _ -> mkBullet scene)
           Mines = Array.init minePool (fun _ -> mkMine scene)
@@ -157,6 +158,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
     frameCamera vw w dt
     drawTags vw w
     drawSpawns vw w
+    drawMarks vw w
     drawHud vw w dt
     drawTint vw dt
     drawPost vw dt

@@ -117,6 +117,7 @@ module Cfg =
     let mutable raceGrace = 20.
     let mutable raceDrag = 0.16
     let mutable offroadFactor = 0.55
+    let mutable raceGrip = 6.
 
     let mutable padAimOn = 0.15
     let mutable padThrustOn = 0.75
@@ -187,6 +188,7 @@ module Cfg =
            "raceGrace", (fun () -> raceGrace), (fun x -> raceGrace <- x)
            "raceDrag", (fun () -> raceDrag), (fun x -> raceDrag <- x)
            "offroadFactor", (fun () -> offroadFactor), (fun x -> offroadFactor <- x)
+           "raceGrip", (fun () -> raceGrip), (fun x -> raceGrip <- x)
            "padAimOn", (fun () -> padAimOn), (fun x -> padAimOn <- x)
            "padThrustOn", (fun () -> padThrustOn), (fun x -> padThrustOn <- x) |]
 

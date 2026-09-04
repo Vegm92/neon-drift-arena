@@ -6,10 +6,13 @@ open Domain
 open Domain.Cfg
 
 let mutable race = false
+let mutable road: V2[] = [||]
 let mutable gates: V2[] = [||]
+let mutable gateEvery = 1
 let mutable trackWidth = 0.
 
 let private gateAhead i = gates.[(i + 1) % gates.Length]
+let private roadAhead i = road.[(i + 1) % road.Length]
 
 let private segDist (a: V2) (b: V2) (p: V2) =
     let ab = b - a
@@ -22,13 +25,13 @@ let private segDist (a: V2) (b: V2) (p: V2) =
 
 let onTrack (p: V2) =
     not race
-    || gates |> Array.mapi (fun i g -> segDist g (gateAhead i) p) |> Array.min < trackWidth / 2.
+    || road |> Array.mapi (fun i g -> segDist g (roadAhead i) p) |> Array.min < trackWidth / 2.
 
 let spawnPos i =
-    if race && gates.Length > 1 then
-        let dir = norm (gateAhead 0 - gates.[0])
+    if race && road.Length > 1 then
+        let dir = norm (roadAhead 0 - road.[0])
         let side = v -dir.Y dir.X
-        gates.[0] - dir * (90. + 100. * float (i / 2)) + side * (if i % 2 = 0 then -70. else 70.)
+        road.[0] + dir * (80. + 90. * float (i / 2)) + side * (if i % 2 = 0 then -60. else 60.)
     else
         let a = (diagLimit - 320.) / 2.
         match i with
@@ -38,8 +41,8 @@ let spawnPos i =
         | _ -> v a a
 
 let spawnAngle (p: V2) =
-    if race && gates.Length > 1 then
-        let d = gateAhead 0 - gates.[0]
+    if race && road.Length > 1 then
+        let d = roadAhead 0 - road.[0]
         atan2 d.Y d.X
     else
         atan2 (-p.Y) (-p.X)
@@ -115,7 +118,7 @@ type Layout =
     { Rocks: (V2 * float) list
       Pads: (V2 * float * int) list
       Crates: V2 list
-      Track: (V2 list * float) option }
+      Track: (V2 list * float * int) option }
 
 let private polar r deg =
     let a = deg * Math.PI / 180.
@@ -246,21 +249,11 @@ let private arenas =
          Crates = spin (fun a -> [ turn (v 1080. 0.) a; turn (v 560. 0.) a ])
          Track = None } |]
 
-let private oval =
-    let rx, ry, r = arenaHalf * 0.7, arenaHalf * 0.45, 320.
-    let corner cx cy a0 =
-        [ for k in 0..2 ->
-              let a = (a0 + float k * 30.) * Math.PI / 180.
-              v (cx + cos a * r) (cy + sin a * r) ]
-    [ v 0. -ry; v (rx * 0.5) -ry ]
-    @ corner (rx - r) (-ry + r) -90.
-    @ [ v rx 0. ]
-    @ corner (rx - r) (ry - r) 0.
-    @ [ v (rx * 0.5) ry; v 0. ry; v (-rx * 0.5) ry ]
-    @ corner (-rx + r) (ry - r) 90.
-    @ [ v -rx 0. ]
-    @ corner (-rx + r) (-ry + r) 180.
-    @ [ v (-rx * 0.5) -ry ]
+let private grandPrix =
+    [ v -900. -1000.; v -400. -1000.; v 100. -1000.; v 600. -1000.; v 900. -920.; v 1050. -700.; v 1050. -400.
+      v 950. -200.; v 700. -100.; v 600. 150.; v 750. 400.; v 1000. 500.; v 1100. 750.; v 950. 950.; v 650. 1000.
+      v 300. 900.; v 100. 650.; v -200. 550.; v -550. 650.; v -750. 900.; v -1050. 850.; v -1150. 550.
+      v -1050. 250.; v -750. 150.; v -500. -50.; v -550. -350.; v -850. -450.; v -1100. -650.; v -1050. -900. ]
 
 let private hairpin =
     let arc cx cy =
@@ -271,39 +264,50 @@ let private hairpin =
     @ arc 950. 500.
     @ [ v 400. 750.; v -200. 750.; v -700. 750.; v -1000. 650.; v -1150. 300.; v -1180. -50.; v -1150. -400.; v -1000. -750. ]
 
-let private ring = [ for k in 0..15 -> polar 1000. (float k * 22.5) ]
+let private figureEight =
+    [ v 350. -350.; v -350. 350.; v -750. 480.; v -1050. 300.; v -1150. 0.; v -1050. -300.; v -750. -480.
+      v -350. -350.; v 350. 350.; v 750. 480.; v 1050. 300.; v 1150. 0.; v 1050. -300.; v 750. -480. ]
 
 let tracks =
-    [| { Rocks = [ v 0. 0., 60.; v 500. 0., 40.; v -500. 0., 40. ]
+    [| { Rocks = [ v 0. -500., 50.; v 300. 300., 46.; v -200. -700., 40.; v -700. 450., 44. ]
          Pads =
-           [ v (arenaHalf * 0.25) (-(arenaHalf * 0.45)), padRefill, 0
-             v (-(arenaHalf * 0.25)) (arenaHalf * 0.45), padRefill, 0
-             v (arenaHalf * 0.7) 0., healAmount, 1
-             v (-(arenaHalf * 0.7)) 0., healAmount, 1 ]
-         Crates =
-           [ v (arenaHalf * 0.5) (-(arenaHalf * 0.45))
-             v (-(arenaHalf * 0.5)) (arenaHalf * 0.45)
-             v (arenaHalf * 0.7) (arenaHalf * 0.2)
-             v (-(arenaHalf * 0.7)) (-(arenaHalf * 0.2)) ]
-         Track = Some(oval, 280.) }
+           [ v 100. -1000., padRefill, 0
+             v -400. -1000., padRefill, 0
+             v 1050. -700., padRefill, 0
+             v 300. 900., padRefill, 0
+             v 950. 950., padRefill, 0
+             v -1050. 850., padRefill, 0
+             v -750. 150., padRefill, 0
+             v 1050. -400., healAmount, 1
+             v -1150. 550., healAmount, 1 ]
+         Crates = [ v 600. -1000.; v 750. 400.; v -550. 650.; v -550. -350. ]
+         Track = Some(grandPrix, 280., 3) }
 
        { Rocks = [ v 400. -50., 50.; v 400. 500., 46.; v -700. -50., 44. ]
          Pads =
            [ v 300. -850., padRefill, 0
+             v 600. -850., padRefill, 0
+             v 600. 250., padRefill, 0
              v 0. 750., padRefill, 0
+             v -700. 750., padRefill, 0
+             v -1150. 300., padRefill, 0
              v -1180. -50., healAmount, 1
              v 650. -350., healAmount, 1 ]
          Crates = [ v -200. -850.; v 1200. -600.; v -300. 0.; v 1200. 500. ]
-         Track = Some(hairpin, 260.) }
+         Track = Some(hairpin, 260., 3) }
 
-       { Rocks = [ for k in 0..5 -> polar (if k % 2 = 0 then 930. else 1070.) (30. + float k * 60.), 42. ]
+       { Rocks = [ v 0. 450., 46.; v 0. -450., 46. ]
          Pads =
-           [ polar 1000. 120., padRefill, 0
-             polar 1000. 300., padRefill, 0
-             polar 1000. 180., healAmount, 1
-             v 0. 0., healAmount, 1 ]
-         Crates = [ polar 1000. 45.; polar 1000. 135.; polar 1000. 225.; polar 1000. 315. ]
-         Track = Some(ring, 300.) } |]
+           [ v 1150. 0., padRefill, 0
+             v -1150. 0., padRefill, 0
+             v 1050. -300., padRefill, 0
+             v -1050. 300., padRefill, 0
+             v 350. 350., padRefill, 0
+             v -350. -350., padRefill, 0
+             v 750. 480., healAmount, 1
+             v -750. -480., healAmount, 1 ]
+         Crates = [ v 750. -480.; v -750. 480.; v 1050. 300.; v -1050. -300. ]
+         Track = Some(figureEight, 300., 2) } |]
 
 let layouts = Array.append arenas tracks
 let isTrack i = layouts.[i].Track.IsSome
@@ -324,8 +328,10 @@ let private build i =
     let l = layouts.[i]
     asteroids <- l.Rocks |> List.map (fun (p, r) -> { Pos = p; Radius = r }) |> List.toArray
     cratePositions <- l.Crates |> List.toArray
-    gates <- l.Track |> Option.map (fst >> List.toArray) |> Option.defaultValue [||]
-    trackWidth <- l.Track |> Option.map snd |> Option.defaultValue 0.
+    road <- l.Track |> Option.map (fun (r, _, _) -> List.toArray r) |> Option.defaultValue [||]
+    gates <- l.Track |> Option.map (fun (r, _, k) -> [| for i in 0 .. k .. r.Length - 1 -> road.[i] |]) |> Option.defaultValue [||]
+    gateEvery <- l.Track |> Option.map (fun (_, _, k) -> k) |> Option.defaultValue 1
+    trackWidth <- l.Track |> Option.map (fun (_, w, _) -> w) |> Option.defaultValue 0.
     { Ships = Array.init 4 (fun i -> { freshShip i with Active = false; Alive = false; Stocks = 0 })
       Bullets = []
       Mines = []
@@ -441,6 +447,12 @@ let private stepShip k dt (inp: Input) (s: Ship) =
             else 0.
         let push = ofAngle angle * accel + ofAngle (angle + System.Math.PI / 2.) * (inp.Strafe * strafeAccel * k)
         let vel = (s.Vel + push * dt) * (1. - (if race then raceDrag else drag) * slick () * dt) |> clampLen (maxSpeed * k)
+        let vel =
+            if race then
+                let f = ofAngle angle
+                let fwd = dot vel f
+                f * fwd + (vel - f * fwd) * max 0. (1. - raceGrip * dt)
+            else vel
         { s with
             Angle = angle
             Vel = vel
@@ -1057,8 +1069,9 @@ let bot (w: World) i =
     elif not me.Alive then
         idle
     elif race then
-        let near = len (me.Pos - gates.[me.Next]) < gateRadius * 1.5
-        let goal = if near then gateAhead me.Next else gates.[me.Next]
+        let lo = (me.Next + gates.Length - 1) % gates.Length * gateEvery
+        let seg = [| lo .. lo + gateEvery - 1 |] |> Array.minBy (fun i -> segDist road.[i % road.Length] (roadAhead i) me.Pos)
+        let goal = if len (me.Pos - roadAhead seg) < 160. then roadAhead (seg + 1) else roadAhead seg
         let d = goal - me.Pos
         let aim = defaultArg (dodge me) (atan2 d.Y d.X)
         let off = abs (atan2 (sin (aim - me.Angle)) (cos (aim - me.Angle)))
@@ -1070,7 +1083,7 @@ let bot (w: World) i =
         { idle with
             Aim = Some aim
             Steer = true
-            Thrust = true
+            Thrust = off < 1.2
             Boost = off < 0.15 && me.Boost > 30.
             Special = ahead.IsSome && me.Weapon <> Blaster && int (w.Time * 2.) % 2 = 0 }
     else
