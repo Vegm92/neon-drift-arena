@@ -1,4 +1,4 @@
-module RenderCam
+﻿module RenderCam
 
 open System
 open Browser
@@ -11,13 +11,16 @@ open RenderTypes
 
 let private smooth x = x * x * (3. - 2. * x)
 
-let flyby (vw: View) dt =
+let flyby (vw: View) (w: World) dt =
     vw.Intro <- vw.Intro - dt
-    let t = 1. - vw.Intro / introTime
-    let u = min 2.999 (t / 0.8 * 3.)
-    let seg = int u
-    let a, b = Sim.spawnPos seg, Sim.spawnPos (seg + 1)
-    vw.Cam <- a + (b - a) * smooth (u - float seg)
+    let stops = w.Ships |> Array.filter (fun s -> s.Active) |> Array.map (fun s -> Sim.spawnPos s.Id)
+    if stops.Length > 0 then
+        let segs = max 1 (stops.Length - 1)
+        let t = 1. - vw.Intro / introTime
+        let u = min (float segs - 0.001) (t / 0.8 * float segs) |> max 0.
+        let seg = int u
+        let a, b = stops.[seg], stops.[min (seg + 1) (stops.Length - 1)]
+        vw.Cam <- a + (b - a) * smooth (u - float seg)
     vw.CamH <- minCamH * 0.5
 
 let frameCamera (vw: View) (w: World) dt =
@@ -39,7 +42,7 @@ let frameCamera (vw: View) (w: World) dt =
     let center = center * zoomed
     let k = 1. - exp (-4. * dt)
     if vw.Intro > introTime * 0.2 then
-        flyby vw dt
+        flyby vw w dt
     else
         vw.Intro <- max 0. (vw.Intro - dt)
         vw.Cam <- vw.Cam + (center - vw.Cam) * k
