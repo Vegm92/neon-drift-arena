@@ -145,6 +145,25 @@ let private toggleBots () =
                 ready.[s] <- false
                 teams.[s] <- 0
 
+let dropIn () =
+    let mutable arrived = None
+    for d in Input.devices () do
+        let mine = d.Slot >= 0 && joined.Contains d.Slot && owner.[d.Slot] = d.Key
+        let wants = rising d.Key "start" d.Input.Start || rising d.Key "fire" d.Input.Fire
+        if not mine && wants && arrived.IsNone then
+            let free = [ 0..3 ] |> List.tryFind (fun i -> not (joined.Contains i))
+            let seat = free |> Option.orElse ([ 0..3 ] |> List.tryFind (fun i -> isBot i && i <> Sim.target))
+            match seat with
+            | Some slot ->
+                let fromBot = isBot slot
+                claim d.Key slot
+                ready.[slot] <- true
+                held.Add(sprintf "s%dstart" slot) |> ignore
+                held.Add(sprintf "s%dfire" slot) |> ignore
+                arrived <- Some(slot, fromBot)
+            | None -> ()
+    arrived
+
 let addTarget () =
     match [ 0..3 ] |> List.tryFind (fun i -> not (joined.Contains i)) with
     | Some slot ->

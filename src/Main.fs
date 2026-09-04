@@ -183,6 +183,13 @@ let rec frame (t: float) =
             acc <- acc - Cfg.physicsDt
             steps <- steps + 1
         if steps = 8 then acc <- 0.
+        match Menu.dropIn () with
+        | Some(slot, fromBot) ->
+            if fromBot then
+                world <- { world with Ships = world.Ships |> Array.map (fun s -> if s.Id = slot then { s with Active = false; Alive = false } else s) }
+            world <- Sim.withTeams Menu.teams world
+            say (Strings.t.Joins(name slot))
+        | None -> ()
         let mutable pause = false
         inputs
         |> Array.iteri (fun i inp ->

@@ -322,6 +322,10 @@ let main _ =
     check "TURBO thrusts harder" (fast > fwd * 1.3)
     check "ICE keeps ships sliding" (coasting.Ships.[0].Vel.X > braking.Ships.[0].Vel.X + 10.)
 
+    let midway = run 240 three (step dt three initial) |> edit 0 (fun s -> { s with Stocks = 1 })
+    let late = step dt (all present) midway
+    check "a drop-in ship arrives alive with full stocks" (late.Ships.[3].Active && late.Ships.[3].Alive && late.Ships.[3].Stocks = stocks && late.Ships.[0].Stocks = 1)
+
     check "border is whole until the clock runs out" (bounds matchTime = 1. && bounds (matchTime + shrinkTime) = shrinkMin)
     let late = { w0 with Time = matchTime + shrinkTime + 1. } |> place 0 (v (arenaHalf * 0.9) 0.) 0.
     let closed = step dt (all present) late
