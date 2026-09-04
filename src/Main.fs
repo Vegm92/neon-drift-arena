@@ -43,6 +43,7 @@ let private masked () =
 let private go intro =
     countdown <- if intro then Cfg.introTime else 3.
     view.Intro <- if intro then Cfg.introTime else 0.
+    Render.syncArena view
     if intro then world <- Sim.step Cfg.physicsDt (masked ()) world
     acc <- 0.
     slowmo <- 0.
@@ -136,10 +137,12 @@ let rec frame (t: float) =
         Sfx.silence ()
         match Menu.update (masked ()) with
         | Some Menu.Rematch when Menu.screen = Menu.Lobby ->
+            Settings.rollArena ()
             world <- { Sim.initial with Rng = System.Random().Next 1000003 } |> Sim.withTeams Menu.teams
             go true
         | Some Menu.Rematch
         | Some Menu.Restart ->
+            if Menu.screen <> Menu.Pause then Settings.rollArena ()
             world <- Sim.reset (fun i -> Menu.joined.Contains i) world |> Sim.withTeams Menu.teams
             go true
         | Some Menu.Resume -> go false

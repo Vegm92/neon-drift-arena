@@ -29,7 +29,7 @@ let mutable screen = Lobby
 let mutable note = ""
 let mutable private shown = true
 let mutable private cursor = 0
-let mutable private lobbyPick = 4
+let mutable private lobbyPick = 5
 let private ready = Array.create 4 false
 let private onRow = Array.create 4 false
 let private owner = Array.create 4 ""
@@ -239,13 +239,14 @@ let private renderLobby (devices: Input.Device[]) =
         |> String.concat ""
     let picks =
         [ Strings.t.ModeLabel, (if teamMode then Strings.t.Teams else Strings.t.Ffa), true
-          Strings.t.Arena, Strings.t.Arenas.[Sim.layout], true
+          Strings.t.Arena, Settings.arenaName (), true
+          Strings.t.Mutator, Strings.t.Mutators.[Sim.mutator], true
           "", (if joined.Count < 4 then Strings.t.AddBot else Strings.t.ClearBots), true
           "", Strings.t.Settings, true
           Strings.t.KeysLaunch, Strings.t.Start, go ]
         |> List.mapi (fun i (top, t, ok) ->
             let sel = i = lobbyPick && who <> ""
-            let cls = (if sel then " sel" else "") + (if ok then "" else " dim") + (if i = 4 && go then " go" else "")
+            let cls = (if sel then " sel" else "") + (if ok then "" else " dim") + (if i = 5 && go then " go" else "")
             sprintf "<div class=\"item%s\"><em>%s</em><b>%s</b><div class=\"who\">%s</div></div>" cls top t (if sel then who else ""))
         |> String.concat ""
     let hints =
@@ -350,8 +351,8 @@ let private updateLobby () =
                     else [ 0..3 ] |> List.tryFind (fun i -> not (joined.Contains i))
                 slot |> Option.iter (claim d.Key)
         elif onRow.[d.Slot] then
-            if left then lobbyPick <- (lobbyPick + 4) % 5
-            if right then lobbyPick <- (lobbyPick + 1) % 5
+            if left then lobbyPick <- (lobbyPick + 5) % 6
+            if right then lobbyPick <- (lobbyPick + 1) % 6
             if up || back then onRow.[d.Slot] <- false
             elif start && canStart () then launch <- true
             elif fire || start then
@@ -360,8 +361,9 @@ let private updateLobby () =
                     teamMode <- not teamMode
                     applyMode ()
                 | 1 -> Settings.adjust Settings.Arena 1
-                | 2 -> toggleBots ()
-                | 3 -> options <- true
+                | 2 -> Sim.mutator <- (Sim.mutator + 1) % Sim.mutators
+                | 3 -> toggleBots ()
+                | 4 -> options <- true
                 | _ -> if canStart () then launch <- true
         else
             if (left || right) && not ready.[d.Slot] then

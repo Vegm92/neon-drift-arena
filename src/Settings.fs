@@ -11,6 +11,13 @@ let private arenaKey = "nda-arena"
 let private catchKey = "nda-catchup"
 
 let private defaults = Cfg.tunables |> Array.map (fun (_, get, _) -> get ())
+let mutable arenaPick = 0
+
+let arenaName () =
+    if arenaPick = Sim.layouts.Length then Strings.t.Random else Strings.t.Arenas.[Sim.layout]
+
+let rollArena () =
+    if arenaPick = Sim.layouts.Length then Sim.setLayout (System.Random().Next Sim.layouts.Length)
 
 type Row =
     | Header of string
@@ -120,7 +127,7 @@ let value r =
     | Slot(_, get, _) -> if get () = Input.autoSlot then Strings.t.Auto else Strings.t.Player(get ())
     | Swap(_, get, _) -> if get () then Strings.t.On else Strings.t.Off
     | Level(_, k) -> if Sfx.level k = 0. then Strings.t.Off else sprintf "%.0f%%" (Sfx.level k * 100.)
-    | Arena -> Strings.t.Arenas.[Sim.layout]
+    | Arena -> arenaName ()
     | Tune k ->
         let _, get, _ = Cfg.tunables.[k]
         sprintf "%.3g" (get ())
@@ -132,8 +139,10 @@ let adjust r dir =
     | Swap(_, get, set) -> set (not (get ()))
     | Level(_, k) -> Sfx.setLevel k (Sfx.level k + float dir * 0.1)
     | Arena ->
-        Sim.setLayout (Sim.layout + dir)
-        window.localStorage.setItem (arenaKey, string Sim.layout)
+        let n = Sim.layouts.Length + 1
+        arenaPick <- (arenaPick + dir + n) % n
+        if arenaPick < Sim.layouts.Length then Sim.setLayout arenaPick
+        window.localStorage.setItem (arenaKey, string arenaPick)
     | Tune k ->
         let _, get, set = Cfg.tunables.[k]
         let step = defaults.[k] / 20.
@@ -156,7 +165,10 @@ let init () =
     | null -> ()
     | v ->
         match System.Int32.TryParse v with
-        | true, i when i >= 0 && i < Sim.layouts.Length -> Sim.setLayout i
+        | true, i when i >= 0 && i < Sim.layouts.Length ->
+            arenaPick <- i
+            Sim.setLayout i
+        | true, i when i = Sim.layouts.Length -> arenaPick <- i
         | _ -> ()
     Sim.catchUp <- window.localStorage.getItem catchKey <> "false"
     Input.changed <- savePads

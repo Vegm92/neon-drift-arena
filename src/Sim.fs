@@ -205,6 +205,10 @@ let layouts =
          Crates = spin (fun a -> [ turn (v 1080. 0.) a; turn (v 560. 0.) a ]) } |]
 
 let mutable layout = 0
+let mutable mutator = 0
+let mutators = 4
+let private turbo () = if mutator = 2 then 1.5 else 1.
+let private slick () = if mutator = 3 then 0.25 else 1.
 let mutable asteroids: Asteroid[] = [||]
 let mutable cratePositions: V2[] = [||]
 
@@ -277,7 +281,7 @@ let private stepShip dt (inp: Input) (s: Ship) =
         s
     else
         let inp = if s.Stun > 0. then noInput else inp
-        let k = slow s
+        let k = slow s * turbo ()
         let angle =
             match inp.Aim with
             | Some a when not inp.Steer -> a
@@ -294,7 +298,7 @@ let private stepShip dt (inp: Input) (s: Ship) =
             elif inp.Reverse then -thrustAccel * reverseFactor * k
             else 0.
         let push = ofAngle angle * accel + ofAngle (angle + System.Math.PI / 2.) * (inp.Strafe * strafeAccel * k)
-        let vel = (s.Vel + push * dt) * (1. - drag * dt) |> clampLen (maxSpeed * k)
+        let vel = (s.Vel + push * dt) * (1. - drag * slick () * dt) |> clampLen (maxSpeed * k)
         { s with
             Angle = angle
             Vel = vel
@@ -680,7 +684,7 @@ let private stepCrates dt rng (ships: Ship[]) (crates: Crate[]) =
                 match sh |> Array.tryFindIndex (fun s -> s.Alive && len (s.Pos - c.Pos) < crateRadius + shipRadius) with
                 | Some i ->
                     r <- nextRng r
-                    let w = crateWeapons.[r % crateWeapons.Length]
+                    let w = if mutator = 1 then Rail else crateWeapons.[r % crateWeapons.Length]
                     let a = Array.copy sh
                     a.[i] <- { a.[i] with Weapon = w; Ammo = weaponAmmo w; Charge = 0.; Grabs = a.[i].Grabs + 1 }
                     sh <- a

@@ -59,6 +59,9 @@ type Locale =
       Settings: string
       Arena: string
       Arenas: string[]
+      Random: string
+      Mutator: string
+      Mutators: string[]
       Controllers: string
       Keyboard: string
       Auto: string
@@ -178,6 +181,9 @@ let en =
       Settings = "SETTINGS"
       Arena = "ARENA"
       Arenas = [| "CORE RING"; "CROSS BASTIONS"; "PINWHEEL"; "TWIN GAUNTLET"; "OPEN BELT" |]
+      Random = "RANDOM"
+      Mutator = "MUTATOR"
+      Mutators = [| "NONE"; "RAILS ONLY"; "TURBO"; "ICE" |]
       Controllers = "CONTROLLERS"
       Keyboard = "KEYBOARD"
       Auto = "AUTO"

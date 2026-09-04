@@ -301,6 +301,19 @@ let main _ =
     let even = w0 |> edit 0 (fun s -> { s with Alive = false; RespawnIn = dt / 2. }) |> step dt (all present)
     check "an even ship gets no catch-up" (even.Ships.[0].Boost = boostStart)
 
+    let crateAt = w0.Crates.[0].Pos
+    mutator <- 1
+    let railsOnly = w0 |> place 0 crateAt 0. |> step dt (all present)
+    check "RAILS ONLY hands out railguns" (railsOnly.Ships.[0].Weapon = Rail)
+    mutator <- 2
+    let fast = (w0 |> place 0 zero 0. |> run 30 thruster).Ships.[0].Vel.X
+    mutator <- 3
+    let coasting = w0 |> place 0 zero 0. |> edit 0 (fun s -> { s with Vel = v 200. 0. }) |> run 120 (all present)
+    mutator <- 0
+    let braking = w0 |> place 0 zero 0. |> edit 0 (fun s -> { s with Vel = v 200. 0. }) |> run 120 (all present)
+    check "TURBO thrusts harder" (fast > fwd * 1.3)
+    check "ICE keeps ships sliding" (coasting.Ships.[0].Vel.X > braking.Ships.[0].Vel.X + 10.)
+
     check "border is whole until the clock runs out" (bounds matchTime = 1. && bounds (matchTime + shrinkTime) = shrinkMin)
     let late = { w0 with Time = matchTime + shrinkTime + 1. } |> place 0 (v (arenaHalf * 0.9) 0.) 0.
     let closed = step dt (all present) late
