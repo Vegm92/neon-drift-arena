@@ -102,6 +102,7 @@ type View =
       Smoke: float[]
       mutable Puff: float
       mutable Spike: float
+      mutable Jolt: float
       mutable Tint: float
       mutable TintHex: string
       mutable Cam: V2

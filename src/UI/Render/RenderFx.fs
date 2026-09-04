@@ -68,6 +68,11 @@ let spawnRing (vw: View) (p: V2) hex r grow span =
     m.position.set (p.X, 3., p.Y)
     addFlash vw m grow span
 
+let spawnFlash (vw: View) (p: V2) hex r span =
+    let m = three.Mesh(three.RingGeometry(0., r, 32) |> flat, glowMat hex 1.)
+    m.position.set (p.X, 3., p.Y)
+    addFlash vw m 1.5 span
+
 let edgeHit (a: V2) (d: V2) =
     let axis o dd = if abs dd < 1e-6 then 1e9 else max ((arenaHalf - o) / dd) ((-arenaHalf - o) / dd)
     let chamfer =

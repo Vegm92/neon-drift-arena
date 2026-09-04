@@ -227,7 +227,7 @@ let rec frame (t: float) =
         inputs
         |> Array.iteri (fun i inp ->
             if Menu.rising (sprintf "s%d" i) "start" inp.Start then pause <- true)
-        if events |> List.exists (function Explode _ -> true | _ -> false) then hitstop <- 0.055
+        if events |> List.exists (function Explode _ -> true | _ -> false) then hitstop <- 0.09
         announce world events
         shout <- max 0. (shout - dt)
         if shout > 0. then

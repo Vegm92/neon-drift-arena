@@ -44,8 +44,11 @@ let frameCamera (vw: View) (w: World) dt =
         vw.Intro <- max 0. (vw.Intro - dt)
         vw.Cam <- vw.Cam + (center - vw.Cam) * k
         vw.CamH <- vw.CamH + (h - vw.CamH) * k
-    vw.Camera.position.set (vw.Cam.X, vw.CamH, vw.Cam.Y + vw.CamH * 0.3)
-    vw.Camera.lookAt (vw.Cam.X, 0., vw.Cam.Y)
+    vw.Jolt <- max 0. (vw.Jolt - dt * 3.)
+    let j = vw.Jolt * vw.Jolt * vw.CamH * 0.02
+    let jx, jy = (rnd.NextDouble() - 0.5) * j, (rnd.NextDouble() - 0.5) * j
+    vw.Camera.position.set (vw.Cam.X + jx, vw.CamH, vw.Cam.Y + vw.CamH * 0.3 + jy)
+    vw.Camera.lookAt (vw.Cam.X + jx, 0., vw.Cam.Y + jy)
 
 let aspect () =
     let w, h = window.innerWidth, window.innerHeight
