@@ -146,6 +146,8 @@ let private build () =
         o.connect (engineCut :> Node) |> ignore
         o.start ctx.currentTime
 
+let asleep () = isNullOrUndefined (box ctx) || ctx.state = "suspended"
+
 let private ready () =
     if isNullOrUndefined (box ctx) then
         build ()

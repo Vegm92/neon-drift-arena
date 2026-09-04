@@ -85,6 +85,7 @@ type Locale =
       MostRings: string -> int -> string
       NoCrates: string -> string
       SuddenDeath: string
+      SoundHint: string
       CatchUp: string
       SeriesWin: string -> string
       GhostReady: string
@@ -207,6 +208,7 @@ let en =
       MostRings = fun n r -> sprintf "%s FLEW OUT %d TIMES" n r
       NoCrates = sprintf "%s NEVER OPENED A CRATE"
       SuddenDeath = "SUDDEN DEATH"
+      SoundHint = "TAP ANY KEY OR CLICK THE SCREEN FOR SOUND"
       CatchUp = "CATCH-UP"
       SeriesWin = sprintf "%s TAKES THE SERIES"
       GhostReady = "GHOST · FIRE DROPS A MINE"

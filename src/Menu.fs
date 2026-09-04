@@ -257,7 +257,8 @@ let private renderLobby (devices: Input.Device[]) =
         |> List.map (fun (k, l) -> hint k l)
         |> String.concat ""
     let note =
-        if go then ""
+        if Sfx.asleep () then Strings.t.SoundHint
+        elif go then ""
         elif joined.Count < 2 then Strings.t.NeedPlayers
         elif teamMode && not (opposed ()) then Strings.t.NeedTwo
         else Strings.t.NeedReady
