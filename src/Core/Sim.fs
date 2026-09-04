@@ -262,6 +262,17 @@ let private oval =
     @ corner (-rx + r) (-ry + r) 180.
     @ [ v (-rx * 0.5) -ry ]
 
+let private hairpin =
+    let arc cx cy =
+        [ for a in [ -90.; -45.; 0.; 45.; 90. ] -> v (cx + cos (a * Math.PI / 180.) * 250.) (cy + sin (a * Math.PI / 180.) * 250.) ]
+    [ v -500. -850.; v 100. -850.; v 600. -850. ]
+    @ arc 950. -600.
+    @ [ v 500. -350.; v 150. -350.; v -100. -280.; v -300. -100.; v -300. 100.; v -100. 280.; v 250. 250.; v 600. 250. ]
+    @ arc 950. 500.
+    @ [ v 400. 750.; v -200. 750.; v -700. 750.; v -1000. 650.; v -1150. 300.; v -1180. -50.; v -1150. -400.; v -1000. -750. ]
+
+let private ring = [ for k in 0..15 -> polar 1000. (float k * 22.5) ]
+
 let tracks =
     [| { Rocks = [ v 0. 0., 60.; v 500. 0., 40.; v -500. 0., 40. ]
          Pads =
@@ -274,7 +285,25 @@ let tracks =
              v (-(arenaHalf * 0.5)) (arenaHalf * 0.45)
              v (arenaHalf * 0.7) (arenaHalf * 0.2)
              v (-(arenaHalf * 0.7)) (-(arenaHalf * 0.2)) ]
-         Track = Some(oval, 280.) } |]
+         Track = Some(oval, 280.) }
+
+       { Rocks = [ v 400. -50., 50.; v 400. 500., 46.; v -700. -50., 44. ]
+         Pads =
+           [ v 300. -850., padRefill, 0
+             v 0. 750., padRefill, 0
+             v -1180. -50., healAmount, 1
+             v 650. -350., healAmount, 1 ]
+         Crates = [ v -200. -850.; v 1200. -600.; v -300. 0.; v 1200. 500. ]
+         Track = Some(hairpin, 260.) }
+
+       { Rocks = [ for k in 0..5 -> polar (if k % 2 = 0 then 930. else 1070.) (30. + float k * 60.), 42. ]
+         Pads =
+           [ polar 1000. 120., padRefill, 0
+             polar 1000. 300., padRefill, 0
+             polar 1000. 180., healAmount, 1
+             v 0. 0., healAmount, 1 ]
+         Crates = [ polar 1000. 45.; polar 1000. 135.; polar 1000. 225.; polar 1000. 315. ]
+         Track = Some(ring, 300.) } |]
 
 let layouts = Array.append arenas tracks
 let isTrack i = layouts.[i].Track.IsSome

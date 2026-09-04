@@ -180,5 +180,6 @@ let init () =
             Sim.setLayout i
         | true, i when i = Sim.layouts.Length -> arenaPick <- i
         | _ -> ()
+    fixArena ()
     Sim.catchUp <- window.localStorage.getItem catchKey <> "false"
     Input.changed <- savePads

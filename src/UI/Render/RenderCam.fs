@@ -14,9 +14,11 @@ let private smooth x = x * x * (3. - 2. * x)
 let flyby (vw: View) dt =
     vw.Intro <- vw.Intro - dt
     let t = 1. - vw.Intro / introTime
-    let u = min 2.999 (t / 0.8 * 3.)
+    let n = if Sim.race then min 8 Sim.gates.Length else 3
+    let stop i = if Sim.race then Sim.gates.[i * Sim.gates.Length / n % Sim.gates.Length] else Sim.spawnPos i
+    let u = min (float n - 0.001) (t / 0.8 * float n)
     let seg = int u
-    let a, b = Sim.spawnPos seg, Sim.spawnPos (seg + 1)
+    let a, b = stop seg, stop (seg + 1)
     vw.Cam <- a + (b - a) * smooth (u - float seg)
     vw.CamH <- minCamH * 0.5
 

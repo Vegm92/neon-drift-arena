@@ -109,7 +109,12 @@ let main _ =
                 && abs a.Pos.Y + a.Radius < arenaHalf
                 && abs a.Pos.X + abs a.Pos.Y + a.Radius < diagLimit))
         if isTrack i then
-            check (tag "every gate is on the road") (gates |> Array.forall (fun g -> abs g.X + trackWidth / 2. < arenaHalf && abs g.Y + trackWidth / 2. < arenaHalf))
+            check (tag "every gate is on the road") (gates |> Array.forall (fun g -> abs g.X + trackWidth / 2. < arenaHalf && abs g.Y + trackWidth / 2. < arenaHalf && abs g.X + abs g.Y + trackWidth / 2. < diagLimit))
+            check (tag "the road never doubles back on itself") (
+                gates
+                |> Array.mapi (fun i g -> i, g)
+                |> Array.forall (fun (i, g) ->
+                    gates |> Array.mapi (fun j h -> j, h) |> Array.forall (fun (j, h) -> abs (i - j) <= 1 || abs (i - j) >= gates.Length - 1 || len (g - h) > trackWidth * 0.9)))
         else
             check (tag "the core has an open approach") (
                 [ 0. .. 45. .. 315. ]
