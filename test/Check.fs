@@ -387,6 +387,8 @@ let main _ =
     check "the finish is announced with a place" (won.Events |> List.exists (function Finished(0, 1) -> true | _ -> false))
     let flag = run (int (raceGrace / dt) + 2) (all present) won
     check "the race ends for everyone after the grace period" (flag.Phase = Over(Some 0))
+    let sprint (p: V2) = (grid |> place 0 p 0. |> run 360 thruster).Ships.[0].Vel |> len
+    check "off the road a ship is slower than on it" (sprint (gates.[0] + v 0. -400.) < sprint gates.[0] * 0.7)
     race <- false
 
     0

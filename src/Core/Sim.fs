@@ -11,6 +11,19 @@ let mutable trackWidth = 0.
 
 let private gateAhead i = gates.[(i + 1) % gates.Length]
 
+let private segDist (a: V2) (b: V2) (p: V2) =
+    let ab = b - a
+    let l2 = dot ab ab
+    if l2 < 1e-9 then
+        len (p - a)
+    else
+        let t = max 0. (min 1. (dot (p - a) ab / l2))
+        len (p - (a + ab * t))
+
+let onTrack (p: V2) =
+    not race
+    || gates |> Array.mapi (fun i g -> segDist g (gateAhead i) p) |> Array.min < trackWidth / 2.
+
 let spawnPos i =
     if race && gates.Length > 1 then
         let dir = norm (gateAhead 0 - gates.[0])
@@ -365,7 +378,8 @@ let private stepLauncher k dt (inp: Input) (s: Ship) =
         Pos = rim k angle
         LaunchCd = max 0. (s.LaunchCd - dt) }
 
-let private slow (s: Ship) = if hurting s then hurtFactor else 1.
+let private slow (s: Ship) =
+    (if hurting s then hurtFactor else 1.) * (if onTrack s.Pos then 1. else offroadFactor)
 
 let private join (inp: Input) (s: Ship) =
     if not s.Active && inp.Present then respawn s else s
@@ -394,7 +408,7 @@ let private stepShip k dt (inp: Input) (s: Ship) =
             elif inp.Reverse then -thrustAccel * reverseFactor * k
             else 0.
         let push = ofAngle angle * accel + ofAngle (angle + System.Math.PI / 2.) * (inp.Strafe * strafeAccel * k)
-        let vel = (s.Vel + push * dt) * (1. - drag * slick () * dt) |> clampLen (maxSpeed * k)
+        let vel = (s.Vel + push * dt) * (1. - (if race then raceDrag else drag) * slick () * dt) |> clampLen (maxSpeed * k)
         { s with
             Angle = angle
             Vel = vel
@@ -615,15 +629,6 @@ let private stepRocks k dt (rocks: Rock list) =
             if hitRock then events.Add(Bump r.Pos)
             if r.Life <= 0. || hitRock || outOfBoundsAt k r.Pos then None else Some r)
     live, List.ofSeq events
-
-let private segDist (a: V2) (b: V2) (p: V2) =
-    let ab = b - a
-    let l2 = dot ab ab
-    if l2 < 1e-9 then
-        len (p - a)
-    else
-        let t = max 0. (min 1. (dot (p - a) ab / l2))
-        len (p - (a + ab * t))
 
 let private resolveBeams (ships: Ship[]) beams =
     let s = Array.copy ships

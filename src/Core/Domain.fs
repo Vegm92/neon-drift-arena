@@ -115,6 +115,8 @@ module Cfg =
     let mutable laps = 3.
     let mutable gateRadius = 150.
     let mutable raceGrace = 20.
+    let mutable raceDrag = 0.16
+    let mutable offroadFactor = 0.55
 
     let mutable padAimOn = 0.15
     let mutable padThrustOn = 0.75
@@ -183,6 +185,8 @@ module Cfg =
            "laps", (fun () -> laps), (fun x -> laps <- x)
            "gateRadius", (fun () -> gateRadius), (fun x -> gateRadius <- x)
            "raceGrace", (fun () -> raceGrace), (fun x -> raceGrace <- x)
+           "raceDrag", (fun () -> raceDrag), (fun x -> raceDrag <- x)
+           "offroadFactor", (fun () -> offroadFactor), (fun x -> offroadFactor <- x)
            "padAimOn", (fun () -> padAimOn), (fun x -> padAimOn <- x)
            "padThrustOn", (fun () -> padThrustOn), (fun x -> padThrustOn <- x) |]
 
