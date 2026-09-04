@@ -221,6 +221,30 @@ let main _ =
     check "pulse deals no damage" (pulsed.Ships.[1].Hp = hpMax)
     check "pulse kicks the user back" (pulsed.Ships.[0].Vel.X < 0.)
 
+    let zapped =
+        w0 |> place 0 zero 0. |> place 1 (v 100. 0.) 0. |> place 2 (v (-100.) 0.) 0. |> place 3 (v 600. 0.) 0.
+        |> edit 0 (fun s -> { s with Weapon = Scatter; Ammo = 2 })
+        |> step dt using
+    check "scatter stuns the ship in front for a second" (zapped.Ships.[1].Stun >= scatterStun - dt)
+    check "scatter hurts a little" (zapped.Ships.[1].Hp = hpMax - scatterDamage)
+    check "scatter spares ships behind or far" (zapped.Ships.[2].Stun = 0. && zapped.Ships.[3].Stun = 0.)
+    check "scatter has two shots" (zapped.Ships.[0].Ammo = 1 && zapped.Ships.[0].Weapon = Scatter)
+
+    let towed =
+        w0 |> place 0 zero 0. |> place 1 (v 300. 0.) 0.
+        |> edit 0 (fun s -> { s with Weapon = Tractor; Ammo = 2 })
+        |> run 30 using
+    check "tractor latches the nearest enemy" (towed.Ships.[0].Tow = TowShip 1 && towed.Ships.[0].Ammo = 1)
+    check "tractor pulls the enemy toward us" (towed.Ships.[1].Vel.X < -50. && abs towed.Ships.[0].Vel.X < 1e-6)
+    let letGo = run (int (tractorTime / dt) + 2) (all present) towed
+    check "tractor lets go after its time" (letGo.Ships.[0].Tow = NoTether)
+    let hooked =
+        w0 |> place 0 (rock.Pos + v (-(rock.Radius + 300.)) 0.) 0. |> place 1 (v 1200. 1200.) 0.
+        |> place 2 (v (-1200.) 1200.) 0. |> place 3 (v 1200. (-1200.)) 0.
+        |> edit 0 (fun s -> { s with Weapon = Tractor; Ammo = 2 })
+        |> run 30 using
+    check "tractor pulls us to a rock when no ship is near"
+        ((match hooked.Ships.[0].Tow with TowRock _ -> true | _ -> false) && hooked.Ships.[0].Vel.X > 50.)
     let ringed = w0 |> place 0 (v (arenaHalf + killMargin + 1.) 0.) 0. |> step dt (all present)
     check "ring outs are flagged" (ringed.Events |> List.exists (function Explode(_, _, r) -> r | _ -> false))
     check "ring outs are counted" (ringed.Ships.[0].Rings = 1)

@@ -38,7 +38,7 @@ The lobby opens on load. Each device presses Fire or A to claim one of the four 
 - Below 25 HP a ship smokes and runs 25% slower in every axis - turn, thrust, boost, strafe and top speed.
 - Four heal pads sit at the far ends of the two lanes: +40 HP, 30 s respawn, ignored by a ship at full health.
 - The blaster is always on RT. Crate weapons are a **special** on RB, fired independently, so you never lose your gun.
-- Four weapon crates sit in the arena at all times, one per quadrant. Grabbing one hands out a random loadout - MAG MINES and SEEKERS common (3/9 each), REPULSOR uncommon (2/9), RAILGUN rare (1/9) - and that crate reappears 10 s later on a free spot. Spend the ammo and the special is gone.
+- Four weapon crates sit in the arena at all times, one per quadrant. Grabbing one hands out a random loadout - MAG MINES and SEEKERS common (3/13 each), REPULSOR, SCATTER GUN and TRACTOR uncommon (2/13 each), RAILGUN rare (1/13) - and that crate reappears 10 s later on a free spot. Spend the ammo and the special is gone.
 
 | Weapon | Behaviour |
 |--------|-----------|
@@ -46,6 +46,8 @@ The lobby opens on load. Each device presses Fire or A to claim one of the four 
 | MAG MINES | Drops a dormant orb behind you. An enemy inside 130 units arms it; it then chases them and detonates 1.5 s later, hurting anyone in the blast - you included. |
 | SEEKERS | One homing missile per RB press, not a volley. |
 | REPULSOR | No damage: a forward cone of pure knockback. Ring-outs count as your kill. |
+| SCATTER GUN | Two shots of close-range electrical discharge: a short forward cone that knocks out every enemy in it for 1 s and chips 12 HP. |
+| TRACTOR | Two charges. Latches onto the nearest thing in reach, enemy ships first, then asteroids. A ship gets dragged toward you for 1.4 s so you can ram it; a rock reels you in instead. |
 - Boost drains at 21/s and only refills from pads: eight ring pads give 26, the centre pad refills fully. Pads respawn 7 s after pickup. All pads sit inside two narrow lanes (a cross through the centre) walled by asteroids.
 - Asteroids block bullets and bounce ships; a bump stuns the ship for 0.6 s and sends it spinning.
 - Leaving the arena border by more than 60 units destroys the ship.
