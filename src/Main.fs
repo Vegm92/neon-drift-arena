@@ -220,7 +220,7 @@ let private sendState () =
     let menu = if html = lastMenu && now - lastMenuAt < 1000. then null else html
     if not (isNull menu) then lastMenuAt <- now
     lastMenu <- html
-    Input.hotSend "nda:state" (createObj [ "world" ==> { world with Events = [] }; "events" ==> List.toArray frameEvents; "layout" ==> Sim.layout; "intro" ==> view.Intro; "banner" ==> banner.textContent; "bannerClass" ==> banner.className; "menuClass" ==> menuEl.className; "menu" ==> menu ])
+    Input.hotSend "nda:state" (createObj [ "world" ==> { world with Events = [] }; "events" ==> List.toArray frameEvents; "layout" ==> Sim.layout; "colors" ==> playerColor; "intro" ==> view.Intro; "banner" ==> banner.textContent; "bannerClass" ==> banner.className; "menuClass" ==> menuEl.className; "menu" ==> menu ])
 
 let private weaponOf (s: string) =
     match s with
@@ -279,6 +279,7 @@ let private clientFrame dt =
     let m = remote
     let layout: int = m?layout
     if Sim.layout <> layout then Sim.setLayout layout
+    Array.blit (m?colors: int[]) 0 playerColor 0 4
     Render.syncArena view
     view.Intro <- m?intro
     banner.textContent <- m?banner
