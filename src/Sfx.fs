@@ -293,6 +293,16 @@ let private wave p =
     noise "bandpass" x 500. 0.34 0.45 2.2
     tone "sine" x 90. 300. 0.3 0.3
 
+let private zap p =
+    let x = panOf p
+    noise "highpass" x 2500. 0.22 0.4 1.
+    tone "square" x 1800. 200. 0.18 0.25
+
+let private latch p =
+    let x = panOf p
+    tone "sine" x 220. 660. 0.3 0.3
+    tone "triangle" x 110. 330. 0.3 0.2
+
 let private cooked p =
     let x = panOf p
     tone "square" x 420. 70. 0.42 0.32
@@ -330,6 +340,8 @@ let play (events: Event list) =
             | Blast p -> blast p
             | Wave(p, _, _) -> wave p
             | Cooked p -> cooked p
+            | Zap(p, _, _) -> zap p
+            | Latch(p, _) -> latch p
             | Explode(p, _, _) -> explode p
 
 let thrust (w: World) =

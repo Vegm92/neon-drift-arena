@@ -77,6 +77,17 @@ module Cfg =
     let mutable pulseForce = 430.
     let pulseAmmo = 3
 
+    let mutable scatterRange = 170.
+    let mutable scatterCone = 0.7
+    let mutable scatterDamage = 12.
+    let mutable scatterStun = 1.
+    let scatterAmmo = 2
+
+    let mutable tractorRange = 520.
+    let mutable tractorPull = 900.
+    let mutable tractorTime = 1.4
+    let tractorAmmo = 2
+
     let mutable padAimOn = 0.15
     let mutable padThrustOn = 0.75
 
@@ -119,6 +130,13 @@ module Cfg =
            "pulseRange", (fun () -> pulseRange), (fun x -> pulseRange <- x)
            "pulseCone", (fun () -> pulseCone), (fun x -> pulseCone <- x)
            "pulseForce", (fun () -> pulseForce), (fun x -> pulseForce <- x)
+           "scatterRange", (fun () -> scatterRange), (fun x -> scatterRange <- x)
+           "scatterCone", (fun () -> scatterCone), (fun x -> scatterCone <- x)
+           "scatterDamage", (fun () -> scatterDamage), (fun x -> scatterDamage <- x)
+           "scatterStun", (fun () -> scatterStun), (fun x -> scatterStun <- x)
+           "tractorRange", (fun () -> tractorRange), (fun x -> tractorRange <- x)
+           "tractorPull", (fun () -> tractorPull), (fun x -> tractorPull <- x)
+           "tractorTime", (fun () -> tractorTime), (fun x -> tractorTime <- x)
            "padAimOn", (fun () -> padAimOn), (fun x -> padAimOn <- x)
            "padThrustOn", (fun () -> padThrustOn), (fun x -> padThrustOn <- x) |]
 
@@ -146,8 +164,10 @@ type Weapon =
     | Mines
     | Swarm
     | Pulse
+    | Scatter
+    | Tractor
 
-let crateTiers = [| Rail, 1; Pulse, 2; Mines, 3; Swarm, 3 |]
+let crateTiers = [| Rail, 1; Pulse, 2; Scatter, 2; Tractor, 2; Mines, 3; Swarm, 3 |]
 let crateWeapons = crateTiers |> Array.collect (fun (w, n) -> Array.create n w)
 
 let weaponAmmo w =
@@ -157,6 +177,13 @@ let weaponAmmo w =
     | Mines -> Cfg.mineAmmo
     | Swarm -> Cfg.swarmAmmo
     | Pulse -> Cfg.pulseAmmo
+    | Scatter -> Cfg.scatterAmmo
+    | Tractor -> Cfg.tractorAmmo
+
+type Tether =
+    | NoTether
+    | TowShip of int
+    | TowRock of int
 
 let playerColor = [| 0; 1; 2; 3 |]
 
@@ -185,6 +212,8 @@ type Ship =
       Ammo: int
       Charge: float
       Held: bool
+      Tow: Tether
+      TowLeft: float
       LastHit: int
       Streak: int
       Shots: int
@@ -229,6 +258,8 @@ type Event =
     | Blast of V2
     | Wave of V2 * float * int
     | Cooked of V2
+    | Zap of V2 * float * int
+    | Latch of V2 * int
 
 type World =
     { Ships: Ship[]

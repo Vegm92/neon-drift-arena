@@ -31,6 +31,7 @@ type ShipView =
       Retro: Object3D
       Coil: Mesh
       Laser: Mesh
+      Tether: Mesh
       Trail: Mesh
       History: ResizeArray<V2> }
 
@@ -144,6 +145,9 @@ let private mkShip (scene: Object3D) i =
     shield.visible <- false
     root.add shield
     let trail = mkTrail hex
+    let tether = three.Mesh(three.PlaneGeometry(1., 4.) |> flat, glowMat hex 0.7)
+    tether.visible <- false
+    scene.add tether
     scene.add root
     scene.add trail
     { Shield = shield
@@ -153,6 +157,7 @@ let private mkShip (scene: Object3D) i =
       Retro = retro
       Coil = coil
       Laser = laser
+      Tether = tether
       Trail = trail
       History = ResizeArray() }
 
@@ -452,6 +457,23 @@ let private updateFlashes (vw: View) dt =
                 f.Obj.material.opacity <- 1. - k
                 true)
 
+let private drawTether t (w: World) (sv: ShipView) (s: Ship) =
+    let target =
+        match s.Tow with
+        | TowShip j when s.Alive -> Some w.Ships.[j].Pos
+        | TowRock k when s.Alive -> Some Sim.asteroids.[k].Pos
+        | _ -> None
+    sv.Tether.visible <- target.IsSome
+    match target with
+    | Some p ->
+        let d = p - s.Pos
+        let mid = (s.Pos + p) * 0.5
+        sv.Tether.position.set (mid.X, 4., mid.Y)
+        sv.Tether.rotation.y <- -(atan2 d.Y d.X)
+        sv.Tether.scale.set (len d, 1., 1.)
+        sv.Tether.material.opacity <- 0.5 + 0.3 * sin (t * 25.)
+    | None -> ()
+
 let private drawShip t (vw: View) (sv: ShipView) (s: Ship) =
     sv.Root.visible <- s.Alive
     if s.Alive then
@@ -590,6 +612,8 @@ let private weaponLabel (s: Ship) =
     | Mines -> Strings.t.Loaded Strings.t.WMines s.Ammo
     | Swarm -> Strings.t.Loaded Strings.t.WSwarm s.Ammo
     | Pulse -> Strings.t.Loaded Strings.t.WPulse s.Ammo
+    | Scatter -> Strings.t.Loaded Strings.t.WScatter s.Ammo
+    | Tractor -> Strings.t.Loaded Strings.t.WTractor s.Ammo
 
 let private drawHud (vw: View) (w: World) dt =
     w.Ships
@@ -662,6 +686,10 @@ let draw (vw: View) (w: World) (events: Event list) dt =
         | Cooked p ->
             spawnBurst vw p 0xff7b2b 18 120.
             spawnRing vw p 0xff7b2b 26. 2.2 0.5
+        | Zap(p, a, _) ->
+            spawnCone vw p 0x9df3ff 40 scatterRange a scatterCone
+            spawnRing vw p 0xffffff 40. 2.6 0.2
+        | Latch(p, i) -> spawnRing vw p (shipColor w.Ships.[i]) 30. 3. 0.3
         | Explode(p, i, ring) ->
             let hex = shipColor w.Ships.[i]
             let sv = vw.Ships.[i]
@@ -680,6 +708,8 @@ let draw (vw: View) (w: World) (events: Event list) dt =
         | Shot _ -> ()
     drawSmoke vw w dt
     Array.iter2 (drawShip w.Time vw) vw.Ships w.Ships
+    Array.iter2 (drawTether w.Time w) vw.Ships w.Ships
+    Array.iter2 (drawTether w.Time w) vw.Ships w.Ships
     drawPads vw w
     drawCrates vw w
     drawMines vw w

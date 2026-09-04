@@ -39,6 +39,8 @@ let freshShip i =
       Ammo = 0
       Charge = 0.
       Held = false
+      Tow = NoTether
+      TowLeft = 0.
       LastHit = -1
       Streak = 0
       Shots = 0
@@ -368,6 +370,12 @@ let private special dt (inp: Input) (s: Ship) =
                 { spend s with Vel = s.Vel - dir * (pulseForce * 0.08) }, [], [], [ Wave(s.Pos, s.Angle, s.Id) ]
             else
                 s, [], [], []
+        | Scatter ->
+            if press then
+                { spend s with Vel = s.Vel - dir * recoil; Shots = s.Shots + 1 }, [], [], [ Zap(s.Pos, s.Angle, s.Id) ]
+            else
+                s, [], [], []
+        | Tractor -> if press then s, [], [], [ Latch(s.Pos, s.Id) ] else s, [], [], []
 
 let private fire dt (inp: Input) (s: Ship) =
     let s, shots, e1 = blaster inp s
@@ -416,18 +424,72 @@ let private resolveBeams (ships: Ship[]) beams =
                 s.[i] <- { s.[i] with Vel = s.[i].Vel + dir * bulletKnockback } |> tag owner |> damage railDamage
     s, List.ofSeq events
 
+let private inCone (s: Ship[]) p a range cone owner i =
+    let d = s.[i].Pos - p
+    let dist = len d
+    if s.[i].Alive && side s.[i] <> side s.[owner] && dist < range && dist > 1e-6 then
+        let rel = atan2 d.Y d.X - a
+        let off = atan2 (sin rel) (cos rel)
+        if abs off < cone then Some(norm d, 1. - dist / range) else None
+    else
+        None
+
 let private resolveWaves (ships: Ship[]) waves =
     let s = Array.copy ships
     for (p, a, owner) in waves do
         for i in 0 .. s.Length - 1 do
-            let d = s.[i].Pos - p
-            let dist = len d
-            if s.[i].Alive && side s.[i] <> side s.[owner] && dist < pulseRange && dist > 1e-6 then
-                let rel = atan2 d.Y d.X - a
-                let off = atan2 (sin rel) (cos rel)
-                if abs off < pulseCone then
-                    let f = 1. - dist / pulseRange
-                    s.[i] <- { s.[i] with Vel = s.[i].Vel + norm d * (pulseForce * f) } |> tag owner
+            match inCone s p a pulseRange pulseCone owner i with
+            | Some(n, f) -> s.[i] <- { s.[i] with Vel = s.[i].Vel + n * (pulseForce * f) } |> tag owner
+            | None -> ()
+    s
+
+let private resolveZaps (ships: Ship[]) zaps =
+    let s = Array.copy ships
+    let events = ResizeArray()
+    for (p, a, owner) in zaps do
+        for i in 0 .. s.Length - 1 do
+            match inCone s p a scatterRange scatterCone owner i with
+            | Some _ ->
+                events.Add(Hit s.[i].Pos)
+                if s.[i].Invuln <= 0. then
+                    s.[owner] <- { s.[owner] with Hits = s.[owner].Hits + 1 }
+                s.[i] <- { s.[i] with Stun = max s.[i].Stun scatterStun; Thrusting = 0. } |> tag owner |> damage scatterDamage
+            | None -> ()
+    s, List.ofSeq events
+
+let private acquire (s: Ship[]) owner =
+    let me = s.[owner]
+    match nearest s owner me.Pos with
+    | Some t when len (t.Pos - me.Pos) < tractorRange -> TowShip t.Id
+    | _ ->
+        let rocks =
+            asteroids
+            |> Array.mapi (fun k a -> k, len (a.Pos - me.Pos) - a.Radius)
+            |> Array.filter (fun (_, d) -> d < tractorRange)
+        if rocks.Length = 0 then NoTether else TowRock(fst (Array.minBy snd rocks))
+
+let private resolveTows dt (ships: Ship[]) latches =
+    let s = Array.copy ships
+    for owner in latches do
+        if s.[owner].Tow = NoTether then
+            match acquire s owner with
+            | NoTether -> ()
+            | t -> s.[owner] <- { spend s.[owner] with Tow = t; TowLeft = tractorTime }
+    for i in 0 .. s.Length - 1 do
+        let me = s.[i]
+        let drop () = s.[i] <- { s.[i] with Tow = NoTether; TowLeft = 0. }
+        let pull (from: V2) (target: V2) = norm (target - from) * (tractorPull * dt)
+        if me.Tow <> NoTether then
+            if not me.Alive || me.TowLeft <= dt then
+                drop ()
+            else
+                match me.Tow with
+                | TowShip j when s.[j].Alive && len (s.[j].Pos - me.Pos) < tractorRange * 1.3 ->
+                    s.[j] <- { s.[j] with Vel = s.[j].Vel + pull s.[j].Pos me.Pos } |> tag i
+                    s.[i] <- { s.[i] with TowLeft = me.TowLeft - dt }
+                | TowRock k when len (asteroids.[k].Pos - me.Pos) > asteroids.[k].Radius + 2. * shipRadius ->
+                    s.[i] <- { me with Vel = me.Vel + pull me.Pos asteroids.[k].Pos; TowLeft = me.TowLeft - dt }
+                | _ -> drop ()
     s
 
 let private stepMines dt (ships: Ship[]) (mines: Mine list) =
@@ -634,7 +696,11 @@ let step dt (inputs: Input[]) (w: World) =
         let shotEvents = fired |> Array.toList |> List.collect (fun (_, _, _, e) -> e)
         let beams = shotEvents |> List.choose (function Beam(a, b, o) -> Some(a, b, o) | _ -> None)
         let waves = shotEvents |> List.choose (function Wave(p, a, o) -> Some(p, a, o) | _ -> None)
+        let zaps = shotEvents |> List.choose (function Zap(p, a, o) -> Some(p, a, o) | _ -> None)
+        let latches = shotEvents |> List.choose (function Latch(_, o) -> Some o | _ -> None)
         let ships = resolveWaves ships waves
+        let ships, zapHits = resolveZaps ships zaps
+        let ships = resolveTows dt ships latches
         let ships, beamHits = resolveBeams ships beams
         let bullets =
             newBullets @ w.Bullets
@@ -664,6 +730,7 @@ let step dt (inputs: Input[]) (w: World) =
           Events =
             shotEvents
             @ beamHits
+            @ zapHits
             @ hits
             @ mineEvents
             @ rams

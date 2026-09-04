@@ -69,6 +69,8 @@ type Locale =
       WMines: string
       WSwarm: string
       WPulse: string
+      WScatter: string
+      WTractor: string
       Loaded: string -> int -> string
       FirstBlood: string
       DoubleKill: string
@@ -178,6 +180,8 @@ let en =
       WMines = "MAG MINES"
       WSwarm = "SEEKERS"
       WPulse = "REPULSOR"
+      WScatter = "SCATTER GUN"
+      WTractor = "TRACTOR"
       Loaded = fun n a -> sprintf "%s x%d" n a
       FirstBlood = "FIRST BLOOD"
       DoubleKill = "DOUBLE KILL"
