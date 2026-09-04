@@ -58,6 +58,7 @@ The lobby opens on load. Each device presses Fire or A to claim one of the four 
 - Boost drains at 21/s and only refills from pads: eight ring pads give 26, the centre pad refills fully. Pads respawn 7 s after pickup. All pads sit inside two narrow lanes (a cross through the centre) walled by asteroids.
 - Asteroids block bullets and bounce ships; a bump stuns the ship for 0.6 s and sends it spinning.
 - Every 20 s a violet wormhole pair opens on two free spots for 12 s. Anything that crosses one ring - ships, bullets, seekers, mines, rocks - pops out of the other ring at the same speed and heading. A ship gets half a second before it can warp again. No new pairs open in sudden death.
+- Every 35 s a black hole opens on a free spot for 15 s: a black disc with a bright violet horizon and a swirl of light falling in. It never moves. It drags ships, bullets, seekers, mines and rocks toward it with a pull that grows sharply near the horizon; touching the core destroys the ship, credited to whoever hit it last. The danger arc points at it when you are inside the pull. None open in sudden death.
 - Leaving the arena border by more than 60 units destroys the ship.
 - Firing recoils the shooter, so the blaster doubles as a reverse thruster.
 - Every sim event drives a synthesised voice — no audio files. Browsers keep audio suspended until a key or click, so a gamepad-only session stays silent until someone touches the keyboard or the window; the lobby's note line says so until sound is unlocked.

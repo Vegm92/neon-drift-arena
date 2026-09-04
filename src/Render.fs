@@ -18,6 +18,7 @@ let private minePool = 24
 let private rockPool = 8
 let private portalPool = 2
 let private portalHex = 0xb36bff
+let private holeHex = 0xd48cff
 let private maxCamH = (arenaHalf + 100.) / tan (20. * Math.PI / 180.)
 let private minCamH = maxCamH * 0.75
 let private rnd = Random()
@@ -66,6 +67,9 @@ type View =
       Mines: Object3D[]
       Boulders: Object3D[]
       Gates: Mesh[]
+      Hole: Object3D
+      Horizon: Mesh
+      Halo: Mesh
       Crates: Object3D[]
       Panels: HTMLElement[]
       Tags: HTMLElement[]
@@ -256,6 +260,21 @@ let private mkGate (scene: Object3D) i =
     scene.add m
     m
 
+let private mkHole (scene: Object3D) =
+    let root = three.Group()
+    let disc = three.Mesh(three.CircleGeometry(holeCore * 3., 48) |> flat, three.MeshBasicMaterial(box {| color = 0x000000 |}))
+    disc.position.y <- 1.
+    root.add disc
+    let horizon = three.Mesh(three.RingGeometry(holeCore * 3., holeCore * 3. + 6., 48) |> flat, glowMat holeHex 1.)
+    horizon.position.y <- 2.
+    root.add horizon
+    let halo = three.Mesh(three.RingGeometry(holeCore * 9., holeCore * 9. + 3., 6) |> flat, glowMat holeHex 0.2)
+    halo.position.y <- 2.
+    root.add halo
+    root.visible <- false
+    scene.add root
+    root, horizon, halo
+
 let private mkBullet (scene: Object3D) =
     let m = three.Mesh(three.PlaneGeometry(16., 3.) |> flat, glowMat 0xffffff 1.)
     m.visible <- false
@@ -384,6 +403,7 @@ let create () =
     composer.addPass (renderPass (scene, camera))
     composer.addPass (box bloom)
     let border, spawns = mkArena scene
+    let hole, horizon, halo = mkHole scene
     let hud = document.getElementById "hud"
     let vw =
         { Scene = scene
@@ -399,6 +419,9 @@ let create () =
           Mines = Array.init minePool (fun _ -> mkMine scene)
           Boulders = Array.init rockPool (fun _ -> mkAsteroid scene { Pos = zero; Radius = rockRadius })
           Gates = Array.init (portalPool * 4) (mkGate scene)
+          Hole = hole
+          Horizon = horizon
+          Halo = halo
           Crates = Array.init 4 (fun _ -> mkCrate scene)
           Panels = Array.init 4 (mkPanel hud)
           Tags = Array.init 4 (mkTag hud)
@@ -651,7 +674,11 @@ let private threat (w: World) (me: Ship) =
             if s.Alive && s.Charge > 0. && foe s.Id && dist < reach && abs (atan2 (sin rel) (cos rel)) < 0.35 then
                 Some(toward s.Pos (0.5 + 0.5 * min 1. (s.Charge / railCharge)))
             else None)
-    match bullets @ rocks @ mines @ charging with
+    let hole =
+        match w.Hole with
+        | Some h when len (h.Pos - me.Pos) < holeCore * 12. -> [ toward h.Pos (1. - len (h.Pos - me.Pos) / (holeCore * 12.)) ]
+        | _ -> []
+    match bullets @ rocks @ mines @ charging @ hole with
     | [] -> None
     | ts -> Some(List.maxBy snd ts)
 
@@ -739,6 +766,21 @@ let private drawPortals (vw: View) (w: World) =
                     k <- k + 1
     for i in k .. vw.Gates.Length - 1 do
         vw.Gates.[i].visible <- false
+
+let private drawHole (vw: View) (w: World) dt =
+    match w.Hole with
+    | Some h ->
+        vw.Hole.visible <- true
+        vw.Hole.position.set (h.Pos.X, 0., h.Pos.Y)
+        let fade = min 1. (h.Life / 1.5) * min 1. ((holeLife - h.Life) * 2.)
+        vw.Horizon.material.opacity <- fade * (0.7 + 0.3 * sin (w.Time * 7.))
+        vw.Horizon.rotation.z <- w.Time * 1.5
+        vw.Halo.material.opacity <- fade * 0.2
+        vw.Halo.rotation.z <- -w.Time * 0.4
+        if vw.Puff + dt > 0.05 then
+            let a = rnd.NextDouble() * Math.PI * 2.
+            spawnCone vw (h.Pos + ofAngle a * (holeCore * 8.)) holeHex 3 260. (a + Math.PI + 0.5) 0.25 14.
+    | None -> vw.Hole.visible <- false
 
 let private drawMines (vw: View) (w: World) =
     let mutable k = 0
@@ -850,6 +892,7 @@ let private icon (w: Weapon) ring =
             | Tractor -> "M8 32 L36 32 M36 32 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0 M56 20 L56 44"
             | Collision -> "M32 8 L36 26 L54 22 L40 34 L52 50 L34 42 L28 58 L26 40 L8 44 L22 32 L12 16 L28 24 Z"
             | Rock -> "M20 12 L44 10 L56 28 L50 50 L26 54 L10 38 Z M26 30 L36 26 L40 36"
+            | Singularity -> "M32 32 m-22 0 a22 22 0 1 0 44 0 a22 22 0 1 0 -44 0 M32 32 m-9 0 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0 M10 32 L4 32 M54 32 L60 32"
     sprintf "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"%s\"/></svg>" path
 
 let private feedLine (vw: View) (w: World) victim by wpn ring =
@@ -857,7 +900,7 @@ let private feedLine (vw: View) (w: World) victim by wpn ring =
     let line = document.createElement "div"
     line.innerHTML <-
         if by >= 0 && by <> victim then tag by + icon wpn ring + tag victim
-        else tag victim + icon Collision true
+        else tag victim + icon wpn (ring || wpn <> Singularity)
     vw.Feed?prepend line
     while vw.Feed.children.length > 4 do
         vw.Feed?lastElementChild?remove ()
@@ -867,7 +910,8 @@ let private weaponLabel (s: Ship) =
     match s.Weapon with
     | Blaster
     | Collision
-    | Rock -> Strings.t.WBlaster
+    | Rock
+    | Singularity -> Strings.t.WBlaster
     | Rail -> Strings.t.Loaded Strings.t.WRail s.Ammo
     | Mines -> Strings.t.Loaded Strings.t.WMines s.Ammo
     | Swarm -> Strings.t.Loaded Strings.t.WSwarm s.Ammo
@@ -961,6 +1005,10 @@ let draw (vw: View) (w: World) (events: Event list) dt =
                 spawnRing vw p portalHex portalRadius 3. 0.6
                 spawnBurst vw p portalHex 20 160.
         | Warp p -> spawnBurst vw p portalHex 12 140.
+        | HoleOpen p ->
+            spawnRing vw p holeHex (holeCore * 9.) -0.8 0.9
+            spawnBurst vw p holeHex 40 240.
+            vw.Spike <- max vw.Spike 0.9
         | Explode(p, i, ring) ->
             let hex = shipColor w.Ships.[i]
             let sv = vw.Ships.[i]
@@ -988,6 +1036,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
     drawMines vw w
     drawRocks vw w dt
     drawPortals vw w
+    drawHole vw w dt
     drawBullets vw w dt
     updateBursts vw dt
     updateFlashes vw dt

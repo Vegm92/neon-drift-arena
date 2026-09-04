@@ -227,6 +227,8 @@ let private build i =
       Rocks = []
       Portals = []
       PortalIn = portalEvery
+      Hole = None
+      HoleIn = holeEvery
       Pads = l.Pads |> List.map (fun (p, a, k) -> { Pos = p; Amount = a; RespawnIn = 0.; Kind = k }) |> List.toArray
       Crates = [| 0; 2; 4; 6 |] |> Array.map (fun i -> { Pos = cratePositions.[i]; RespawnIn = 0. })
       Rng = 7
@@ -383,7 +385,8 @@ let private special dt (inp: Input) (s: Ship) =
         match s.Weapon with
         | Blaster
         | Collision
-        | Rock -> s, [], [], []
+        | Rock
+        | Singularity -> s, [], [], []
         | Rail ->
             if inp.Special then
                 let c = s.Charge + dt
@@ -488,6 +491,30 @@ let private stepPortals k dt sudden (ships: Ship[]) rng (w: World) =
         let a, r1 = freeSpot k ships [] rng
         let b, r2 = freeSpot k ships [ a ] r1
         { A = a; B = b; Life = portalLife } :: live, portalEvery, r2, [ PortalOpen(a, b) ]
+
+let private stepHole k dt sudden (ships: Ship[]) rng (w: World) =
+    let live = w.Hole |> Option.filter (fun h -> h.Life > dt) |> Option.map (fun h -> { h with Life = h.Life - dt })
+    if w.HoleIn > dt || sudden || live.IsSome then
+        live, max 0. (w.HoleIn - dt), rng, []
+    else
+        let p, r = freeSpot k ships (w.Portals |> List.collect (fun g -> [ g.A; g.B ])) rng
+        Some { Pos = p; Life = holeLife }, holeEvery, r, [ HoleOpen p ]
+
+let private pull (hole: Hole option) dt (p: V2) (vel: V2) =
+    match hole with
+    | Some h ->
+        let d = h.Pos - p
+        let r = max holeCore (len d)
+        vel + norm d * (holeG / (r * r) * dt)
+    | None -> vel
+
+let private resolveHole (hole: Hole option) dt (ships: Ship[]) =
+    ships
+    |> Array.map (fun s ->
+        match hole with
+        | Some h when s.Alive && len (h.Pos - s.Pos) < holeCore -> { s with Hp = 0.; LastWeapon = Singularity }
+        | Some _ when s.Alive -> { s with Vel = pull hole dt s.Pos s.Vel }
+        | _ -> s)
 
 let private warpAt (portals: Portal list) (p: V2) (vel: V2) =
     portals
@@ -960,21 +987,24 @@ let step dt (inputs: Input[]) (w: World) =
         let bullets =
             newBullets @ w.Bullets
             |> List.map (steer dt ships)
+            |> List.map (fun b -> { b with Vel = pull w.Hole dt b.Pos b.Vel })
             |> List.choose (stepBullet k w.Rocks dt)
             |> List.map (fun b -> match warpAt w.Portals b.Pos b.Vel with Some p -> { b with Pos = p } | None -> b)
         let ships, bullets, hits = resolveBullets ships bullets
         let mines, blasts, mineEvents = stepMines k dt ships (newMines @ w.Mines)
-        let mines = mines |> List.map (fun m -> match warpAt w.Portals m.Pos m.Vel with Some p -> { m with Pos = p } | None -> m)
+        let mines = mines |> List.map (fun m -> match warpAt w.Portals m.Pos m.Vel with Some p -> { m with Pos = p } | None -> { m with Vel = pull w.Hole dt m.Pos m.Vel })
         let ships = resolveBlasts ships blasts
         let ships, rams = resolveRams ships
         let ships, bumps = resolveAsteroids ships
         let rocks, rockEvents = stepRocks k dt (newRocks @ w.Rocks)
-        let rocks = rocks |> List.map (fun r -> match warpAt w.Portals r.Pos r.Vel with Some p -> { r with Pos = p } | None -> r)
+        let rocks = rocks |> List.map (fun r -> match warpAt w.Portals r.Pos r.Vel with Some p -> { r with Pos = p } | None -> { r with Vel = pull w.Hole dt r.Pos r.Vel })
         let ships, rockHits = resolveRocks ships rocks
         let ships, warps = resolveWarps dt w.Portals ships
+        let ships = resolveHole w.Hole dt ships
         let ships, pads, picks = resolvePads (sudden w) dt ships w.Pads
         let ships, crates, rng, grabs = stepCrates dt w.Rng ships w.Crates
         let portals, portalIn, rng, portalEvents = stepPortals k dt (sudden w) ships rng w
+        let hole, holeIn, rng, holeEvents = stepHole k dt (sudden w) ships rng w
         let settled, deaths = ships |> Array.map (settle ships rng k dt) |> Array.unzip
         let ships = Array.copy settled
         let kills = deaths |> Array.toList |> List.choose id
@@ -987,6 +1017,8 @@ let step dt (inputs: Input[]) (w: World) =
           Rocks = rocks
           Portals = portals
           PortalIn = portalIn
+          Hole = hole
+          HoleIn = holeIn
           Pads = pads
           Crates = crates
           Rng = rng
@@ -1004,6 +1036,7 @@ let step dt (inputs: Input[]) (w: World) =
             @ rockHits
             @ warps
             @ portalEvents
+            @ holeEvents
             @ picks
             @ grabs
             @ (kills |> List.map (fun (p, i, ring, _, _) -> Explode(p, i, ring)))
