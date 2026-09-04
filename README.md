@@ -33,6 +33,8 @@ The lobby opens on load. Each device presses Fire or A to claim one of the four 
 
 `npm run dev` serves the game on the LAN (`--host`). The lobby shows a QR code with the pad URL (`http://<lan-ip>:5173/pad.html`); the pause menu shows it again. A phone that opens it becomes a controller: JOIN, then ◀ ▶ picks the colour (or side in TEAMS), the big button readies up, BACK and START match the gamepad buttons. In play the left half is a floating stick — the ship turns toward the thumb at the keyboard turn rate and thrusts once the thumb is near the rim (`padAimOn` / `padThrustOn` in TUNING) — the middle column shows that player's hull, boost, stocks and kills, and the right panel holds the SPECIAL, BOOST and FIRE hexes (hold them) with a strafe slider underneath; ☰ in the header pauses. Pause and result menus turn the phone into ▲ ▼ OK BACK. A phone silent for 2 s drops out of the lobby. Messages travel over Vite's HMR WebSocket, so the pad only works under the dev server, not a static build.
 
+A second PC on the LAN can open the game URL itself (`http://<lan-ip>:5173/`). The first browser to open the game is the host and runs the simulation; every later one becomes a mirror: it sends its keyboard and gamepads to the host as `LAN PC` devices (join with Fire like a phone) and renders the host's world, menu and banner as they arrive over the same WebSocket. If the host closes, the mirror falls back to a local lobby after a second.
+
 ## Rules
 
 - 3 stocks each, 100 HP. Bullets deal 20 and knock the target back. Ramming exchanges momentum and deals damage proportional to closing speed.

@@ -12,6 +12,7 @@ type Locale =
       PadLegend: (string list * string) list
       Gamepad: string
       Phone: string
+      Remote: string
       ScanToJoin: string
       PadConnecting: string
       PadFire: string
@@ -154,6 +155,7 @@ let en =
           [ "B" ], "BACK" ]
       Gamepad = "GAMEPAD"
       Phone = "PHONE"
+      Remote = "LAN PC"
       ScanToJoin = "SCAN TO PLAY FROM YOUR PHONE"
       PadConnecting = "CONNECTING"
       PadFire = "FIRE"

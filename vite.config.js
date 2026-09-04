@@ -36,6 +36,9 @@ const phonePad = {
       host ??= client;
       if (host === client) server.ws.send("nda:host", data);
     });
+    server.ws.on("nda:state", (data, client) => {
+      if (client === host) for (const c of server.ws.clients) if (c !== host) c.send("nda:state", data);
+    });
     server.middlewares.use("/__pad-url", (_, res) => {
       const net = server.resolvedUrls?.network[0] ?? "";
       res.end(net && net + "pad.html");
@@ -43,4 +46,4 @@ const phonePad = {
   },
 };
 
-export default { plugins: [bakeTweaks, phonePad] };
+export default { plugins: [bakeTweaks, phonePad], server: { port: process.env.PORT ? +process.env.PORT : undefined } };
