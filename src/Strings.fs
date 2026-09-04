@@ -20,6 +20,9 @@ type Locale =
       PadMoveHint: string
       PadBadge: string
       PadStrafe: string
+      PadHull: string
+      PadStocks: string
+      PadKills: string
       PadSpecial: string
       PadOk: string
       PadBack: string
@@ -120,11 +123,14 @@ let en =
       PadMoveHint = "TURN &#8226; PUSH OUT = THRUST"
       PadBadge = "MOBILE"
       PadStrafe = "STRAFE"
+      PadHull = "HULL"
+      PadStocks = "STOCKS"
+      PadKills = "KILLS"
       PadSpecial = "SPECIAL"
       PadOk = "OK"
       PadBack = "BACK"
       PhoneLegend =
-        [ [ "L" ], "AIM + THRUST"
+        [ [ "L" ], "TURN + THRUST"
           [ "RT" ], "FIRE"
           [ "B" ], "BOOST"
           [ "SP" ], "SPECIAL"

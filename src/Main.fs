@@ -98,9 +98,15 @@ let private announce (w: World) (events: Event list) =
             hyped.[s.Id] <- true
             if shout <= 0. then say (Strings.t.OnFire(name s.Id)))
 
+let private padStats (card: obj) =
+    if isNull card then null
+    else
+        let s = world.Ships.[card?slot]
+        createObj [ "hp" ==> s.Hp / Cfg.hpMax; "sh" ==> s.Shield / Cfg.hpMax; "boost" ==> s.Boost / Cfg.boostMax; "stocks" ==> s.Stocks; "kills" ==> s.Kills ]
+
 let private broadcast () =
-    let pads = createObj [ for d in Input.devices () do if d.Key.StartsWith "ph:" then d.Key.Substring 3 ==> Menu.padCard d.Key ]
-    Input.hotSend "nda:host" (createObj [ "phase" ==> Menu.phase (); "pads" ==> pads ])
+    let phones = [ for d in Input.devices () do if d.Key.StartsWith "ph:" then d.Key.Substring 3, Menu.padCard d.Key ]
+    Input.hotSend "nda:host" (createObj [ "phase" ==> Menu.phase (); "pads" ==> createObj [ for id, c in phones -> id ==> c ]; "stats" ==> createObj [ for id, c in phones -> id ==> padStats c ] ])
 
 let rec frame (t: float) =
     let dt = if last = 0. then 0. else (t - last) / 1000. |> max 0. |> min 0.1

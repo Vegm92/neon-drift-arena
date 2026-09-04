@@ -21,6 +21,7 @@ let mutable private dirty = true
 let mutable private lastSent = 0.
 let mutable private phase = ""
 let mutable private card: obj = null
+let mutable private stats: obj = null
 let private root = document.getElementById "pad"
 
 let private flush () =
@@ -144,12 +145,26 @@ let private footer =
     |> String.concat ""
     |> sprintf "<div class=\"bar foot\">%s</div>"
 
+let private showStats () =
+    match document.getElementById "stats" with
+    | null -> ()
+    | el when isNullOrUndefined stats || isNullOrUndefined card -> el.innerHTML <- ""
+    | el ->
+        let meter cls (label: string) (v: float) (sh: float) =
+            sprintf "<small>%s</small><div class=\"meter %s\"><i style=\"width:%d%%\"></i><u style=\"width:%d%%\"></u></div>" label cls (int (100. * max 0. (min 1. v))) (int (100. * max 0. (min 1. sh)))
+        el.innerHTML <-
+            sprintf "<b style=\"color:%s\">%s</b>%s%s<div class=\"nums\"><span>%s <em>%d</em></span><span>%s <em>%d</em></span></div>"
+                (card?color: string) (card?name: string)
+                (meter "hp" Strings.t.PadHull (stats?hp: float) (stats?sh: float))
+                (meter "boost" Strings.t.PadBoost (stats?boost: float) 0.)
+                Strings.t.PadStocks (stats?stocks: int) Strings.t.PadKills (stats?kills: int)
+
 let private render () =
     clearInputs ()
     match phase with
     | "play" ->
         root.innerHTML <-
-            sprintf "%s%s<div class=\"row2\"><div class=\"panel cyan zone\" id=\"stick\"><div class=\"ring\"></div><div class=\"knob\"></div><div class=\"lbl\">%s<small>%s</small></div></div><div class=\"mid\"></div><div class=\"panel mag acts\"><div class=\"hexes\">%s%s%s</div><div class=\"slide\" id=\"strafe\"><div class=\"lbl\">&#9664; %s &#9654;</div><div class=\"track\"><div class=\"fill\"></div><div class=\"thumb\"></div></div></div></div></div>%s"
+            sprintf "%s%s<div class=\"row2\"><div class=\"panel cyan zone\" id=\"stick\"><div class=\"ring\"></div><div class=\"knob\"></div><div class=\"lbl\">%s<small>%s</small></div></div><div class=\"mid\" id=\"stats\"></div><div class=\"panel mag acts\"><div class=\"hexes\">%s%s%s</div><div class=\"slide\" id=\"strafe\"><div class=\"lbl\">&#9664; %s &#9654;</div><div class=\"track\"><div class=\"fill\"></div><div class=\"thumb\"></div></div></div></div></div>%s"
                 corners header Strings.t.PadMove Strings.t.PadMoveHint
                 (button "hex special" "special" Strings.t.PadSpecial)
                 (button "hex boost" "boost" Strings.t.PadBoost)
@@ -158,6 +173,7 @@ let private render () =
                 footer
         stick (document.getElementById "stick")
         slider (document.getElementById "strafe")
+        showStats ()
     | "lobby" when isNullOrUndefined card ->
         root.innerHTML <-
             sprintf "%s<div class=\"card panel cyan\"><div class=\"title\">%s %s</div>%s</div>" corners Strings.t.TitleMain Strings.t.TitleSub (button "big" "fire" Strings.t.Join)
@@ -185,10 +201,15 @@ let private tick () =
 Input.hotOn "nda:host" (fun m ->
     let p: string = m?phase
     let c: obj = m?pads?(id)
+    let s: obj = m?stats?(id)
     if p <> phase || JS.JSON.stringify c <> JS.JSON.stringify card then
         phase <- p
         card <- c
-        render ())
+        stats <- s
+        render ()
+    elif JS.JSON.stringify s <> JS.JSON.stringify stats then
+        stats <- s
+        showStats ())
 
 document?addEventListener ("pointerdown", (fun (_: Event) -> fullscreen ()), createObj [ "once" ==> true ])
 document?addEventListener ("touchmove", (fun (e: Event) -> e.preventDefault ()), createObj [ "passive" ==> false ])
