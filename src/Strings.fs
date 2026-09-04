@@ -19,6 +19,7 @@ type Locale =
       PadMove: string
       PadMoveHint: string
       PadBadge: string
+      PadStrafe: string
       PadSpecial: string
       PadOk: string
       PadBack: string
@@ -118,6 +119,7 @@ let en =
       PadMove = "MOVE"
       PadMoveHint = "AIM &#8226; PAST HALF = THRUST"
       PadBadge = "MOBILE"
+      PadStrafe = "STRAFE"
       PadSpecial = "SPECIAL"
       PadOk = "OK"
       PadBack = "BACK"
@@ -126,6 +128,7 @@ let en =
           [ "RT" ], "FIRE"
           [ "B" ], "BOOST"
           [ "SP" ], "SPECIAL"
+          [ "◀▶" ], "STRAFE"
           [ "☰" ], "PAUSE" ]
       Join = "JOIN"
       Leave = "LEAVE"

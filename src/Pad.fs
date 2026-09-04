@@ -31,11 +31,11 @@ let private flush () =
 let private set (k: string) (v: obj) =
     if state?(k) <> v then
         state?(k) <- v
-        if k = "x" || k = "y" then dirty <- true else flush ()
+        if k = "x" || k = "y" || k = "s" then dirty <- true else flush ()
 
 let private clearInputs () =
-    for k in [ "x"; "y"; "fire"; "boost"; "special"; "start"; "back"; "left"; "right"; "up"; "down" ] do
-        set k (if k = "x" || k = "y" then box 0. else box false)
+    for k in [ "x"; "y"; "s"; "fire"; "boost"; "special"; "start"; "back"; "left"; "right"; "up"; "down" ] do
+        set k (if k = "x" || k = "y" || k = "s" then box 0. else box false)
 
 let private fullscreen () =
     try
@@ -104,6 +104,35 @@ let private stick (zone: Element) =
     zone.addEventListener ("pointerup", up)
     zone.addEventListener ("pointercancel", up)
 
+let private slider (zone: Element) =
+    let thumb = zone.querySelector ".thumb"
+    let fill = zone.querySelector ".fill"
+    let mutable pid = -1.
+    let move (e: Event) =
+        if (e?pointerId: float) = pid then
+            let w: float = zone?clientWidth
+            let v = max -1. (min 1. (((e?offsetX: float) - w / 2.) / (w / 2. - 24.)))
+            set "s" v
+            thumb?style?left <- sprintf "%f%%" (50. + v * 42.)
+            fill?style?left <- sprintf "%f%%" (if v < 0. then 50. + v * 42. else 50.)
+            fill?style?width <- sprintf "%f%%" (abs v * 42.)
+    zone.addEventListener ("pointerdown", fun e ->
+        if pid < 0. then
+            pid <- e?pointerId
+            try zone?setPointerCapture pid with _ -> ()
+            zone.classList.add "on"
+            move e)
+    zone.addEventListener ("pointermove", move)
+    let up (e: Event) =
+        if (e?pointerId: float) = pid then
+            pid <- -1.
+            set "s" 0.
+            zone.classList.remove "on"
+            thumb?style?left <- ""
+            fill?style?width <- ""
+    zone.addEventListener ("pointerup", up)
+    zone.addEventListener ("pointercancel", up)
+
 let private corners = "<div class=\"corner tl\"></div><div class=\"corner tr\"></div><div class=\"corner bl\"></div><div class=\"corner br\"></div>"
 
 let private header =
@@ -120,13 +149,15 @@ let private render () =
     match phase with
     | "play" ->
         root.innerHTML <-
-            sprintf "%s%s<div class=\"row2\"><div class=\"panel cyan zone\" id=\"stick\"><div class=\"ring\"></div><div class=\"knob\"></div><div class=\"lbl\">%s<small>%s</small></div></div><div class=\"mid\"></div><div class=\"panel mag acts\">%s%s%s</div></div>%s"
+            sprintf "%s%s<div class=\"row2\"><div class=\"panel cyan zone\" id=\"stick\"><div class=\"ring\"></div><div class=\"knob\"></div><div class=\"lbl\">%s<small>%s</small></div></div><div class=\"mid\"></div><div class=\"panel mag acts\"><div class=\"hexes\">%s%s%s</div><div class=\"slide\" id=\"strafe\"><div class=\"lbl\">&#9664; %s &#9654;</div><div class=\"track\"><div class=\"fill\"></div><div class=\"thumb\"></div></div></div></div></div>%s"
                 corners header Strings.t.PadMove Strings.t.PadMoveHint
-                (button "special" "special" Strings.t.PadSpecial)
-                (button "boost" "boost" Strings.t.PadBoost)
-                (button "fire" "fire" Strings.t.PadFire)
+                (button "hex special" "special" Strings.t.PadSpecial)
+                (button "hex boost" "boost" Strings.t.PadBoost)
+                (button "hex fire" "fire" Strings.t.PadFire)
+                Strings.t.PadStrafe
                 footer
         stick (document.getElementById "stick")
+        slider (document.getElementById "strafe")
     | "lobby" when isNullOrUndefined card ->
         root.innerHTML <-
             sprintf "%s<div class=\"card panel cyan\"><div class=\"title\">%s %s</div>%s</div>" corners Strings.t.TitleMain Strings.t.TitleSub (button "big" "fire" Strings.t.Join)
