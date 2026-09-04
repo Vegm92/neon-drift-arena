@@ -24,6 +24,7 @@ type Action =
 
 let joined = HashSet<int>()
 let teams: int[] = Array.zeroCreate 4
+let wins: int[] = Array.zeroCreate 4
 let mutable screen = Lobby
 let mutable note = ""
 let mutable private shown = true
@@ -106,6 +107,7 @@ let private cycleColor slot dir =
 
 let private applyMode () =
     Array.fill ready 0 4 false
+    Array.fill wins 0 4 0
     let order = joined |> Seq.sort |> Seq.toList
     if teamMode then
         order |> List.iteri (fun i s -> teams.[s] <- 1 + i % 2)
@@ -118,6 +120,7 @@ let isBot slot = joined.Contains slot && owner.[slot] = botKey
 
 let private claim key slot =
     if key <> botKey then Input.assign key slot
+    Array.fill wins 0 4 0
     owner.[slot] <- key
     joined.Add slot |> ignore
     ready.[slot] <- false
@@ -148,6 +151,7 @@ let testStart () =
 
 let private leave slot =
     joined.Remove slot |> ignore
+    Array.fill wins 0 4 0
     ready.[slot] <- false
     onRow.[slot] <- false
     teams.[slot] <- 0
@@ -216,7 +220,7 @@ let private renderLobby (devices: Input.Device[]) =
               let color = cardColor i
               let foot =
                   if not inGame then ""
-                  elif ready.[i] then sprintf "<div class=\"foot\">%s</div>" Strings.t.Ready
+                  elif ready.[i] then sprintf "<div class=\"foot\">%s %s</div>" Strings.t.Ready (String.replicate wins.[i] "★")
                   else sprintf "<div class=\"foot pick\">&#9664; %s &#9654;</div>" (pickName i)
               let cls = (if inGame then " in" else "") + (if inGame && onRow.[i] then " away" else "")
               sprintf
@@ -265,15 +269,33 @@ let private renderLobby (devices: Input.Device[]) =
             (legend Strings.t.Phone Strings.t.PhoneLegend)
             (qr ())
 
+let recordWin (winner: int) (team: int) =
+    for s in joined do
+        if s = winner || (team > 0 && teams.[s] = team) then wins.[s] <- wins.[s] + 1
+    let series = wins.[winner] >= Cfg.seriesTo
+    if series then Array.fill wins 0 4 0
+    series
+
+let private tally () =
+    joined
+    |> Seq.sort
+    |> Seq.map (fun s -> sprintf "<i style=\"color:%s\">%s %s</i>" (cardColor s) (Strings.t.Player s) (String.replicate wins.[s] "★"))
+    |> String.concat ""
+
 let private renderList (title: string) =
     let list =
         items ()
         |> List.mapi (fun i (label, _) -> sprintf "<div class=\"item%s\"><b>%s</b></div>" (if i = cursor then " sel" else "") label)
         |> String.concat ""
-    let hints = Strings.t.NavKeys |> List.map (fun (k, l) -> hint k l) |> String.concat ""
+    let hints =
+        (match screen with
+         | Pause -> Strings.t.NavKeys
+         | _ -> Strings.t.NavKeys @ [ Strings.t.KeysJoin, Strings.t.Join; Strings.t.KeysLeave, Strings.t.Leave ])
+        |> List.map (fun (k, l) -> hint k l)
+        |> String.concat ""
     el.innerHTML <-
-        sprintf "<div class=\"lobby\"><div class=\"title\"><h1>%s</h1></div><div class=\"stats\">%s</div><div class=\"buttons col\">%s</div><div class=\"hints\">%s</div>%s</div>"
-            title note list hints (if screen = Pause then qr () else "")
+        sprintf "<div class=\"lobby\"><div class=\"title\"><h1>%s</h1></div><div class=\"tally\">%s</div><div class=\"stats\">%s</div><div class=\"buttons col\">%s</div><div class=\"hints\">%s</div>%s</div>"
+            title (tally ()) note list hints (if screen = Pause then qr () else "")
 
 let private renderOptions () =
     let n = optRows.Length
@@ -397,7 +419,16 @@ let private updateList (title: string) (inputs: Input[]) =
         let fire = rising k "fire" (inp.Fire || inp.Boost)
         let start = rising k "start" inp.Start
         if fire || start then action <- Some(snd (items ()).[cursor])
-        if rising k "back" inp.Back then action <- Some(if screen = Pause then Resume else Quit))
+        if rising k "back" inp.Back then
+            if screen = Pause then action <- Some Resume
+            else
+                leave i
+                if joined.Count < 2 then action <- Some Quit)
+    if screen <> Pause then
+        for d in Input.devices () do
+            let mine = d.Slot >= 0 && joined.Contains d.Slot && owner.[d.Slot] = d.Key
+            if not mine && rising d.Key "fire" (d.Input.Fire || d.Input.Boost) then
+                [ 0..3 ] |> List.tryFind (fun i -> not (joined.Contains i)) |> Option.iter (claim d.Key)
     renderList title
     match action with
     | Some Configure ->

@@ -140,7 +140,7 @@ let rec frame (t: float) =
             go true
         | Some Menu.Rematch
         | Some Menu.Restart ->
-            world <- Sim.reset world
+            world <- Sim.reset (fun i -> Menu.joined.Contains i) world |> Sim.withTeams Menu.teams
             go true
         | Some Menu.Resume -> go false
         | Some Menu.Quit ->
@@ -192,6 +192,10 @@ let rec frame (t: float) =
             slowmo <- 1.5
             endTitle <- title world
             endNote <- stats world
+            match world.Phase with
+            | Over(Some i) when Menu.recordWin i world.Ships.[i].Team ->
+                endTitle <- Strings.t.SeriesWin(if world.Ships.[i].Team > 0 then [| ""; Strings.t.Blue; Strings.t.Red |].[world.Ships.[i].Team] else name i)
+            | _ -> ()
         | Over _ ->
             finish <- finish - dt
             if finish <= 0. then

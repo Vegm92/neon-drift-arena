@@ -8,6 +8,7 @@ open Domain
 let private tweaksKey = "nda-tweaks"
 let private padsKey = "nda-pads"
 let private arenaKey = "nda-arena"
+let private catchKey = "nda-catchup"
 
 let private defaults = Cfg.tunables |> Array.map (fun (_, get, _) -> get ())
 
@@ -71,6 +72,7 @@ let rows () =
           yield Swap(Strings.t.SwapSticks, (fun () -> (Input.pref i).Swap), (fun b -> padPref i (fun pr -> { pr with Swap = b })))
       yield Header Strings.t.Arena
       yield Arena
+      yield Swap(Strings.t.CatchUp, (fun () -> Sim.catchUp), (fun b -> Sim.catchUp <- b; window.localStorage.setItem (catchKey, string b)))
       yield Header Strings.t.Audio
       yield Level(Strings.t.Music, 1)
       yield Level(Strings.t.Sounds, 0)
@@ -156,4 +158,5 @@ let init () =
         match System.Int32.TryParse v with
         | true, i when i >= 0 && i < Sim.layouts.Length -> Sim.setLayout i
         | _ -> ()
+    Sim.catchUp <- window.localStorage.getItem catchKey <> "false"
     Input.changed <- savePads

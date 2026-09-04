@@ -87,7 +87,8 @@ let main _ =
         teamed |> place 0 zero 0. |> place 1 (v 30. 0.) 0. |> edit 1 (fun s -> { s with Vel = v (-150.) 0. })
         |> step dt three
     check "teammates ram without damage" (w13.Ships.[0].Hp = hpMax && w13.Ships.[1].Hp = hpMax)
-    check "teammates keep their team on respawn" (w13.Ships.[0].Team = 1 && (reset w13).Ships.[1].Team = 1)
+    check "teammates keep their team on respawn" (w13.Ships.[0].Team = 1 && (reset (fun _ -> true) w13).Ships.[1].Team = 1)
+    check "reset drops players who left" (not (reset (fun i -> i <> 1) w13).Ships.[1].Active)
 
     let clear (p: V2) margin = asteroids |> Array.forall (fun a -> len (a.Pos - p) > a.Radius + margin)
     let ray (dir: V2) = [ 180. .. 40. .. 900. ] |> List.forall (fun t -> clear (dir * t) shipRadius)
@@ -290,6 +291,15 @@ let main _ =
     check "test stage faces two ships across a crate and a mine"
         (staged.Ships.[0].Pos.X < 0. && staged.Ships.[1].Pos.X > 0. && staged.Mines.Length = 1 && staged.Crates.[0].RespawnIn = 0.)
     check "test stage arms any weapon" ((arm 0 Rail staged).Ships.[0].Ammo = railAmmo)
+
+    let behindOne = w0 |> edit 0 (fun s -> { s with Alive = false; Stocks = 1; RespawnIn = dt / 2. }) |> step dt (all present)
+    check "the underdog respawns with full boost and a shield" (behindOne.Ships.[0].Boost = boostMax && behindOne.Ships.[0].Shield = shieldAmount)
+    catchUp <- false
+    let noMercy = w0 |> edit 0 (fun s -> { s with Alive = false; Stocks = 1; RespawnIn = dt / 2. }) |> step dt (all present)
+    check "catch-up can be switched off" (noMercy.Ships.[0].Boost = boostStart && noMercy.Ships.[0].Shield = 0.)
+    catchUp <- true
+    let even = w0 |> edit 0 (fun s -> { s with Alive = false; RespawnIn = dt / 2. }) |> step dt (all present)
+    check "an even ship gets no catch-up" (even.Ships.[0].Boost = boostStart)
 
     check "border is whole until the clock runs out" (bounds matchTime = 1. && bounds (matchTime + shrinkTime) = shrinkMin)
     let late = { w0 with Time = matchTime + shrinkTime + 1. } |> place 0 (v (arenaHalf * 0.9) 0.) 0.

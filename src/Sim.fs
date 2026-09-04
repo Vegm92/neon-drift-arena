@@ -704,9 +704,16 @@ let private pickSpawn (ships: Ship[]) rng (s: Ship) =
     let ranked = [| 0..3 |] |> Array.sortByDescending (fun i -> safety (spawnPos i))
     ranked.[(rng + s.Id * 7919) % 2]
 
+let mutable catchUp = true
+
+let private underdog (ships: Ship[]) (s: Ship) =
+    let rivals = ships |> Array.filter (fun t -> t.Active && t.Stocks > 0 && side t <> side s)
+    catchUp && rivals.Length > 0 && s.Stocks < (rivals |> Array.map (fun t -> t.Stocks) |> Array.min)
+
 let private reborn (ships: Ship[]) rng (s: Ship) =
     let p = spawnPos (pickSpawn ships rng s)
-    { respawn s with Stocks = s.Stocks; Pos = p; Angle = atan2 (-p.Y) (-p.X) }
+    let back = { respawn s with Stocks = s.Stocks; Pos = p; Angle = atan2 (-p.Y) (-p.X) }
+    if underdog ships s then { back with Boost = boostMax; Shield = shieldAmount } else back
 
 let private settle (ships: Ship[]) rng k dt (s: Ship) =
     if s.Alive && (s.Hp <= 0. || outOfBoundsAt k s.Pos) then
@@ -779,12 +786,18 @@ let stage (w: World) =
 let arm i wpn (w: World) =
     { w with Ships = w.Ships |> Array.map (fun s -> if s.Id = i then { s with Weapon = wpn; Ammo = weaponAmmo wpn; Charge = 0. } else s) }
 
-let reset (w: World) =
-    { initial with Ships = w.Ships |> Array.map (fun s -> if s.Active then { freshShip s.Id with Team = s.Team } else s); Rng = w.Rng }
+let reset (active: int -> bool) (w: World) =
+    { initial with
+        Ships =
+            w.Ships
+            |> Array.map (fun s ->
+                if active s.Id then { freshShip s.Id with Team = s.Team }
+                else { freshShip s.Id with Team = s.Team; Active = false; Alive = false; Stocks = 0 })
+        Rng = w.Rng }
 
 let step dt (inputs: Input[]) (w: World) =
     match w.Phase with
-    | Over _ when inputs |> Array.exists (fun i -> i.Start) -> reset w
+    | Over _ when inputs |> Array.exists (fun i -> i.Start) -> reset (fun i -> w.Ships.[i].Active) w
     | _ ->
         let k = bounds w.Time
         let fired =

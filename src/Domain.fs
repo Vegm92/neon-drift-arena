@@ -93,6 +93,7 @@ module Cfg =
     let mutable shrinkTime = 40.
     let shrinkMin = 0.45
     let introTime = 5.
+    let seriesTo = 5
     let mutable ghostSpeed = 240.
     let mutable ghostCooldown = 8.
 
