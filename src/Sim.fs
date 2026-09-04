@@ -671,7 +671,18 @@ let private stepCrates dt rng (ships: Ship[]) (crates: Crate[]) =
                 | None -> c)
     sh, out, r, List.ofSeq events
 
-let private settle k dt (s: Ship) =
+let private pickSpawn (ships: Ship[]) rng (s: Ship) =
+    let foes = ships |> Array.filter (fun t -> t.Alive && side t <> side s)
+    let safety p =
+        if foes.Length = 0 then 0. else foes |> Array.map (fun t -> len (t.Pos - p)) |> Array.min
+    let ranked = [| 0..3 |] |> Array.sortByDescending (fun i -> safety (spawnPos i))
+    ranked.[(rng + s.Id * 7919) % 2]
+
+let private reborn (ships: Ship[]) rng (s: Ship) =
+    let p = spawnPos (pickSpawn ships rng s)
+    { respawn s with Stocks = s.Stocks; Pos = p; Angle = atan2 (-p.Y) (-p.X) }
+
+let private settle (ships: Ship[]) rng k dt (s: Ship) =
     if s.Alive && (s.Hp <= 0. || outOfBoundsAt k s.Pos) then
         let ring = outOfBoundsAt k s.Pos
         { s with
@@ -684,7 +695,7 @@ let private settle k dt (s: Ship) =
             Rings = s.Rings + (if ring then 1 else 0) },
         Some(s.Pos, s.Id, ring, s.LastHit, s.LastWeapon)
     elif not s.Alive && s.Active && s.Stocks > 0 then
-        (if s.RespawnIn <= dt then { respawn s with Stocks = s.Stocks } else { s with RespawnIn = s.RespawnIn - dt }),
+        (if s.RespawnIn <= dt then reborn ships rng s else { s with RespawnIn = s.RespawnIn - dt }),
         None
     else
         s, None
@@ -731,7 +742,7 @@ let step dt (inputs: Input[]) (w: World) =
         let ships, bumps = resolveAsteroids ships
         let ships, pads, picks = resolvePads (sudden w) dt ships w.Pads
         let ships, crates, rng, grabs = stepCrates dt w.Rng ships w.Crates
-        let settled, deaths = ships |> Array.map (settle k dt) |> Array.unzip
+        let settled, deaths = ships |> Array.map (settle ships rng k dt) |> Array.unzip
         let ships = Array.copy settled
         let kills = deaths |> Array.toList |> List.choose id
         for (_, victim, _, by, _) in kills do

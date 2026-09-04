@@ -30,8 +30,9 @@ let mutable endNote = ""
 let private masked () =
     Input.read () |> Array.mapi (fun i x -> if Menu.joined.Contains i then x else noInput)
 
-let private go () =
-    countdown <- 3.
+let private go intro =
+    countdown <- if intro then Cfg.introTime else 3.
+    view.Intro <- if intro then Cfg.introTime else 0.
     acc <- 0.
     slowmo <- 0.
     hitstop <- 0.
@@ -125,12 +126,12 @@ let rec frame (t: float) =
         match Menu.update (masked ()) with
         | Some Menu.Rematch when Menu.screen = Menu.Lobby ->
             world <- { Sim.initial with Rng = System.Random().Next 1000003 } |> Sim.withTeams Menu.teams
-            go ()
+            go true
         | Some Menu.Rematch
         | Some Menu.Restart ->
             world <- Sim.reset world
-            go ()
-        | Some Menu.Resume -> go ()
+            go true
+        | Some Menu.Resume -> go false
         | Some Menu.Quit ->
             world <- Sim.initial
             Menu.show ()

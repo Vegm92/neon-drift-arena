@@ -64,7 +64,7 @@ let main _ =
     check "out of bounds kills and costs a stock" (not w5.Ships.[0].Alive && w5.Ships.[0].Stocks = stocks - 1)
     check "explosion event emitted" (w5.Events |> List.exists (function Explode _ -> true | _ -> false))
     let w6 = run (int (respawnDelay / dt) + 2) (all present) w5
-    check "respawns at own corner" (w6.Ships.[0].Alive && w6.Ships.[0].Pos = spawnPos 0)
+    check "respawns at a spawn point" (w6.Ships.[0].Alive && [ 0..3 ] |> List.exists (fun i -> w6.Ships.[0].Pos = spawnPos i))
 
     let w7 =
         w0 |> place 0 zero 0. |> place 1 (v 30. 0.) 0. |> edit 1 (fun s -> { s with Vel = v (-150.) 0. })
@@ -267,6 +267,10 @@ let main _ =
     let downed =
         Seq.fold (fun (w, seen) _ -> let w = step dt firing w in w, seen @ w.Events) (w0 |> place 0 zero 0. |> place 1 (v 200. 0.) 0. |> edit 1 (fun s -> { s with Hp = 1. }), []) (seq { 1..60 }) |> snd
     check "kill feed names the shooter and the blaster" (downed |> List.exists (function Downed(1, 0, Blaster, false) -> true | _ -> false))
+
+    let camping = w0 |> place 1 (spawnPos 0 + v 50. 0.) 0. |> place 2 zero 0. |> place 3 (v 100. 100.) 0.
+    let backAgain = camping |> edit 0 (fun s -> { s with Alive = false; RespawnIn = dt / 2. }) |> step dt (all present)
+    check "respawn avoids the camped spawn point" (backAgain.Ships.[0].Alive && len (backAgain.Ships.[0].Pos - spawnPos 0) > 100.)
 
     check "border is whole until the clock runs out" (bounds matchTime = 1. && bounds (matchTime + shrinkTime) = shrinkMin)
     let late = { w0 with Time = matchTime + shrinkTime + 1. } |> place 0 (v (arenaHalf * 0.9) 0.) 0.

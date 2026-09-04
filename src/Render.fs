@@ -61,6 +61,9 @@ type View =
       Mines: Object3D[]
       Crates: Object3D[]
       Panels: HTMLElement[]
+      Tags: HTMLElement[]
+      Spawns: Mesh[]
+      mutable Intro: float
       Border: Object3D
       Clock: HTMLElement
       Feed: HTMLElement
@@ -277,12 +280,14 @@ let private mkArena (scene: Object3D) =
     core.add (three.Mesh(three.RingGeometry(150., 152., 48) |> flat, glowMat 0x00f6ff 0.35))
     core.position.y <- -0.5
     scene.add core
-    for i in 0..3 do
-        let p = Sim.spawnPos i
-        let m = three.Mesh(three.RingGeometry(120., 124., 8) |> flat, glowMat colors.[i] 0.5)
-        m.position.set (p.X, -0.5, p.Y)
-        m.rotation.z <- Math.PI / 8.
-        scene.add m
+    let spawns =
+        Array.init 4 (fun i ->
+            let p = Sim.spawnPos i
+            let m = three.Mesh(three.RingGeometry(120., 124., 8) |> flat, glowMat colors.[i] 0.5)
+            m.position.set (p.X, -0.5, p.Y)
+            m.rotation.z <- Math.PI / 8.
+            scene.add m
+            m)
     let n = 1500
     let stars = three.BufferGeometry()
     stars.setAttribute (
@@ -298,7 +303,7 @@ let private mkArena (scene: Object3D) =
     scene.add (
         three.Points(stars, three.PointsMaterial(box {| color = 0x9fb3ff; size = 3.; transparent = true; opacity = 0.7 |}))
     )
-    border
+    border, spawns
 
 let syncArena (vw: View) =
     if vw.Layout <> Sim.layout then
@@ -318,6 +323,14 @@ let private mkPanel (hud: HTMLElement) i =
             "<div class=\"name\" style=\"color:#%06x\">%s</div><div class=\"bar hp\"><i></i></div><div class=\"bar shield\"><i></i></div><div class=\"bar boost\"><i></i></div><div class=\"bar heat\"><i></i></div><div class=\"stocks\"></div><div class=\"wep\"></div>"
             colors.[i]
             (Strings.t.Player i)
+    hud.appendChild el |> ignore
+    el
+
+let private mkTag (hud: HTMLElement) i =
+    let el = document.createElement "div"
+    el.className <- "tag"
+    el.textContent <- Strings.t.Player i
+    el.hidden <- true
     hud.appendChild el |> ignore
     el
 
@@ -344,7 +357,7 @@ let create () =
     let bloom = bloomPass (three.Vector2(w, h), 1.3, 0.5, 0.12)
     composer.addPass (renderPass (scene, camera))
     composer.addPass (box bloom)
-    let border = mkArena scene
+    let border, spawns = mkArena scene
     let hud = document.getElementById "hud"
     let vw =
         { Scene = scene
@@ -360,6 +373,9 @@ let create () =
           Mines = Array.init minePool (fun _ -> mkMine scene)
           Crates = Array.init 4 (fun _ -> mkCrate scene)
           Panels = Array.init 4 (mkPanel hud)
+          Tags = Array.init 4 (mkTag hud)
+          Spawns = spawns
+          Intro = 0.
           Border = border
           Clock = document.getElementById "clock"
           Feed = document.getElementById "feed"
@@ -642,6 +658,17 @@ let private drawBullets (vw: View) (w: World) dt =
     for i in k .. vw.Bullets.Length - 1 do
         vw.Bullets.[i].visible <- false
 
+let private smooth x = x * x * (3. - 2. * x)
+
+let private flyby (vw: View) dt =
+    vw.Intro <- vw.Intro - dt
+    let t = 1. - vw.Intro / introTime
+    let u = min 2.999 (t / 0.8 * 3.)
+    let seg = int u
+    let a, b = Sim.spawnPos seg, Sim.spawnPos (seg + 1)
+    vw.Cam <- a + (b - a) * smooth (u - float seg)
+    vw.CamH <- minCamH * 0.5
+
 let private frameCamera (vw: View) (w: World) dt =
     let alive = w.Ships |> Array.filter (fun s -> s.Alive)
     let lo, hi =
@@ -660,10 +687,34 @@ let private frameCamera (vw: View) (w: World) dt =
     let zoomed = (maxCamH - h) / (maxCamH - minCamH)
     let center = center * zoomed
     let k = 1. - exp (-4. * dt)
-    vw.Cam <- vw.Cam + (center - vw.Cam) * k
-    vw.CamH <- vw.CamH + (h - vw.CamH) * k
+    if vw.Intro > introTime * 0.2 then
+        flyby vw dt
+    else
+        vw.Intro <- max 0. (vw.Intro - dt)
+        vw.Cam <- vw.Cam + (center - vw.Cam) * k
+        vw.CamH <- vw.CamH + (h - vw.CamH) * k
     vw.Camera.position.set (vw.Cam.X, vw.CamH, vw.Cam.Y + vw.CamH * 0.3)
     vw.Camera.lookAt (vw.Cam.X, 0., vw.Cam.Y)
+
+let private drawTags (vw: View) (w: World) =
+    w.Ships
+    |> Array.iteri (fun i s ->
+        let el = vw.Tags.[i]
+        let show = s.Alive && s.Invuln > 0.
+        el.hidden <- not show
+        if show then
+            let p = (three.Vector3(s.Pos.X, 0., s.Pos.Y)).project vw.Camera
+            el?style?left <- sprintf "%.0fpx" ((p.x + 1.) / 2. * window.innerWidth)
+            el?style?top <- sprintf "%.0fpx" ((1. - p.y) / 2. * window.innerHeight - 44.)
+            el?style?color <- sprintf "#%06x" (shipColor s))
+
+let private drawSpawns (vw: View) (w: World) =
+    Array.iter2
+        (fun (m: Mesh) (s: Ship) ->
+            m.visible <- s.Active
+            m.material.color.setHex (shipColor s))
+        vw.Spawns
+        w.Ships
 
 let private icon (w: Weapon) ring =
     let path =
@@ -806,6 +857,8 @@ let draw (vw: View) (w: World) (events: Event list) dt =
     updateBursts vw dt
     updateFlashes vw dt
     frameCamera vw w dt
+    drawTags vw w
+    drawSpawns vw w
     drawHud vw w dt
     drawTint vw dt
     drawPost vw dt

@@ -8,6 +8,7 @@ type Vector3 =
     abstract y: float with get, set
     abstract z: float with get, set
     abstract set: float * float * float -> unit
+    abstract project: obj -> Vector3
 
 type Color =
     abstract setHex: int -> unit
@@ -85,6 +86,8 @@ type Lib =
     abstract Color: int -> Color
     [<Emit("new $0.Vector2($1,$2)")>]
     abstract Vector2: float * float -> obj
+    [<Emit("new $0.Vector3($1,$2,$3)")>]
+    abstract Vector3: float * float * float -> Vector3
     [<Emit("new $0.Shape()")>]
     abstract Shape: unit -> Shape
     [<Emit("new $0.BufferGeometry()")>]
