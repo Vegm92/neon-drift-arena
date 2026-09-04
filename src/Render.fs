@@ -33,6 +33,7 @@ type ShipView =
       Laser: Mesh
       Tether: Mesh
       Bubble: Mesh
+      Warn: Mesh
       Trail: Mesh
       History: ResizeArray<V2> }
 
@@ -156,6 +157,10 @@ let private mkShip (scene: Object3D) i =
     let shield = three.Mesh(three.RingGeometry(shipRadius + 5., shipRadius + 9., 6) |> flat, glowMat 0x3b8cff 0.9)
     shield.visible <- false
     root.add shield
+    let warn = three.Mesh(three.Arc(shipRadius + 15., shipRadius + 19., 20, -0.65, 1.3) |> flat, glowMat 0xff3b5c 0.8)
+    warn.position.y <- 3.
+    warn.visible <- false
+    scene.add warn
     let trail = mkTrail hex
     let tether = three.Mesh(three.PlaneGeometry(1., 4.) |> flat, glowMat hex 0.7)
     tether.visible <- false
@@ -171,6 +176,7 @@ let private mkShip (scene: Object3D) i =
       Laser = laser
       Tether = tether
       Bubble = bubble
+      Warn = warn
       Trail = trail
       History = ResizeArray() }
 
@@ -578,6 +584,48 @@ let private drawShip t (vw: View) (sv: ShipView) (s: Ship) =
     sv.Trail.geometry.setDrawRange (0, sv.History.Count)
     attr.needsUpdate <- true
 
+let private threat (w: World) (me: Ship) =
+    let foe (owner: int) = Sim.side w.Ships.[owner] <> Sim.side me
+    let toward (p: V2) f = let d = p - me.Pos in atan2 d.Y d.X, f
+    let bullets =
+        w.Bullets
+        |> List.choose (fun b ->
+            let rel = me.Pos - b.Pos
+            let dir = norm b.Vel
+            let along = dot rel dir
+            if foe b.Owner && along > 0. && along < 620. && len (rel - dir * along) < 60. then
+                Some(toward b.Pos (1. - along / 620.))
+            else None)
+    let mines =
+        w.Mines
+        |> List.choose (fun m ->
+            let d = len (m.Pos - me.Pos)
+            if foe m.Owner && m.Fuse >= 0. && d < mineMagnet * 2.5 then Some(toward m.Pos (1. - d / (mineMagnet * 2.5))) else None)
+    let charging =
+        w.Ships
+        |> Array.toList
+        |> List.choose (fun s ->
+            let d = me.Pos - s.Pos
+            let dist = len d
+            let reach = if s.Weapon = Rail then 4. * arenaHalf else tractorRange * 1.2
+            let rel = atan2 d.Y d.X - s.Angle
+            if s.Alive && s.Charge > 0. && foe s.Id && dist < reach && abs (atan2 (sin rel) (cos rel)) < 0.35 then
+                Some(toward s.Pos (0.5 + 0.5 * min 1. (s.Charge / railCharge)))
+            else None)
+    match bullets @ mines @ charging with
+    | [] -> None
+    | ts -> Some(List.maxBy snd ts)
+
+let private drawWarn t (w: World) (sv: ShipView) (s: Ship) =
+    let hit = if s.Alive then threat w s else None
+    sv.Warn.visible <- hit.IsSome
+    match hit with
+    | Some(a, f) ->
+        sv.Warn.position.set (s.Pos.X, 3., s.Pos.Y)
+        sv.Warn.rotation.y <- -a
+        sv.Warn.material.opacity <- (0.25 + 0.75 * f) * (0.7 + 0.3 * sin (t * 18.))
+    | None -> ()
+
 let private drawSmoke (vw: View) (w: World) dt =
     w.Ships
     |> Array.iteri (fun i s ->
@@ -849,6 +897,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
     drawSmoke vw w dt
     Array.iter2 (drawShip w.Time vw) vw.Ships w.Ships
     Array.iter2 (drawTether w.Time w) vw.Ships w.Ships
+    Array.iter2 (drawWarn w.Time w) vw.Ships w.Ships
     drawBorder vw w
     drawPads vw w
     drawCrates vw w

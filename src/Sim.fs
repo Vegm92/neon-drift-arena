@@ -59,7 +59,7 @@ let private respawn (s: Ship) =
         Rings = s.Rings
         Kills = s.Kills }
 
-let private side (s: Ship) = if s.Team > 0 then -s.Team else s.Id
+let side (s: Ship) = if s.Team > 0 then -s.Team else s.Id
 
 let private nearest (ships: Ship[]) owner (p: V2) =
     ships

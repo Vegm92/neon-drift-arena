@@ -343,6 +343,7 @@ let play (events: Event list) =
             | Zap(p, _, _) -> zap p
             | Latch(p, _) -> latch p
             | Explode(p, _, _) -> explode p
+            | Downed _ -> ()
 
 let thrust (w: World) =
     if ready () then

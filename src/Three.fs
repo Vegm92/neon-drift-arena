@@ -98,6 +98,8 @@ type Lib =
     abstract ExtrudeGeometry: Shape * obj -> BufferGeometry
     [<Emit("new $0.EdgesGeometry($1)")>]
     abstract EdgesGeometry: BufferGeometry -> BufferGeometry
+    [<Emit("new $0.RingGeometry($1,$2,$3,1,$4,$5)")>]
+    abstract Arc: float * float * int * float * float -> BufferGeometry
     [<Emit("new $0.RingGeometry($1,$2,$3)")>]
     abstract RingGeometry: float * float * int -> BufferGeometry
     [<Emit("new $0.CircleGeometry($1,$2)")>]
