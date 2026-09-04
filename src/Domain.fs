@@ -175,6 +175,7 @@ type Weapon =
     | Pulse
     | Scatter
     | Tractor
+    | Collision
 
 let crateTiers = [| Rail, 1; Pulse, 2; Scatter, 2; Tractor, 2; Mines, 3; Swarm, 3 |]
 let crateWeapons = crateTiers |> Array.collect (fun (w, n) -> Array.create n w)
@@ -188,6 +189,7 @@ let weaponAmmo w =
     | Pulse -> Cfg.pulseAmmo
     | Scatter -> Cfg.scatterAmmo
     | Tractor -> Cfg.tractorAmmo
+    | Collision -> 0
 
 type Tether =
     | NoTether
@@ -224,6 +226,7 @@ type Ship =
       Tow: Tether
       TowLeft: float
       LastHit: int
+      LastWeapon: Weapon
       Streak: int
       Shots: int
       Hits: int
@@ -254,6 +257,7 @@ type Phase =
 type Event =
     | Hit of V2
     | Explode of V2 * int * bool
+    | Downed of int * int * Weapon * bool
     | Shot of V2
     | Ram of V2
     | Bump of V2

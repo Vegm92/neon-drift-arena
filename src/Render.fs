@@ -63,6 +63,7 @@ type View =
       Panels: HTMLElement[]
       Border: Object3D
       Clock: HTMLElement
+      Feed: HTMLElement
       Banner: HTMLElement
       Vignette: HTMLElement
       mutable Bursts: Burst list
@@ -361,6 +362,7 @@ let create () =
           Panels = Array.init 4 (mkPanel hud)
           Border = border
           Clock = document.getElementById "clock"
+          Feed = document.getElementById "feed"
           Banner = document.getElementById "banner"
           Vignette = document.getElementById "vignette"
           Bursts = []
@@ -663,9 +665,36 @@ let private frameCamera (vw: View) (w: World) dt =
     vw.Camera.position.set (vw.Cam.X, vw.CamH, vw.Cam.Y + vw.CamH * 0.3)
     vw.Camera.lookAt (vw.Cam.X, 0., vw.Cam.Y)
 
+let private icon (w: Weapon) ring =
+    let path =
+        if ring then "M8 32 L48 32 M34 18 L48 32 L34 46"
+        else
+            match w with
+            | Blaster -> "M10 32 L38 32 M42 32 L54 32"
+            | Rail -> "M4 32 L60 32 M46 24 L46 40"
+            | Mines -> "M32 14 L32 50 M14 32 L50 32 M19 19 L45 45 M45 19 L19 45 M32 32 m-9 0 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0"
+            | Swarm -> "M10 40 L40 22 M40 22 L30 22 M40 22 L40 32 M22 46 L52 28"
+            | Pulse -> "M24 16 a20 20 0 0 1 0 32 M36 10 a28 28 0 0 1 0 44 M10 32 L18 32"
+            | Scatter -> "M8 32 L20 20 L28 40 L38 22 L46 42 L56 30"
+            | Tractor -> "M8 32 L36 32 M36 32 m-10 0 a10 10 0 1 0 20 0 a10 10 0 1 0 -20 0 M56 20 L56 44"
+            | Collision -> "M32 8 L36 26 L54 22 L40 34 L52 50 L34 42 L28 58 L26 40 L8 44 L22 32 L12 16 L28 24 Z"
+    sprintf "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"%s\"/></svg>" path
+
+let private feedLine (vw: View) (w: World) victim by wpn ring =
+    let tag i = sprintf "<b style=\"color:#%06x\">%s</b>" (shipColor w.Ships.[i]) (Strings.t.Player i)
+    let line = document.createElement "div"
+    line.innerHTML <-
+        if by >= 0 && by <> victim then tag by + icon wpn ring + tag victim
+        else tag victim + icon Collision true
+    vw.Feed?prepend line
+    while vw.Feed.children.length > 4 do
+        vw.Feed?lastElementChild?remove ()
+    window.setTimeout ((fun () -> line.remove ()), 5000) |> ignore
+
 let private weaponLabel (s: Ship) =
     match s.Weapon with
-    | Blaster -> Strings.t.WBlaster
+    | Blaster
+    | Collision -> Strings.t.WBlaster
     | Rail -> Strings.t.Loaded Strings.t.WRail s.Ammo
     | Mines -> Strings.t.Loaded Strings.t.WMines s.Ammo
     | Swarm -> Strings.t.Loaded Strings.t.WSwarm s.Ammo
@@ -764,6 +793,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
             vw.Spike <- max vw.Spike 1.
             vw.Tint <- 1.
             vw.TintHex <- sprintf "#%06x" (if ring then 0x3d5cff else hex)
+        | Downed(victim, by, wpn, ring) -> feedLine vw w victim by wpn ring
         | Shot _ -> ()
     drawSmoke vw w dt
     Array.iter2 (drawShip w.Time vw) vw.Ships w.Ships

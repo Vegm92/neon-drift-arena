@@ -42,6 +42,7 @@ let freshShip i =
       Tow = NoTether
       TowLeft = 0.
       LastHit = -1
+      LastWeapon = Blaster
       Streak = 0
       Shots = 0
       Hits = 0
@@ -243,7 +244,7 @@ let private damage amt (s: Ship) =
         let soaked = min s.Shield amt
         { s with Shield = s.Shield - soaked; Hp = s.Hp - (amt - soaked) }
 
-let private tag by (s: Ship) = if s.Invuln > 0. then s else { s with LastHit = by }
+let private tag by wpn (s: Ship) = if s.Invuln > 0. then s else { s with LastHit = by; LastWeapon = wpn }
 
 let hurting (s: Ship) = s.Alive && s.Hp < hurtBelow
 
@@ -326,7 +327,8 @@ let private special dt (inp: Input) (s: Ship) =
         let dir = ofAngle s.Angle
         let nose = s.Pos + dir * (shipRadius + 6.)
         match s.Weapon with
-        | Blaster -> s, [], [], []
+        | Blaster
+        | Collision -> s, [], [], []
         | Rail ->
             if inp.Special then
                 let c = s.Charge + dt
@@ -434,7 +436,7 @@ let private resolveBeams (ships: Ship[]) beams =
                 events.Add(Hit s.[i].Pos)
                 if s.[i].Invuln <= 0. then
                     s.[owner] <- { s.[owner] with Hits = s.[owner].Hits + 1 }
-                s.[i] <- { s.[i] with Vel = s.[i].Vel + dir * bulletKnockback } |> tag owner |> damage railDamage
+                s.[i] <- { s.[i] with Vel = s.[i].Vel + dir * bulletKnockback } |> tag owner Rail |> damage railDamage
     s, List.ofSeq events
 
 let private inCone (s: Ship[]) p a range cone owner i =
@@ -452,7 +454,7 @@ let private resolveWaves (ships: Ship[]) waves =
     for (p, a, owner) in waves do
         for i in 0 .. s.Length - 1 do
             match inCone s p a pulseRange pulseCone owner i with
-            | Some(n, f) -> s.[i] <- { s.[i] with Vel = s.[i].Vel + n * (pulseForce * f) } |> tag owner
+            | Some(n, f) -> s.[i] <- { s.[i] with Vel = s.[i].Vel + n * (pulseForce * f) } |> tag owner Pulse
             | None -> ()
     s
 
@@ -466,7 +468,7 @@ let private resolveZaps (ships: Ship[]) zaps =
                 events.Add(Hit s.[i].Pos)
                 if s.[i].Invuln <= 0. then
                     s.[owner] <- { s.[owner] with Hits = s.[owner].Hits + 1 }
-                s.[i] <- { s.[i] with Stun = max s.[i].Stun scatterStun; Thrusting = 0. } |> tag owner |> damage scatterDamage
+                s.[i] <- { s.[i] with Stun = max s.[i].Stun scatterStun; Thrusting = 0. } |> tag owner Scatter |> damage scatterDamage
             | None -> ()
     s, List.ofSeq events
 
@@ -500,7 +502,7 @@ let private resolveTows dt (ships: Ship[]) latches =
             else
                 match me.Tow with
                 | TowShip j when s.[j].Alive && len (s.[j].Pos - me.Pos) < tractorRange * 1.3 ->
-                    s.[j] <- { s.[j] with Vel = s.[j].Vel + pull s.[j].Pos me.Pos } |> tag i
+                    s.[j] <- { s.[j] with Vel = s.[j].Vel + pull s.[j].Pos me.Pos } |> tag i Tractor
                     s.[i] <- { s.[i] with TowLeft = me.TowLeft - dt }
                 | TowRock k when len (asteroids.[k].Pos - me.Pos) > asteroids.[k].Radius + 2. * shipRadius ->
                     s.[i] <- { me with Vel = me.Vel + pull me.Pos asteroids.[k].Pos; TowLeft = me.TowLeft - dt }
@@ -541,7 +543,7 @@ let private resolveBlasts (ships: Ship[]) blasts =
             let dist = len d
             if s.[i].Alive && dist < mineBlast then
                 let f = 1. - dist / mineBlast
-                s.[i] <- { s.[i] with Vel = s.[i].Vel + norm d * (pulseForce * f) } |> tag owner |> damage (mineDamage * f)
+                s.[i] <- { s.[i] with Vel = s.[i].Vel + norm d * (pulseForce * f) } |> tag owner Mines |> damage (mineDamage * f)
     s
 
 let private bump (events: ResizeArray<Event>) (sh: Ship) (a: Asteroid) =
@@ -579,7 +581,7 @@ let private resolveBullets (ships: Ship[]) (bullets: Bullet list) =
             | Some i ->
                 if s.[i].Invuln <= 0. then
                     s.[b.Owner] <- { s.[b.Owner] with Hits = s.[b.Owner].Hits + 1 }
-                s.[i] <- { s.[i] with Vel = s.[i].Vel + norm b.Vel * bulletKnockback } |> tag b.Owner |> damage b.Damage
+                s.[i] <- { s.[i] with Vel = s.[i].Vel + norm b.Vel * bulletKnockback } |> tag b.Owner (if b.Kind = 2 then Swarm else Blaster) |> damage b.Damage
                 events.Add(Hit b.Pos)
                 false
             | None -> true)
@@ -600,7 +602,7 @@ let private resolveRams (ships: Ship[]) =
                 let impulse = if vn < 0. then -(1. + restitution) * vn / 2. else 0.
                 let enemy = side a <> side b
                 let dmg = if enemy then abs vn * ramDamageFactor else 0.
-                let mark by sh = if enemy then tag by sh else sh
+                let mark by sh = if enemy then tag by Collision sh else sh
                 s.[i] <- { a with Pos = a.Pos - push; Vel = a.Vel - n * impulse } |> mark b.Id |> damage dmg
                 s.[j] <- { b with Pos = b.Pos + push; Vel = b.Vel + n * impulse } |> mark a.Id |> damage dmg
                 if impulse > 0. then events.Add(Ram(a.Pos + d * 0.5))
@@ -680,7 +682,7 @@ let private settle k dt (s: Ship) =
             Thrusting = 0.
             Streak = 0
             Rings = s.Rings + (if ring then 1 else 0) },
-        Some(s.Pos, s.Id, ring, s.LastHit)
+        Some(s.Pos, s.Id, ring, s.LastHit, s.LastWeapon)
     elif not s.Alive && s.Active && s.Stocks > 0 then
         (if s.RespawnIn <= dt then { respawn s with Stocks = s.Stocks } else { s with RespawnIn = s.RespawnIn - dt }),
         None
@@ -732,7 +734,7 @@ let step dt (inputs: Input[]) (w: World) =
         let settled, deaths = ships |> Array.map (settle k dt) |> Array.unzip
         let ships = Array.copy settled
         let kills = deaths |> Array.toList |> List.choose id
-        for (_, victim, _, by) in kills do
+        for (_, victim, _, by, _) in kills do
             if by >= 0 && by <> victim then
                 ships.[by] <- { ships.[by] with Kills = ships.[by].Kills + 1; Streak = ships.[by].Streak + 1 }
         { Ships = ships
@@ -753,4 +755,5 @@ let step dt (inputs: Input[]) (w: World) =
             @ bumps
             @ picks
             @ grabs
-            @ (kills |> List.map (fun (p, i, ring, _) -> Explode(p, i, ring))) }
+            @ (kills |> List.map (fun (p, i, ring, _, _) -> Explode(p, i, ring)))
+            @ (kills |> List.map (fun (_, i, ring, by, wpn) -> Downed(i, by, wpn, ring))) }

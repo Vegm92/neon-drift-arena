@@ -264,6 +264,9 @@ let main _ =
         |> edit 1 (fun s -> { s with Hp = 1. }) |> run 60 firing
     check "kills are credited to the shooter" (shotDown.Ships.[0].Kills = 1 && shotDown.Ships.[0].Streak = 1)
     check "hits are counted for accuracy" (shotDown.Ships.[0].Hits > 0 && shotDown.Ships.[0].Shots > 0)
+    let downed =
+        Seq.fold (fun (w, seen) _ -> let w = step dt firing w in w, seen @ w.Events) (w0 |> place 0 zero 0. |> place 1 (v 200. 0.) 0. |> edit 1 (fun s -> { s with Hp = 1. }), []) (seq { 1..60 }) |> snd
+    check "kill feed names the shooter and the blaster" (downed |> List.exists (function Downed(1, 0, Blaster, false) -> true | _ -> false))
 
     check "border is whole until the clock runs out" (bounds matchTime = 1. && bounds (matchTime + shrinkTime) = shrinkMin)
     let late = { w0 with Time = matchTime + shrinkTime + 1. } |> place 0 (v (arenaHalf * 0.9) 0.) 0.
