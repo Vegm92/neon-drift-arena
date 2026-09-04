@@ -9,7 +9,7 @@
   :root{--bg:#03030a;--p1:#080d18;--p2:#0d1426;--edge:#26405e;--txt:#cfe6ff;--dim:#5a728f;--cyan:#00f6ff;--mag:#ff2bd6;--lime:#b6ff3b;--amber:#ffb347;--cut:polygon(14px 0,calc(100% - 14px) 0,100% 14px,100% calc(100% - 14px),calc(100% - 14px) 100%,14px 100%,0 calc(100% - 14px),0 14px)}
   html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;font-family:ui-monospace,Consolas,monospace;color:var(--txt);
     touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
-  #pad{position:fixed;inset:0;display:flex;flex-direction:column;letter-spacing:.2em;
+  #pad{position:fixed;inset:0;display:flex;flex-direction:column;letter-spacing:.2em;padding:max(22px,env(safe-area-inset-top)) 18px 6px;box-sizing:border-box;
     background-image:linear-gradient(var(--edge) 1px,transparent 1px),linear-gradient(90deg,var(--edge) 1px,transparent 1px);background-size:40px 40px}
   #pad::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,246,255,.08),transparent 60%),rgba(3,3,10,.82);pointer-events:none}
   @media (orientation:portrait){#pad{inset:auto;top:0;left:100vw;width:100vh;height:100vw;transform-origin:0 0;transform:rotate(90deg)}}
@@ -23,13 +23,13 @@
   .bar .tag{border:1px solid #1e334f;padding:2px 10px;font-size:9px;letter-spacing:.32em;opacity:.8}
   .bar b{color:var(--cyan);text-shadow:0 0 10px var(--cyan)}
   .foot span{margin-right:14px}.foot i{font-style:normal;color:var(--txt);border:1px solid #3a5678;padding:1px 4px;margin-right:4px}
-  .row2{flex:1;display:flex;align-items:stretch;padding:8px 10px;gap:8px;min-height:0}
+  .row2{flex:1;display:flex;align-items:stretch;padding:8px 10px 10px;gap:8px;min-height:0}
   .panel{position:relative;clip-path:var(--cut);background:linear-gradient(180deg,var(--p1),var(--p2));border:1.5px solid var(--c);
     box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 25%,transparent),0 0 12px color-mix(in srgb,var(--c) 55%,transparent)}
   .panel.cyan{--c:var(--cyan)}.panel.mag{--c:var(--mag)}
   .panel .lbl{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);text-align:center;font-size:9px;font-weight:700;color:var(--c);letter-spacing:.3em;pointer-events:none;white-space:nowrap}
   .panel .lbl small{display:block;font-size:6px;color:var(--dim);margin-top:2px}
-  .zone{width:32%;min-width:200px;overflow:hidden}
+  .zone{width:30%;min-width:190px;overflow:hidden}
   .zone *{pointer-events:none}
   .ring,.knob{position:absolute;left:50%;top:50%;border-radius:50%;transform:translate(-50%,-50%)}
   .ring{width:132px;height:132px;border:1.5px solid var(--edge);background:radial-gradient(circle,#0d1d33,#070f1d 70%);box-shadow:inset 0 0 0 1px #152a44,0 0 10px rgba(0,246,255,.15)}
@@ -38,12 +38,12 @@
   .zone.on .knob{background:var(--cyan);box-shadow:0 0 16px var(--cyan),0 0 28px rgba(0,246,255,.4)}
   .mid{flex:1;display:flex;align-items:center;justify-content:center;opacity:.35}
   .mid::before{content:"";width:14px;height:14px;border:1px solid var(--txt);transform:rotate(45deg)}
-  .acts{width:36%;min-width:250px;display:flex;flex-direction:column;justify-content:space-evenly;padding:12px 16px}
+  .acts{width:44%;min-width:280px;display:flex;flex-direction:column;justify-content:space-evenly;padding:10px 14px}
   .acts *{pointer-events:none}.acts .btn,.acts .slide{pointer-events:auto}
   .hexes{display:flex;justify-content:space-between;align-items:center}
   .btn{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--txt);background:#131a2e;border:1.5px solid var(--edge);padding:10px 18px}
   .btn.on{color:#000;background:var(--b);border-color:var(--b);box-shadow:0 0 16px var(--b),0 0 28px color-mix(in srgb,var(--b) 40%,transparent)}
-  .btn.hex{position:relative;width:30%;aspect-ratio:1;padding:0;border:0;color:var(--b);background:var(--b);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);font-size:11px;letter-spacing:.1em}
+  .btn.hex{position:relative;width:32%;aspect-ratio:1;padding:0;border:0;color:var(--b);background:var(--b);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);font-size:11px;letter-spacing:.1em}
   .btn.hex span{position:absolute;inset:2px;clip-path:inherit;background:#131a2e;display:flex;align-items:center;justify-content:center}
   .btn.hex.on span,.btn.fire span{background:transparent}
   .btn.hex.on{color:#000}
