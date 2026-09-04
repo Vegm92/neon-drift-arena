@@ -165,6 +165,12 @@ let sendRemote () =
 let mutable changed = fun () -> ()
 
 let assign key slot =
+    if slot <> autoSlot then
+        if keyboardSlot = slot then keyboardSlot <- autoSlot
+        for id in Seq.toArray phoneSlots.Keys do
+            if phoneSlots.[id] = slot then phoneSlots.[id] <- autoSlot
+        for i in Seq.toArray prefs.Keys do
+            if prefs.[i].Slot = slot then prefs.[i] <- { prefs.[i] with Slot = autoSlot }
     if key = "kb" then keyboardSlot <- slot
     elif key.StartsWith "ph:" then phoneSlots.[key.Substring 3] <- slot
     else prefs.[int key] <- { pref (int key) with Slot = slot }
