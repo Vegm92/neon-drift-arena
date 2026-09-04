@@ -283,6 +283,7 @@ let mutable layout = 0
 let mutable practice = false
 let mutable target = -1
 let arsenal = [| Rail; Mines; Swarm; Pulse; Scatter; Tractor |]
+let raceArsenal = [| Scatter; Mines; Swarm |]
 let mutable mutator = 0
 let mutators = 4
 let private turbo () = if mutator = 2 then 1.5 else 1.
@@ -351,6 +352,8 @@ let private freeSpot k (ships: Ship[]) (avoid: V2 list) rng =
 let private damage amt (s: Ship) =
     if s.Invuln > 0. then
         s
+    elif race then
+        if amt >= bulletDamage then { s with Stun = max s.Stun scatterStun; Thrusting = 0. } else s
     else
         let soaked = min s.Shield amt
         { s with Shield = s.Shield - soaked; Hp = s.Hp - (amt - soaked) }
@@ -428,7 +431,7 @@ let private spend (s: Ship) =
     if a <= 0 then { s with Weapon = Blaster; Ammo = 0; Charge = 0. } else { s with Ammo = a }
 
 let private blaster (inp: Input) (s: Ship) =
-    if s.Alive && inp.Fire && s.Cooldown <= 0. && s.Locked <= 0. then
+    if s.Alive && inp.Fire && not race && s.Cooldown <= 0. && s.Locked <= 0. then
         let dir = ofAngle s.Angle
         let nose = s.Pos + dir * (shipRadius + 6.)
         let heat = s.Heat + heatPerShot
@@ -875,10 +878,11 @@ let private stepCrates dt rng (ships: Ship[]) (crates: Crate[]) =
                     r <- nextRng r
                     let w =
                         if practice then arsenal.[sh.[i].Grabs % arsenal.Length]
+                        elif race then raceArsenal.[r % raceArsenal.Length]
                         elif mutator = 1 then Rail
                         else crateWeapons.[r % crateWeapons.Length]
                     let a = Array.copy sh
-                    a.[i] <- { a.[i] with Weapon = w; Ammo = weaponAmmo w; Charge = 0.; Grabs = a.[i].Grabs + 1 }
+                    a.[i] <- { a.[i] with Weapon = w; Ammo = (if race && w = Swarm then 1 else weaponAmmo w); Charge = 0.; Grabs = a.[i].Grabs + 1 }
                     sh <- a
                     events.Add(Grab c.Pos)
                     r <- nextRng r
@@ -936,6 +940,19 @@ let private settle (ships: Ship[]) rng k dt (s: Ship) =
         None
     else
         s, None
+
+let private progress (s: Ship) =
+    let n = gates.Length
+    float (s.Laps * n + (s.Next + n - 1) % n) - len (s.Pos - gates.[s.Next]) / (4. * arenaHalf)
+
+let rank (ships: Ship[]) =
+    ships
+    |> Array.filter (fun s -> s.Active)
+    |> Array.sortBy (fun s -> (if s.Finish > 0. then s.Finish else infinity), -progress s)
+    |> Array.map (fun s -> s.Id)
+
+let place (ships: Ship[]) i =
+    rank ships |> Array.tryFindIndex ((=) i) |> Option.defaultValue 0 |> (+) 1
 
 let private stepGates time (ships: Ship[]) =
     let mutable place = ships |> Array.filter (fun s -> s.Finish > 0.) |> Array.length
@@ -1010,6 +1027,23 @@ let bot (w: World) i =
         | None -> idle
     elif not me.Alive then
         idle
+    elif race then
+        let near = len (me.Pos - gates.[me.Next]) < gateRadius * 1.5
+        let goal = if near then gateAhead me.Next else gates.[me.Next]
+        let d = goal - me.Pos
+        let aim = defaultArg (dodge me) (atan2 d.Y d.X)
+        let off = abs (atan2 (sin (aim - me.Angle)) (cos (aim - me.Angle)))
+        let ahead =
+            nearest w.Ships i me.Pos
+            |> Option.filter (fun t ->
+                let r = t.Pos - me.Pos
+                len r < 520. && abs (atan2 (sin (atan2 r.Y r.X - me.Angle)) (cos (atan2 r.Y r.X - me.Angle))) < 0.25)
+        { idle with
+            Aim = Some aim
+            Steer = true
+            Thrust = true
+            Boost = off < 0.15 && me.Boost > 30.
+            Special = ahead.IsSome && me.Weapon <> Blaster && int (w.Time * 2.) % 2 = 0 }
     else
         match nearest w.Ships i me.Pos with
         | None -> idle

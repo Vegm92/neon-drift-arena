@@ -42,7 +42,9 @@ type Locale =
       Teams: string
       Practice: string
       Race: string
-      Lap: int -> int -> string
+      Lap: string -> int -> int -> string
+      ColTime: string
+      Dnf: string
       Finish: string -> string -> string
       Places: string[]
       NeedOne: string
@@ -195,7 +197,9 @@ let en =
       Teams = "TEAMS"
       Practice = "PRACTICE"
       Race = "RACE"
-      Lap = sprintf "LAP %d/%d"
+      Lap = sprintf "%s · LAP %d/%d"
+      ColTime = "TIME"
+      Dnf = "DNF"
       Finish = sprintf "%s FINISHES %s"
       Places = [| "1ST"; "2ND"; "3RD"; "4TH" |]
       NeedOne = "NEED 1 PLAYER"

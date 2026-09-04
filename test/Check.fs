@@ -389,6 +389,20 @@ let main _ =
     check "the race ends for everyone after the grace period" (flag.Phase = Over(Some 0))
     let sprint (p: V2) = (grid |> place 0 p 0. |> run 360 thruster).Ships.[0].Vel |> len
     check "off the road a ship is slower than on it" (sprint (gates.[0] + v 0. -400.) < sprint gates.[0] * 0.7)
+    let ahead = lap1 |> edit 1 (fun s -> { s with Pos = gates.[3]; Next = 4 })
+    check "a lap ahead ranks first, then the ship nearest its next gate" (rank ahead.Ships = [| 0; 1; 2; 3 |])
+    check "a finished ship ranks above everyone still racing" (Sim.rank won.Ships |> Array.head = 0 && Sim.place won.Ships 0 = 1)
+    let racer = { grid with Ships = grid.Ships |> Array.map (fun s -> if s.Id = 1 then { s with Pos = gates.[3] + v 0. 60.; Angle = 0.; Vel = zero; Next = 4 } else s) }
+    let bots = Array.init 4 (fun i -> if i = 1 then bot racer 1 else present)
+    let steered = run 60 bots racer
+    check "a race bot thrusts toward its next gate" (len (steered.Ships.[1].Pos - gates.[4]) < len (racer.Ships.[1].Pos - gates.[4]))
+    let quiet = grid |> place 0 gates.[0] 0. |> step dt shooter
+    check "the blaster stays silent in a race" (quiet.Bullets.IsEmpty)
+    let crated = grid |> place 0 grid.Crates.[0].Pos 0. |> step dt (all present)
+    check "race crates only hand out stun weapons" (Array.contains crated.Ships.[0].Weapon raceArsenal && (crated.Ships.[0].Weapon <> Swarm || crated.Ships.[0].Ammo = 1))
+    let seeker = { Owner = 1; Pos = gates.[0] - v 30. 0.; Vel = v 400. 0.; Life = 1.; Kind = 2; Damage = seekerDamage }
+    let stung = { grid with Bullets = [ seeker ] } |> place 0 gates.[0] 0. |> edit 0 (fun s -> { s with Invuln = 0. }) |> run 12 (all present)
+    check "a race hit stuns instead of hurting" (stung.Ships.[0].Stun > 0. && stung.Ships.[0].Hp = hpMax)
     race <- false
 
     0

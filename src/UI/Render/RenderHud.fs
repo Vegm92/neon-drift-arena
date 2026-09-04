@@ -84,12 +84,13 @@ let drawHud (vw: View) (w: World) dt =
         gauge ".boost" s.Boost boostMax (sprintf "%.0f" (s.Boost / boostMax * 100.))
         gauge ".heat" s.Heat heatMax (if s.Locked > 0. then Strings.t.HudOver else sprintf "%.0f" (s.Heat / heatMax * 100.))
         let pips =
-            if Sim.race then sprintf "<b>%s</b>" (Strings.t.Lap (min (int laps) (s.Laps + 1)) (int laps))
+            if Sim.race then sprintf "<b>%s</b>" (Strings.t.Lap Strings.t.Places.[Sim.place w.Ships i - 1] (min (int laps) (s.Laps + 1)) (int laps))
             else String.concat "" [ for k in 1 .. stocks -> if k <= s.Stocks then "<i></i>" else "<i class=\"gone\"></i>" ]
         let pipEl = el.querySelector ".stocks" :?> HTMLElement
         if pipEl.innerHTML <> pips then pipEl.innerHTML <- pips
         (el.querySelector ".wep" :?> HTMLElement).textContent <-
             if Sim.launcher s then (if s.LaunchCd <= 0. then Strings.t.LaunchReady else Strings.t.LaunchWait)
+            elif Sim.race && s.Weapon = Blaster then ""
             else weaponLabel s)
 
 let drawTint (vw: View) dt =

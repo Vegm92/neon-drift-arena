@@ -115,7 +115,10 @@ let private accuracy (s: Ship) =
 
 let private statRow winner pos (s: Ship) =
     let pips =
-        String.concat "" [ for k in 1 .. Cfg.stocks -> if k <= s.Stocks then "<i></i>" else "<i class=\"gone\"></i>" ]
+        if Sim.race then
+            sprintf "<b>%s</b>" (if s.Finish > 0. then sprintf "%d:%02d.%d" (int s.Finish / 60) (int s.Finish % 60) (int (s.Finish * 10.) % 10) else Strings.t.Dnf)
+        else
+            String.concat "" [ for k in 1 .. Cfg.stocks -> if k <= s.Stocks then "<i></i>" else "<i class=\"gone\"></i>" ]
     sprintf
         "<div class=\"line%s\" style=\"color:#%06x\"><div class=\"pos\">%d</div><div class=\"who\"><svg viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linejoin=\"round\"><path d=\"M24 4 41 40 24 32 7 40Z\"/></svg><b>%s</b></div><div class=\"num big\">%d</div><div class=\"acc\"><div class=\"bar\"><i style=\"width:%d%%\"></i></div><span>%d%%</span></div><div class=\"num\">%d</div><div class=\"num\">%d</div><div class=\"stocks\">%s</div></div>"
         (if s.Id = winner then " lead" elif s.Stocks = 0 then " out" else "")
@@ -139,8 +142,7 @@ let private stats (w: World) =
         | Over(Some i) -> i
         | _ -> -1
     let rows =
-        act
-        |> Array.sortByDescending (fun s -> s.Id = winner, s.Stocks, s.Kills)
+        (if Sim.race then Sim.rank act |> Array.map (fun i -> w.Ships.[i]) else act |> Array.sortByDescending (fun s -> s.Id = winner, s.Stocks, s.Kills))
         |> Array.mapi (fun i s -> statRow winner (i + 1) s)
         |> String.concat ""
     let awards = ResizeArray()
@@ -164,7 +166,7 @@ let private stats (w: World) =
             Strings.t.ColAccuracy
             Strings.t.ColCrates
             Strings.t.ColRings
-            Strings.t.ColStocks
+            (if Sim.race then Strings.t.ColTime else Strings.t.ColStocks)
     sprintf "<div class=\"table\">%s%s</div><div class=\"awards\">%s</div>" head rows (String.concat "" awards)
 
 let private say text =
