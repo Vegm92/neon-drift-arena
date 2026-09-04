@@ -39,7 +39,7 @@ let private detectLayout () =
     let kb: obj = window?navigator?keyboard
     if isNullOrUndefined kb then ()
     else
-        kb?getLayoutMap ()?``then`` (fun (m: obj) ->
+        (kb?getLayoutMap ())?``then``(fun (m: obj) ->
             let w: string = m?get ("KeyW")
             if not (isNullOrUndefined w) && w = "z" then Domain.layout <- Azerty
         ) |> ignore
