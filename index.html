@@ -37,16 +37,16 @@
   #menu .lobby .stats{white-space:pre-line;line-height:1.9;letter-spacing:.2em;opacity:.75;font-size:12px;color:#cfe}
   #menu h1{font-size:34px;margin:0;text-shadow:0 0 24px #00f6ff,0 0 48px #ff2bd6}
   #menu .mode{font-size:12px;opacity:.8}
-  #menu .lobby{display:flex;flex-direction:column;align-items:center;gap:clamp(10px,2.2vh,26px);width:min(1360px,94vw);letter-spacing:normal}
+  #menu .lobby{display:flex;flex-direction:column;align-items:center;gap:clamp(6px,1.4vh,18px);width:min(1360px,94vw);max-height:96vh;letter-spacing:normal}
   #menu .lobby .title{text-align:center;line-height:1}
-  #menu .lobby h1{font-family:system-ui,"Segoe UI",sans-serif;font-weight:900;font-size:clamp(34px,7vw,92px);letter-spacing:.02em;margin:0;
+  #menu .lobby h1{font-family:system-ui,"Segoe UI",sans-serif;font-weight:900;font-size:clamp(28px,7vh,72px);letter-spacing:.02em;margin:0;
     background:linear-gradient(180deg,#fff,#9fb3c8);-webkit-background-clip:text;background-clip:text;color:transparent;
     filter:drop-shadow(0 0 10px rgba(0,246,255,.22)) drop-shadow(0 0 40px rgba(255,43,214,.22))}
-  #menu .lobby .sub{margin-top:6px;font-size:clamp(13px,2.2vw,30px);letter-spacing:.55em;color:#00f6ff;text-shadow:0 0 18px #00f6ff}
+  #menu .lobby .sub{margin-top:2px;font-size:clamp(11px,2vh,22px);letter-spacing:.55em;color:#00f6ff;text-shadow:0 0 18px #00f6ff}
   #menu .lobby .sub::before,.lobby .sub::after{content:"—";opacity:.5;margin:0 .4em}
   #menu .lobby .modebar{display:flex;border:1px solid #1f3550;border-radius:6px;background:rgba(8,14,26,.6);
     box-shadow:0 0 22px rgba(0,246,255,.12) inset}
-  #menu .lobby .modebar span{padding:9px 26px;font-size:clamp(9px,1.05vw,13px);letter-spacing:.22em;opacity:.9;border-right:1px solid #1f3550}
+  #menu .lobby .modebar span{padding:6px 20px;font-size:clamp(9px,1.05vw,12px);letter-spacing:.22em;opacity:.9;border-right:1px solid #1f3550}
   #menu .lobby .modebar span:last-child{border-right:0}
   #menu .lobby .modebar span::before{content:"";display:inline-block;width:1.6em;height:1.6em;margin-right:.7em;vertical-align:-.45em;
     background:url(/icons.png) 0 0/300% 100% no-repeat}
@@ -61,23 +61,23 @@
   #menu .lobby .k2{background-position:1.19% 78.75%}#menu .lobby .k3{background-position:49.9% 83.8%;transform:rotate(180deg)}#menu .lobby .k4{background-position:97.81% 82.58%}
   #menu .lobby .t1{filter:hue-rotate(35deg)}#menu .lobby .t2{filter:hue-rotate(50deg)}
   #menu .lobby .slots{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(10px,1.6vw,26px);width:100%}
-  #menu .lobby .slot{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 12px 0;
+  #menu .lobby .slot{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 12px 0;
     border:2px solid currentColor;clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px);
     background:linear-gradient(180deg,#080d18,#0d1426);overflow:hidden}
   #menu .lobby .slot:not(.in){filter:brightness(.62)}
   #menu .lobby .slot.in{opacity:1;box-shadow:0 0 24px -4px currentColor,0 0 40px -10px currentColor inset}
   #menu .lobby .slot b{font-size:clamp(15px,1.7vw,26px);font-weight:700;letter-spacing:.08em;text-shadow:0 0 14px currentColor}
-  #menu .lobby .art{width:min(62%,150px);aspect-ratio:1;display:grid;place-items:center;filter:drop-shadow(0 0 8px currentColor)}
+  #menu .lobby .art{width:min(50%,16vh);aspect-ratio:1;display:grid;place-items:center;filter:drop-shadow(0 0 8px currentColor)}
   #menu .lobby .art svg{width:100%;height:100%}
-  #menu .lobby .dev{font-size:clamp(8px,.85vw,12px);letter-spacing:.16em;text-align:center;white-space:pre-line;min-height:2.4em;padding:0 4px}
-  #menu .lobby .foot{margin-top:auto;width:calc(100% + 24px);margin-left:-12px;padding:7px 0;background:currentColor;
-    font-size:clamp(11px,1.3vw,20px);font-weight:700;letter-spacing:.14em;text-align:center;-webkit-text-fill-color:#03030a}
+  #menu .lobby .dev{font-size:clamp(8px,.85vw,12px);letter-spacing:.16em;text-align:center;white-space:pre-line;min-height:1.2em;padding:0 4px}
+  #menu .lobby .foot{margin-top:auto;width:calc(100% + 24px);margin-left:-12px;padding:5px 0;background:currentColor;
+    font-size:clamp(11px,1.3vw,16px);font-weight:700;letter-spacing:.14em;text-align:center;-webkit-text-fill-color:#03030a}
   #menu .lobby .foot.pick{background:transparent;-webkit-text-fill-color:currentColor;border-top:1px solid currentColor;letter-spacing:.1em}
   #menu .lobby .hints{display:flex;justify-content:center;gap:clamp(14px,2.6vw,44px);color:#cfe;opacity:.7}
   #menu .lobby .buttons{display:flex;justify-content:center;gap:clamp(10px,1.6vw,26px);width:100%}
-  #menu .lobby .item{min-width:clamp(140px,12vw,190px);padding:8px clamp(10px,1.2vw,18px);border:2px solid #26405e;border-radius:4px;
+  #menu .lobby .item{min-width:clamp(140px,12vw,190px);padding:5px clamp(10px,1.2vw,18px);border:2px solid #26405e;border-radius:4px;
     background:rgba(8,14,26,.55);text-align:center;opacity:.7}
-  #menu .lobby .item b{display:block;font-size:clamp(14px,1.4vw,22px);font-weight:700;letter-spacing:.12em}
+  #menu .lobby .item b{display:block;font-size:clamp(13px,1.3vw,18px);font-weight:700;letter-spacing:.12em}
   #menu .lobby .item.sel{opacity:1;border-color:#00f6ff;color:#fff;box-shadow:0 0 22px -4px #00f6ff,0 0 26px -12px #00f6ff inset;
     text-shadow:0 0 16px #00f6ff}
   @keyframes selpulse{0%,100%{box-shadow:0 0 22px -4px #00f6ff,0 0 26px -12px #00f6ff inset}50%{box-shadow:0 0 34px 2px #00f6ff,0 0 26px -12px #00f6ff inset}}
@@ -91,20 +91,20 @@
     border:1px solid currentColor;border-radius:3px;text-shadow:0 0 8px currentColor}
   #menu .lobby .slot.away{filter:brightness(.7)}
   #menu .lobby .slot.away .foot::after{content:" \25BC"}
-  #menu .lobby .note{font-size:11px;letter-spacing:.25em;color:#ff2bd6;min-height:1em}
+  #menu .lobby .note{font-size:10px;letter-spacing:.25em;color:#ff2bd6;min-height:1em}
   #menu .lobby .legends{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:clamp(8px,1.4vw,22px);width:100%}
-  #menu .lobby .legend{padding:10px 16px;text-align:left;border:1px solid #26405e;border-radius:6px;background:rgba(8,14,26,.5)}
+  #menu .lobby .legend{padding:6px 12px;text-align:left;border:1px solid #26405e;border-radius:6px;background:rgba(8,14,26,.5)}
   #menu .lobby .legend:first-child{color:#00f6ff}.lobby .legend:last-child{color:#ff2bd6}
   #menu .lobby .legend.qr{color:#00f6ff;display:flex;flex-direction:column;align-items:center;gap:6px;filter:drop-shadow(0 0 10px rgba(0,246,255,.5))}
-  #menu .lobby .legend.qr svg{width:clamp(90px,10vw,150px);height:auto}
+  #menu .lobby .legend.qr svg{width:clamp(70px,12vh,120px);height:auto}
   #menu .lobby .legend.qr .url{font-size:clamp(8px,.8vw,11px);letter-spacing:.1em;color:#cfe;opacity:.7}
   #menu .lobby .lt{font-size:clamp(9px,1vw,13px);letter-spacing:.24em;text-shadow:0 0 12px currentColor}
-  #menu .lobby .keys{display:flex;flex-wrap:wrap;justify-content:space-around;gap:8px 4px;margin-top:8px;color:#cfe}
+  #menu .lobby .keys{display:flex;flex-wrap:wrap;justify-content:space-around;gap:5px 4px;margin-top:5px;color:#cfe}
   #menu .lobby .key{text-align:center}
   #menu .lobby .caps{display:flex;gap:5px;justify-content:center}
-  #menu .lobby .caps i{font-style:normal;min-width:1.9em;padding:5px 7px;border:1px solid #3a557a;border-radius:4px;
+  #menu .lobby .caps i{font-style:normal;min-width:1.9em;padding:3px 6px;border:1px solid #3a557a;border-radius:4px;
     font-size:clamp(9px,1vw,14px);background:rgba(255,255,255,.04)}
-  #menu .lobby .key span{display:block;margin-top:5px;font-size:clamp(8px,.8vw,11px);letter-spacing:.18em;opacity:.7}
+  #menu .lobby .key span{display:block;margin-top:3px;font-size:clamp(8px,.8vw,10px);letter-spacing:.18em;opacity:.7}
   #menu .list{display:flex;flex-direction:column;gap:8px}
   #menu .item{padding:8px 32px;font-size:14px;opacity:.45;border:1px solid transparent}
   #menu .item.sel{opacity:1;border-color:#00f6ff;box-shadow:0 0 14px #00f6ff}
