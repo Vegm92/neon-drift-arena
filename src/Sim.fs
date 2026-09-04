@@ -205,6 +205,9 @@ let layouts =
          Crates = spin (fun a -> [ turn (v 1080. 0.) a; turn (v 560. 0.) a ]) } |]
 
 let mutable layout = 0
+let mutable practice = false
+let mutable target = -1
+let arsenal = [| Rail; Mines; Swarm; Pulse; Scatter; Tractor |]
 let mutable mutator = 0
 let mutators = 4
 let private turbo () = if mutator = 2 then 1.5 else 1.
@@ -684,12 +687,16 @@ let private stepCrates dt rng (ships: Ship[]) (crates: Crate[]) =
                 match sh |> Array.tryFindIndex (fun s -> s.Alive && len (s.Pos - c.Pos) < crateRadius + shipRadius) with
                 | Some i ->
                     r <- nextRng r
-                    let w = if mutator = 1 then Rail else crateWeapons.[r % crateWeapons.Length]
+                    let w =
+                        if practice then arsenal.[sh.[i].Grabs % arsenal.Length]
+                        elif mutator = 1 then Rail
+                        else crateWeapons.[r % crateWeapons.Length]
                     let a = Array.copy sh
                     a.[i] <- { a.[i] with Weapon = w; Ammo = weaponAmmo w; Charge = 0.; Grabs = a.[i].Grabs + 1 }
                     sh <- a
                     events.Add(Grab c.Pos)
                     r <- nextRng r
+                    if practice then { c with RespawnIn = 1. } else
                     let mutable k = r % cratePositions.Length
                     let mutable tries = 0
                     while tries < cratePositions.Length && taken.Contains cratePositions.[k] do
@@ -724,7 +731,7 @@ let private settle (ships: Ship[]) rng k dt (s: Ship) =
         let ring = outOfBoundsAt k s.Pos
         { s with
             Alive = false
-            Stocks = s.Stocks - 1
+            Stocks = (if practice then s.Stocks else s.Stocks - 1)
             RespawnIn = respawnDelay
             Vel = zero
             Thrusting = 0.
@@ -777,15 +784,20 @@ let bot (w: World) i =
                 Special = facing && dist < 520. && me.Weapon <> Blaster && (hold || int (w.Time * 2.) % 2 = 0) }
 
 let stage (w: World) =
+    let shooters = w.Ships |> Array.filter (fun s -> s.Active && s.Id <> target) |> Array.map (fun s -> s.Id)
     let ships =
         w.Ships
         |> Array.map (fun s ->
-            match s.Id with
-            | 0 -> { freshShip 0 with Team = s.Team; Pos = v -300. 0.; Angle = 0.; Invuln = 0. }
-            | 1 -> { freshShip 1 with Team = s.Team; Pos = v 300. 0.; Angle = Math.PI; Invuln = 0. }
-            | _ -> s)
+            if s.Id = target then
+                { freshShip s.Id with Team = s.Team; Pos = v 300. 0.; Angle = Math.PI; Invuln = 0. }
+            elif s.Active then
+                let k = Array.findIndex ((=) s.Id) shooters
+                let y = (float k - float (shooters.Length - 1) / 2.) * 120.
+                { freshShip s.Id with Team = s.Team; Pos = v -300. y; Angle = 0.; Invuln = 0. }
+            else s)
     let crates = w.Crates |> Array.mapi (fun i c -> if i = 0 then { c with Pos = v 0. -220.; RespawnIn = 0. } else c)
-    { w with Ships = ships; Crates = crates; Mines = [ { Owner = 1; Pos = v 0. 220.; Vel = zero; Fuse = -1. } ]; Bullets = [] }
+    let mines = if target >= 0 then [ { Owner = target; Pos = v 0. 220.; Vel = zero; Fuse = -1. } ] else []
+    { w with Ships = ships; Crates = crates; Mines = mines; Bullets = [] }
 
 let arm i wpn (w: World) =
     { w with Ships = w.Ships |> Array.map (fun s -> if s.Id = i then { s with Weapon = wpn; Ammo = weaponAmmo wpn; Charge = 0. } else s) }

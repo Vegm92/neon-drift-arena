@@ -39,6 +39,8 @@ type Locale =
       ModeLabel: string
       Ffa: string
       Teams: string
+      Practice: string
+      NeedOne: string
       Start: string
       NeedPlayers: string
       NeedReady: string
@@ -162,6 +164,8 @@ let en =
       ModeLabel = "MODE"
       Ffa = "FREE FOR ALL"
       Teams = "TEAMS"
+      Practice = "PRACTICE"
+      NeedOne = "NEED 1 PLAYER"
       Start = "START"
       NeedPlayers = "NEED 2 PLAYERS"
       NeedReady = "ALL PLAYERS MUST READY UP"

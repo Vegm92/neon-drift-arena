@@ -34,6 +34,8 @@ let private ready = Array.create 4 false
 let private onRow = Array.create 4 false
 let private owner = Array.create 4 ""
 let mutable private teamMode = false
+let mutable private practiceMode = false
+let practice () = practiceMode
 let mutable private optRows: Settings.Row list = []
 let mutable private optCursor = 0
 let mutable private optBack = Lobby
@@ -143,11 +145,12 @@ let private toggleBots () =
                 ready.[s] <- false
                 teams.[s] <- 0
 
-let testStart () =
-    claim "kb" 0
-    claim botKey 1
-    ready.[0] <- true
-    hide ()
+let addTarget () =
+    match [ 0..3 ] |> List.tryFind (fun i -> not (joined.Contains i)) with
+    | Some slot ->
+        claim botKey slot
+        slot
+    | None -> -1
 
 let private leave slot =
     joined.Remove slot |> ignore
@@ -161,7 +164,11 @@ let private allReady () = joined |> Seq.forall (fun s -> ready.[s])
 let private opposed () =
     (joined |> Seq.exists (fun s -> teams.[s] = 1)) && (joined |> Seq.exists (fun s -> teams.[s] = 2))
 
-let private canStart () = joined.Count >= 2 && allReady () && (not teamMode || opposed ())
+let private canStart () =
+    joined.Count >= (if practiceMode then 1 else 2) && allReady () && (not teamMode || opposed ())
+
+let private modeName () =
+    if practiceMode then Strings.t.Practice elif teamMode then Strings.t.Teams else Strings.t.Ffa
 
 let private pickName i =
     if teamMode then Strings.t.Team(teamName teams.[i]) else Strings.t.Colors.[playerColor.[i]]
@@ -238,7 +245,7 @@ let private renderLobby (devices: Input.Device[]) =
             sprintf "<i style=\"color:%s\">%s</i>" c (Strings.t.Player s))
         |> String.concat ""
     let picks =
-        [ Strings.t.ModeLabel, (if teamMode then Strings.t.Teams else Strings.t.Ffa), true
+        [ Strings.t.ModeLabel, modeName (), true
           Strings.t.Arena, Settings.arenaName (), true
           Strings.t.Mutator, Strings.t.Mutators.[Sim.mutator], true
           "", (if joined.Count < 4 then Strings.t.AddBot else Strings.t.ClearBots), true
@@ -259,7 +266,8 @@ let private renderLobby (devices: Input.Device[]) =
     let note =
         if Sfx.asleep () then Strings.t.SoundHint
         elif go then ""
-        elif joined.Count < 2 then Strings.t.NeedPlayers
+        elif joined.Count < 1 then Strings.t.NeedOne
+        elif joined.Count < 2 && not practiceMode then Strings.t.NeedPlayers
         elif teamMode && not (opposed ()) then Strings.t.NeedTwo
         else Strings.t.NeedReady
     el.innerHTML <-
@@ -359,7 +367,9 @@ let private updateLobby () =
             elif fire || start then
                 match lobbyPick with
                 | 0 ->
-                    teamMode <- not teamMode
+                    if practiceMode then practiceMode <- false
+                    elif teamMode then (teamMode <- false; practiceMode <- true)
+                    else teamMode <- true
                     applyMode ()
                 | 1 -> Settings.adjust Settings.Arena 1
                 | 2 -> Sim.mutator <- (Sim.mutator + 1) % Sim.mutators

@@ -287,10 +287,18 @@ let main _ =
     check "ghost mines recharge slowly" ((run 10 firing dropped).Mines.Length = 1)
     check "ghosts never win" ((step dt (all present) { out with Ships = out.Ships |> Array.mapi (fun i s -> if i = 1 then s else { s with Alive = false; Stocks = 0 }) }).Phase = Over(Some 1))
 
+    practice <- true
+    target <- 3
     let staged = stage w0
-    check "test stage faces two ships across a crate and a mine"
-        (staged.Ships.[0].Pos.X < 0. && staged.Ships.[1].Pos.X > 0. && staged.Mines.Length = 1 && staged.Crates.[0].RespawnIn = 0.)
-    check "test stage arms any weapon" ((arm 0 Rail staged).Ships.[0].Ammo = railAmmo)
+    check "practice lines shooters up against the target"
+        (staged.Ships.[0..2] |> Array.forall (fun s -> s.Pos.X < 0.) && staged.Ships.[3].Pos.X > 0. && staged.Mines.Length = 1 && staged.Crates.[0].RespawnIn = 0.)
+    check "practice arms any weapon" ((arm 0 Rail staged).Ships.[0].Ammo = railAmmo)
+    let range = staged |> edit 3 (fun s -> { s with Hp = 0. }) |> step dt (all present)
+    check "practice never costs a stock" (range.Ships.[3].Stocks = stocks && range.Phase = Playing)
+    let grabbed = staged |> place 0 staged.Crates.[0].Pos 0. |> step dt (all present)
+    check "practice crate cycles weapons and comes right back" (grabbed.Ships.[0].Weapon = Rail && grabbed.Crates.[0].RespawnIn = 1. && grabbed.Crates.[0].Pos = staged.Crates.[0].Pos)
+    practice <- false
+    target <- -1
 
     let behindOne = w0 |> edit 0 (fun s -> { s with Alive = false; Stocks = 1; RespawnIn = dt / 2. }) |> step dt (all present)
     check "the underdog respawns with full boost and a shield" (behindOne.Ships.[0].Boost = boostMax && behindOne.Ships.[0].Shield = shieldAmount)

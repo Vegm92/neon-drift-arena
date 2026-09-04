@@ -27,15 +27,12 @@ let private hyped = Array.create 4 false
 let mutable endTitle = ""
 let mutable endNote = ""
 
-let private test = window.location.search.Contains "test"
-let private testBot = window.location.search.Contains "bot"
-
 let private masked () =
     Input.read ()
     |> Array.mapi (fun i x ->
         if Menu.isBot i then
             if Menu.visible () then noInput
-            elif test && not testBot then { noInput with Present = true }
+            elif i = Sim.target then { noInput with Present = true }
             else Sim.bot world i
         elif Menu.joined.Contains i then x
         else noInput)
@@ -56,6 +53,19 @@ let private go intro =
     Array.fill lowStock 0 4 false
     Array.fill hyped 0 4 false
     Menu.note <- ""
+
+let private launch (w: World) =
+    Sim.practice <- Menu.practice ()
+    if Sim.practice then
+        if Sim.target < 0 || not (Menu.isBot Sim.target) then Sim.target <- Menu.addTarget ()
+        world <- w
+        go false
+        world <- Sim.step Cfg.physicsDt (masked ()) world |> Sim.stage
+        countdown <- 1.
+    else
+        Sim.target <- -1
+        world <- w
+        go true
 
 let private name i = Strings.t.Player i
 
@@ -138,16 +148,15 @@ let rec frame (t: float) =
         match Menu.update (masked ()) with
         | Some Menu.Rematch when Menu.screen = Menu.Lobby ->
             Settings.rollArena ()
-            world <- { Sim.initial with Rng = System.Random().Next 1000003 } |> Sim.withTeams Menu.teams
-            go true
+            launch ({ Sim.initial with Rng = System.Random().Next 1000003 } |> Sim.withTeams Menu.teams)
         | Some Menu.Rematch
         | Some Menu.Restart ->
             if Menu.screen <> Menu.Pause then Settings.rollArena ()
-            world <- Sim.reset (fun i -> Menu.joined.Contains i) world |> Sim.withTeams Menu.teams
-            go true
+            launch (Sim.reset (fun i -> Menu.joined.Contains i) world |> Sim.withTeams Menu.teams)
         | Some Menu.Resume -> go false
         | Some Menu.Quit ->
             world <- Sim.initial
+            Sim.target <- -1
             Menu.show ()
         | None -> ()
         Render.syncArena view
@@ -210,23 +219,19 @@ let rec frame (t: float) =
         Render.draw view world events dt
     window.requestAnimationFrame frame |> ignore
 
-if test then
-    Menu.testStart ()
-    go false
-    world <- Sim.step Cfg.physicsDt (masked ()) Sim.initial |> Sim.stage
-    countdown <- 1.
-    let arsenal = [| Blaster; Rail; Mines; Swarm; Pulse; Scatter; Tractor |]
-    window.addEventListener (
-        "keydown",
-        fun e ->
+window.addEventListener (
+    "keydown",
+    fun e ->
+        if Sim.practice && not (Menu.visible ()) then
             match (e :?> Browser.Types.KeyboardEvent).code with
-            | "KeyK" -> world <- { world with Ships = world.Ships |> Array.map (fun s -> if s.Id = 1 then { s with Hp = 0.; Invuln = 0. } else s) }
+            | "KeyK" -> world <- { world with Ships = world.Ships |> Array.map (fun s -> if s.Id = Sim.target then { s with Hp = 0.; Invuln = 0. } else s) }
             | "KeyT" -> world <- { world with Time = Cfg.matchTime }
             | "KeyR" -> world <- Sim.stage world
-            | code when code.StartsWith "Digit" ->
+            | code when code.StartsWith "Digit" && Input.keyboardSlot >= 0 ->
                 let k = int (code.Substring 5) - 1
-                if k >= 0 && k < arsenal.Length then world <- Sim.arm 0 arsenal.[k] world
+                if k = -1 then world <- Sim.arm Input.keyboardSlot Blaster world
+                elif k >= 0 && k < Sim.arsenal.Length then world <- Sim.arm Input.keyboardSlot Sim.arsenal.[k] world
             | _ -> ()
-    )
+)
 
 window.requestAnimationFrame frame |> ignore
