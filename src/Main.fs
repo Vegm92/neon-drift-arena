@@ -89,6 +89,7 @@ let private go intro =
 
 let private launch (w: World) =
     Sim.practice <- Menu.practice ()
+    Sim.race <- Menu.race ()
     if Sim.practice then
         if Sim.target < 0 || not (Menu.isBot Sim.target) then Sim.target <- Menu.addTarget ()
         world <- w
@@ -173,9 +174,13 @@ let private say text =
 
 let private announce (w: World) (events: Event list) =
     let deaths = events |> List.choose (function Explode(_, i, ring) -> Some(i, ring) | _ -> None)
+    let finishes = events |> List.choose (function Finished(i, place) -> Some(i, place) | _ -> None)
     if Sim.sudden w && not suddenSaid then
         suddenSaid <- true
         say Strings.t.SuddenDeath
+    elif not finishes.IsEmpty then
+        let i, place = finishes.Head
+        say (Strings.t.Finish (name i) Strings.t.Places.[place - 1])
     elif deaths.Length >= 2 then say Strings.t.DoubleKill
     elif not deaths.IsEmpty then
         let i, ring = deaths.Head
@@ -220,7 +225,7 @@ let private sendState () =
     let menu = if html = lastMenu && now - lastMenuAt < 1000. then null else html
     if not (isNull menu) then lastMenuAt <- now
     lastMenu <- html
-    Input.hotSend "nda:state" (createObj [ "world" ==> { world with Events = [] }; "events" ==> List.toArray frameEvents; "layout" ==> Sim.layout; "colors" ==> playerColor; "intro" ==> view.Intro; "banner" ==> banner.textContent; "bannerClass" ==> banner.className; "menuClass" ==> menuEl.className; "menu" ==> menu ])
+    Input.hotSend "nda:state" (createObj [ "world" ==> { world with Events = [] }; "events" ==> List.toArray frameEvents; "layout" ==> Sim.layout; "race" ==> Sim.race; "colors" ==> playerColor; "intro" ==> view.Intro; "banner" ==> banner.textContent; "bannerClass" ==> banner.className; "menuClass" ==> menuEl.className; "menu" ==> menu ])
 
 let private weaponOf (s: string) =
     match s with
@@ -256,6 +261,7 @@ let private eventOf (e: obj) : Event =
     | "Launch" -> Launch(a 1)
     | "PortalOpen" -> PortalOpen(a 1, a 2)
     | "Warp" -> Warp(a 1)
+    | "Finished" -> Finished(a 1, a 2)
     | _ -> HoleOpen(a 1)
 
 let private worldOf (w: obj) : World =
@@ -267,6 +273,7 @@ let private worldOf (w: obj) : World =
       PortalIn = w?PortalIn
       Hole = unbox w?Hole
       HoleIn = w?HoleIn
+      RaceEnd = w?RaceEnd
       Pads = w?Pads
       Crates = w?Crates
       Rng = w?Rng
@@ -278,6 +285,7 @@ let private clientFrame dt =
     Input.sendRemote ()
     let m = remote
     let layout: int = m?layout
+    Sim.race <- m?race
     if Sim.layout <> layout then Sim.setLayout layout
     Array.blit (m?colors: int[]) 0 playerColor 0 4
     Render.syncArena view
@@ -320,6 +328,7 @@ let private localFrame (t: float) dt =
             Sim.target <- -1
             Menu.show ()
         | None -> ()
+        if view.Layout <> Sim.layout then world <- Sim.initial
         Render.syncArena view
         Render.draw view world [] dt
     elif countdown > 0. then

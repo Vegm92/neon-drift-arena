@@ -157,7 +157,7 @@ let drawBorder (vw: View) (w: World) =
     vw.Border.scale.set (k, 1., k)
     let closing = Sim.sudden w && k > shrinkMin
     (vw.Border.children.[0] :?> Mesh).material.color.setHex (if closing then 0xff3b5c else 0x00f6ff)
-    let left = max 0. (matchTime - w.Time)
+    let left = if Sim.race then w.Time else max 0. (matchTime - w.Time)
     vw.Clock.className <- if Sim.sudden w then "sudden" else ""
     vw.Clock.textContent <-
         if Sim.sudden w then Strings.t.SuddenDeath

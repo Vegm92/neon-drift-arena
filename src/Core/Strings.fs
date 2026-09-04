@@ -41,6 +41,10 @@ type Locale =
       Ffa: string
       Teams: string
       Practice: string
+      Race: string
+      Lap: int -> int -> string
+      Finish: string -> string -> string
+      Places: string[]
       NeedOne: string
       Start: string
       NeedPlayers: string
@@ -190,6 +194,10 @@ let en =
       Ffa = "FREE FOR ALL"
       Teams = "TEAMS"
       Practice = "PRACTICE"
+      Race = "RACE"
+      Lap = sprintf "LAP %d/%d"
+      Finish = sprintf "%s FINISHES %s"
+      Places = [| "1ST"; "2ND"; "3RD"; "4TH" |]
       NeedOne = "NEED 1 PLAYER"
       Start = "START"
       NeedPlayers = "NEED 2 PLAYERS"
@@ -210,7 +218,7 @@ let en =
       Save = "SAVE TO CODE"
       Settings = "SETTINGS"
       Arena = "ARENA"
-      Arenas = [| "CORE RING"; "CROSS BASTIONS"; "PINWHEEL"; "TWIN GAUNTLET"; "OPEN BELT" |]
+      Arenas = [| "CORE RING"; "CROSS BASTIONS"; "PINWHEEL"; "TWIN GAUNTLET"; "OPEN BELT"; "OVAL" |]
       Random = "RANDOM"
       Mutator = "MUTATOR"
       Mutators = [| "NONE"; "RAILS ONLY"; "TURBO"; "ICE" |]

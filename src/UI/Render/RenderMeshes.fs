@@ -255,9 +255,39 @@ let mkArena (scene: Object3D) =
     )
     border, spawns
 
+let private mkRoad (scene: Object3D) =
+    let g = Sim.gates
+    let n = g.Length
+    let half = Sim.trackWidth / 2.
+    let edge (side: float) =
+        [| for i in 0 .. n - 1 do
+               let d = norm (g.[(i + 1) % n] - g.[(i + n - 1) % n])
+               let p = g.[i] + v -d.Y d.X * (side * half)
+               yield! [ p.X; -0.5; p.Y ] |]
+    let road = three.Group()
+    for side, hex, alpha in [ 1., 0x00f6ff, 0.55; -1., 0xff2bd6, 0.55 ] do
+        let geo = three.BufferGeometry()
+        geo.setAttribute ("position", three.Float32BufferAttribute(edge side, 3))
+        road.add (three.LineLoop(geo, lineMat hex alpha))
+    let d = norm (g.[1] - g.[0])
+    let a, b = g.[0] + v -d.Y d.X * half, g.[0] - v -d.Y d.X * half
+    let start = three.BufferGeometry()
+    start.setAttribute ("position", three.Float32BufferAttribute([| a.X; -0.4; a.Y; b.X; -0.4; b.Y |], 3))
+    road.add (three.Line(start, lineMat 0xfff45c 1.))
+    for i in 1 .. n - 1 do
+        let d = norm (g.[(i + 1) % n] - g.[i - 1])
+        let a, b = g.[i] + v -d.Y d.X * (half * 0.25), g.[i] - v -d.Y d.X * (half * 0.25)
+        let tick = three.BufferGeometry()
+        tick.setAttribute ("position", three.Float32BufferAttribute([| a.X; -0.5; a.Y; b.X; -0.5; b.Y |], 3))
+        road.add (three.Line(tick, lineMat 0x9fb3ff 0.25))
+    scene.add road
+    road
+
 let syncArena (vw: View) =
     if vw.Layout <> Sim.layout then
         vw.Layout <- Sim.layout
+        vw.Road |> Option.iter vw.Scene.remove
+        vw.Road <- if Sim.gates.Length > 1 then Some(mkRoad vw.Scene) else None
         for o in vw.Rocks do
             vw.Scene.remove o
         for m in vw.Pads do

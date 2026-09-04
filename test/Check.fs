@@ -108,14 +108,17 @@ let main _ =
                 abs a.Pos.X + a.Radius < arenaHalf
                 && abs a.Pos.Y + a.Radius < arenaHalf
                 && abs a.Pos.X + abs a.Pos.Y + a.Radius < diagLimit))
-        check (tag "the core has an open approach") (
-            [ 0. .. 45. .. 315. ]
-            |> List.exists (fun d ->
-                let a = d * System.Math.PI / 180.
-                ray (v (cos a) (sin a))))
-        check (tag "one shield core") ((initial.Pads |> Array.filter (fun p -> p.Kind = 2)).Length = 1)
-        check (tag "four heal pads") ((initial.Pads |> Array.filter (fun p -> p.Kind = 1)).Length = 4)
-        check (tag "eight crate spots") (cratePositions.Length = 8)
+        if isTrack i then
+            check (tag "every gate is on the road") (gates |> Array.forall (fun g -> abs g.X + trackWidth / 2. < arenaHalf && abs g.Y + trackWidth / 2. < arenaHalf))
+        else
+            check (tag "the core has an open approach") (
+                [ 0. .. 45. .. 315. ]
+                |> List.exists (fun d ->
+                    let a = d * System.Math.PI / 180.
+                    ray (v (cos a) (sin a))))
+            check (tag "one shield core") ((initial.Pads |> Array.filter (fun p -> p.Kind = 2)).Length = 1)
+            check (tag "four heal pads") ((initial.Pads |> Array.filter (fun p -> p.Kind = 1)).Length = 4)
+            check (tag "eight crate spots") (cratePositions.Length = 8)
     setLayout 0
 
     let strafer = Array.init 4 (fun i -> if i = 0 then { present with Strafe = 1. } else present)
@@ -366,5 +369,24 @@ let main _ =
         { w0 with Time = matchTime + 1. } |> place 0 w0.Pads.[healPad].Pos 0. |> edit 0 (fun s -> { s with Hp = 10. })
         |> step dt (all present)
     check "heal pads sleep in sudden death" (starving.Ships.[0].Hp = 10.)
+
+    race <- true
+    setLayout (layouts |> Array.findIndex (fun l -> l.Track.IsSome))
+    let grid = step dt (all present) initial
+    check "race grid sits behind the start gate" (grid.Ships |> Array.forall (fun s -> s.Active && len (s.Pos - gates.[0]) < 400.))
+    let skip = grid |> place 0 gates.[2] 0. |> step dt (all present)
+    check "a gate out of order does not count" (skip.Ships.[0].Next = 1)
+    let lapOnce w = Seq.fold (fun w g -> w |> place 0 gates.[g % gates.Length] 0. |> step dt (all present)) w (seq { 1 .. gates.Length })
+    let lap1 = lapOnce grid
+    check "passing every gate in order counts a lap" (lap1.Ships.[0].Laps = 1 && lap1.Ships.[0].Next = 1)
+    let crashed = lap1 |> edit 0 (fun s -> { s with Hp = 0. }) |> run (int (respawnDelay / dt) + 2) (all present)
+    check "a race crash keeps stocks, laps and respawns at the last gate" (crashed.Ships.[0].Alive && crashed.Ships.[0].Stocks = stocks && crashed.Ships.[0].Laps = 1 && len (crashed.Ships.[0].Pos - gates.[0]) < 1.)
+    let won = Seq.fold (fun w _ -> lapOnce w) crashed (seq { 2 .. int laps })
+    let first = won.Ships.[0]
+    check "finishing every lap parks the ship and marks the time" (first.Finish > 0. && not first.Alive && won.Phase = Playing)
+    check "the finish is announced with a place" (won.Events |> List.exists (function Finished(0, 1) -> true | _ -> false))
+    let flag = run (int (raceGrace / dt) + 2) (all present) won
+    check "the race ends for everyone after the grace period" (flag.Phase = Over(Some 0))
+    race <- false
 
     0

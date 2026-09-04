@@ -35,7 +35,9 @@ let private onRow = Array.create 4 false
 let private owner = Array.create 4 ""
 let mutable private teamMode = false
 let mutable private practiceMode = false
+let mutable private raceMode = false
 let practice () = practiceMode
+let race () = raceMode
 let mutable private optRows: Settings.Row list = []
 let mutable private optCursor = 0
 let mutable private optBack = Lobby
@@ -108,6 +110,8 @@ let private cycleColor slot dir =
     playerColor.[slot] <- free.[(i + dir + free.Length) % free.Length]
 
 let private applyMode () =
+    Sim.race <- raceMode
+    Settings.fixArena ()
     Array.fill ready 0 4 false
     Array.fill wins 0 4 0
     let order = joined |> Seq.sort |> Seq.toList
@@ -188,7 +192,10 @@ let private canStart () =
     else joined.Count >= 2 && allReady () && (not teamMode || opposed ())
 
 let private modeName () =
-    if practiceMode then Strings.t.Practice elif teamMode then Strings.t.Teams else Strings.t.Ffa
+    if practiceMode then Strings.t.Practice
+    elif raceMode then Strings.t.Race
+    elif teamMode then Strings.t.Teams
+    else Strings.t.Ffa
 
 let private pickName i =
     if teamMode then Strings.t.Team(teamName teams.[i]) else Strings.t.Colors.[playerColor.[i]]
@@ -387,7 +394,8 @@ let private updateLobby () =
             elif fire || start then
                 match lobbyPick with
                 | 0 ->
-                    if practiceMode then practiceMode <- false
+                    if raceMode then raceMode <- false
+                    elif practiceMode then (practiceMode <- false; raceMode <- true)
                     elif teamMode then (teamMode <- false; practiceMode <- true)
                     else teamMode <- true
                     applyMode ()

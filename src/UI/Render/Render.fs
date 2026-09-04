@@ -39,6 +39,7 @@ let create () =
           Ships = Array.init 4 (mkShip scene)
           Pads = [||]
           Rocks = [||]
+          Road = None
           Layout = -1
           Bullets = Array.init bulletPool (fun _ -> mkBullet scene)
           Mines = Array.init minePool (fun _ -> mkMine scene)
@@ -137,6 +138,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
             vw.Tint <- 1.
             vw.TintHex <- sprintf "#%06x" (if ring then 0x3d5cff else hex)
         | Downed(victim, by, wpn, ring) -> feedLine vw w victim by wpn ring
+        | Finished(i, _) -> spawnBurst vw w.Ships.[i].Pos (shipColor w.Ships.[i]) 40 260.
         | Shot _ -> ()
     drawSmoke vw w dt
     Array.iter2 (drawShip w.Time vw) vw.Ships w.Ships

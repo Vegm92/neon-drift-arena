@@ -350,6 +350,7 @@ let play (events: Event list) =
             | HoleOpen p -> blast p
             | Explode(p, _, _) -> explode p
             | Downed _ -> ()
+            | Finished _ -> ()
 
 let thrust (w: World) =
     if ready () then

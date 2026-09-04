@@ -112,6 +112,10 @@ module Cfg =
     let mutable holeG = 9e6
     let mutable holeCore = 30.
 
+    let mutable laps = 3.
+    let mutable gateRadius = 150.
+    let mutable raceGrace = 20.
+
     let mutable padAimOn = 0.15
     let mutable padThrustOn = 0.75
 
@@ -176,6 +180,9 @@ module Cfg =
            "holeG", (fun () -> holeG), (fun x -> holeG <- x)
            "holeCore", (fun () -> holeCore), (fun x -> holeCore <- x)
            "shrinkTime", (fun () -> shrinkTime), (fun x -> shrinkTime <- x)
+           "laps", (fun () -> laps), (fun x -> laps <- x)
+           "gateRadius", (fun () -> gateRadius), (fun x -> gateRadius <- x)
+           "raceGrace", (fun () -> raceGrace), (fun x -> raceGrace <- x)
            "padAimOn", (fun () -> padAimOn), (fun x -> padAimOn <- x)
            "padThrustOn", (fun () -> padThrustOn), (fun x -> padThrustOn <- x) |]
 
@@ -264,6 +271,9 @@ type Ship =
       LaunchCd: float
       LaunchAngle: float
       WarpCd: float
+      Next: int
+      Laps: int
+      Finish: float
       Streak: int
       Shots: int
       Hits: int
@@ -320,6 +330,7 @@ type Event =
     | PortalOpen of V2 * V2
     | Warp of V2
     | HoleOpen of V2
+    | Finished of int * int
 
 type World =
     { Ships: Ship[]
@@ -330,6 +341,7 @@ type World =
       PortalIn: float
       Hole: Hole option
       HoleIn: float
+      RaceEnd: float
       Pads: Pad[]
       Crates: Crate[]
       Rng: int
