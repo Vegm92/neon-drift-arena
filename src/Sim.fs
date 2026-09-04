@@ -708,6 +708,37 @@ let private phase (ships: Ship[]) =
     else
         Playing
 
+let bot (w: World) i =
+    let me = w.Ships.[i]
+    let idle = { noInput with Present = true }
+    if not me.Alive then
+        idle
+    else
+        match nearest w.Ships i me.Pos with
+        | None -> idle
+        | Some t ->
+            let d = t.Pos - me.Pos
+            let dist = len d
+            let k = bounds w.Time
+            let ahead = me.Pos + ofAngle me.Angle * 140.
+            let aim =
+                if abs me.Pos.X > arenaHalf * k - 220. || abs me.Pos.Y > arenaHalf * k - 220. then
+                    atan2 -me.Pos.Y -me.Pos.X
+                else
+                    match asteroids |> Array.tryFind (fun a -> len (a.Pos - ahead) < a.Radius + 50.) with
+                    | Some a -> atan2 (me.Pos.Y - a.Pos.Y) (me.Pos.X - a.Pos.X)
+                    | None -> atan2 d.Y d.X
+            let off = abs (atan2 (sin (aim - me.Angle)) (cos (aim - me.Angle)))
+            let facing = off < 0.25
+            let hold = me.Weapon = Rail || me.Weapon = Tractor
+            { idle with
+                Aim = Some aim
+                Steer = true
+                Thrust = dist > 320. || off > 0.6
+                Boost = dist > 900. && me.Boost > 40.
+                Fire = facing && dist < 650.
+                Special = facing && dist < 520. && me.Weapon <> Blaster && (hold || int (w.Time * 2.) % 2 = 0) }
+
 let reset (w: World) =
     { initial with Ships = w.Ships |> Array.map (fun s -> if s.Active then { freshShip s.Id with Team = s.Team } else s); Rng = w.Rng }
 

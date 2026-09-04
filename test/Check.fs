@@ -272,6 +272,12 @@ let main _ =
     let backAgain = camping |> edit 0 (fun s -> { s with Alive = false; RespawnIn = dt / 2. }) |> step dt (all present)
     check "respawn avoids the camped spawn point" (backAgain.Ships.[0].Alive && len (backAgain.Ships.[0].Pos - spawnPos 0) > 100.)
 
+    let duel = w0 |> place 0 zero 0. |> place 1 (v 300. 0.) 0. |> place 2 (v (-1200.) 1200.) 0. |> place 3 (v 1200. (-1200.)) 0.
+    let b = bot duel 0
+    check "bot fires at the ship ahead" (b.Fire && b.Aim = Some 0. && not b.Thrust)
+    let turned = bot (duel |> place 1 (v 0. 300.) 0.) 0
+    check "bot steers toward its target and holds fire" (turned.Aim = Some (System.Math.PI / 2.) && not turned.Fire && turned.Thrust)
+
     check "border is whole until the clock runs out" (bounds matchTime = 1. && bounds (matchTime + shrinkTime) = shrinkMin)
     let late = { w0 with Time = matchTime + shrinkTime + 1. } |> place 0 (v (arenaHalf * 0.9) 0.) 0.
     let closed = step dt (all present) late

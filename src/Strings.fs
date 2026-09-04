@@ -82,6 +82,9 @@ type Locale =
       MostRings: string -> int -> string
       NoCrates: string -> string
       SuddenDeath: string
+      Bot: string
+      AddBot: string
+      ClearBots: string
       Tuning: string
       Audio: string
       Music: string
@@ -194,6 +197,9 @@ let en =
       MostRings = fun n r -> sprintf "%s FLEW OUT %d TIMES" n r
       NoCrates = sprintf "%s NEVER OPENED A CRATE"
       SuddenDeath = "SUDDEN DEATH"
+      Bot = "BOT"
+      AddBot = "ADD BOT"
+      ClearBots = "CLEAR BOTS"
       Tuning = "TUNING"
       Audio = "AUDIO"
       Music = "MUSIC"

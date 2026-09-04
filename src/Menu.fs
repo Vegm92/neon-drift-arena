@@ -28,7 +28,7 @@ let mutable screen = Lobby
 let mutable note = ""
 let mutable private shown = true
 let mutable private cursor = 0
-let mutable private lobbyPick = 3
+let mutable private lobbyPick = 4
 let private ready = Array.create 4 false
 let private onRow = Array.create 4 false
 let private owner = Array.create 4 ""
@@ -113,8 +113,11 @@ let private applyMode () =
         Array.fill teams 0 4 0
         order |> List.iteri (fun i s -> playerColor.[s] <- i)
 
+let private botKey = "bot"
+let isBot slot = joined.Contains slot && owner.[slot] = botKey
+
 let private claim key slot =
-    Input.assign key slot
+    if key <> botKey then Input.assign key slot
     owner.[slot] <- key
     joined.Add slot |> ignore
     ready.[slot] <- false
@@ -125,6 +128,17 @@ let private claim key slot =
         teams.[slot] <- if side 1 <= side 2 then 1 else 2
     else
         playerColor.[slot] <- [ 0..3 ] |> List.find (fun c -> not (colorTaken slot c))
+    if key = botKey then ready.[slot] <- true
+
+let private toggleBots () =
+    match [ 0..3 ] |> List.tryFind (fun i -> not (joined.Contains i)) with
+    | Some slot -> claim botKey slot
+    | None ->
+        for s in Seq.toArray joined do
+            if isBot s then
+                joined.Remove s |> ignore
+                ready.[s] <- false
+                teams.[s] <- 0
 
 let private leave slot =
     joined.Remove slot |> ignore
@@ -188,9 +202,11 @@ let private renderLobby (devices: Input.Device[]) =
               let inGame = joined.Contains i
               let dev = devices |> Array.tryFind (fun d -> inGame && d.Key = owner.[i])
               let name =
-                  dev
-                  |> Option.map (fun d -> if d.Key = "kb" then Strings.t.Keyboard else d.Name)
-                  |> Option.defaultValue Strings.t.PressToJoin
+                  if isBot i then Strings.t.Bot
+                  else
+                      dev
+                      |> Option.map (fun d -> if d.Key = "kb" then Strings.t.Keyboard else d.Name)
+                      |> Option.defaultValue Strings.t.PressToJoin
               let color = cardColor i
               let foot =
                   if not inGame then ""
@@ -214,11 +230,12 @@ let private renderLobby (devices: Input.Device[]) =
     let picks =
         [ Strings.t.ModeLabel, (if teamMode then Strings.t.Teams else Strings.t.Ffa), true
           Strings.t.Arena, Strings.t.Arenas.[Sim.layout], true
+          "", (if joined.Count < 4 then Strings.t.AddBot else Strings.t.ClearBots), true
           "", Strings.t.Settings, true
           Strings.t.KeysLaunch, Strings.t.Start, go ]
         |> List.mapi (fun i (top, t, ok) ->
             let sel = i = lobbyPick && who <> ""
-            let cls = (if sel then " sel" else "") + (if ok then "" else " dim") + (if i = 3 && go then " go" else "")
+            let cls = (if sel then " sel" else "") + (if ok then "" else " dim") + (if i = 4 && go then " go" else "")
             sprintf "<div class=\"item%s\"><em>%s</em><b>%s</b><div class=\"who\">%s</div></div>" cls top t (if sel then who else ""))
         |> String.concat ""
     let hints =
@@ -281,7 +298,7 @@ let private openOptions () =
 
 let private dropMissing (devices: Input.Device[]) =
     for s in Seq.toArray joined do
-        if not (devices |> Array.exists (fun d -> d.Key = owner.[s] && d.Slot = s)) then leave s
+        if not (isBot s) && not (devices |> Array.exists (fun d -> d.Key = owner.[s] && d.Slot = s)) then leave s
 
 let private updateLobby () =
     let devices = Input.devices ()
@@ -305,8 +322,8 @@ let private updateLobby () =
                     else [ 0..3 ] |> List.tryFind (fun i -> not (joined.Contains i))
                 slot |> Option.iter (claim d.Key)
         elif onRow.[d.Slot] then
-            if left then lobbyPick <- (lobbyPick + 3) % 4
-            if right then lobbyPick <- (lobbyPick + 1) % 4
+            if left then lobbyPick <- (lobbyPick + 4) % 5
+            if right then lobbyPick <- (lobbyPick + 1) % 5
             if up || back then onRow.[d.Slot] <- false
             elif start && canStart () then launch <- true
             elif fire || start then
@@ -315,7 +332,8 @@ let private updateLobby () =
                     teamMode <- not teamMode
                     applyMode ()
                 | 1 -> Settings.adjust Settings.Arena 1
-                | 2 -> options <- true
+                | 2 -> toggleBots ()
+                | 3 -> options <- true
                 | _ -> if canStart () then launch <- true
         else
             if (left || right) && not ready.[d.Slot] then

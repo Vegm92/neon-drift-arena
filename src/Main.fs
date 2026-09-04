@@ -28,11 +28,16 @@ let mutable endTitle = ""
 let mutable endNote = ""
 
 let private masked () =
-    Input.read () |> Array.mapi (fun i x -> if Menu.joined.Contains i then x else noInput)
+    Input.read ()
+    |> Array.mapi (fun i x ->
+        if Menu.isBot i then (if Menu.visible () then noInput else Sim.bot world i)
+        elif Menu.joined.Contains i then x
+        else noInput)
 
 let private go intro =
     countdown <- if intro then Cfg.introTime else 3.
     view.Intro <- if intro then Cfg.introTime else 0.
+    if intro then world <- Sim.step Cfg.physicsDt (masked ()) world
     acc <- 0.
     slowmo <- 0.
     hitstop <- 0.
