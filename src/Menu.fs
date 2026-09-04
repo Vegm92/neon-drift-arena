@@ -140,6 +140,12 @@ let private toggleBots () =
                 ready.[s] <- false
                 teams.[s] <- 0
 
+let testStart () =
+    claim "kb" 0
+    claim botKey 1
+    ready.[0] <- true
+    hide ()
+
 let private leave slot =
     joined.Remove slot |> ignore
     ready.[slot] <- false

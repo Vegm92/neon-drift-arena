@@ -286,6 +286,11 @@ let main _ =
     check "ghost mines recharge slowly" ((run 10 firing dropped).Mines.Length = 1)
     check "ghosts never win" ((step dt (all present) { out with Ships = out.Ships |> Array.mapi (fun i s -> if i = 1 then s else { s with Alive = false; Stocks = 0 }) }).Phase = Over(Some 1))
 
+    let staged = stage w0
+    check "test stage faces two ships across a crate and a mine"
+        (staged.Ships.[0].Pos.X < 0. && staged.Ships.[1].Pos.X > 0. && staged.Mines.Length = 1 && staged.Crates.[0].RespawnIn = 0.)
+    check "test stage arms any weapon" ((arm 0 Rail staged).Ships.[0].Ammo = railAmmo)
+
     check "border is whole until the clock runs out" (bounds matchTime = 1. && bounds (matchTime + shrinkTime) = shrinkMin)
     let late = { w0 with Time = matchTime + shrinkTime + 1. } |> place 0 (v (arenaHalf * 0.9) 0.) 0.
     let closed = step dt (all present) late

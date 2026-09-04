@@ -765,6 +765,20 @@ let bot (w: World) i =
                 Fire = facing && dist < 650.
                 Special = facing && dist < 520. && me.Weapon <> Blaster && (hold || int (w.Time * 2.) % 2 = 0) }
 
+let stage (w: World) =
+    let ships =
+        w.Ships
+        |> Array.map (fun s ->
+            match s.Id with
+            | 0 -> { freshShip 0 with Team = s.Team; Pos = v -300. 0.; Angle = 0.; Invuln = 0. }
+            | 1 -> { freshShip 1 with Team = s.Team; Pos = v 300. 0.; Angle = Math.PI; Invuln = 0. }
+            | _ -> s)
+    let crates = w.Crates |> Array.mapi (fun i c -> if i = 0 then { c with Pos = v 0. -220.; RespawnIn = 0. } else c)
+    { w with Ships = ships; Crates = crates; Mines = [ { Owner = 1; Pos = v 0. 220.; Vel = zero; Fuse = -1. } ]; Bullets = [] }
+
+let arm i wpn (w: World) =
+    { w with Ships = w.Ships |> Array.map (fun s -> if s.Id = i then { s with Weapon = wpn; Ammo = weaponAmmo wpn; Charge = 0. } else s) }
+
 let reset (w: World) =
     { initial with Ships = w.Ships |> Array.map (fun s -> if s.Active then { freshShip s.Id with Team = s.Team } else s); Rng = w.Rng }
 

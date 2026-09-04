@@ -73,6 +73,10 @@ Every tunable in `Cfg` is a row in SETTINGS > TUNING, adjusted with left/right i
 | `src/Main.fs` | requestAnimationFrame loop with a 120 Hz accumulator |
 | `test/Check.fs` | Headless .NET run of the simulation with assertions |
 
+## Test mode
+
+`http://localhost:5173/?test` skips the lobby: P1 on the keyboard and a passive P2 target face each other across the centre, with a crate above and a dormant mine below. `?test&bot` makes P2 fight back. Keys: `1`–`7` arm P1 with BLASTER, RAILGUN, MAG MINES, SEEKERS, REPULSOR, SCATTER GUN, TRACTOR; `K` kills P2; `T` jumps to sudden death; `R` resets the stage.
+
 ## Check the physics
 
 ```bash
