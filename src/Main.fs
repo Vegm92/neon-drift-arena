@@ -292,6 +292,8 @@ let rec frame (t: float) =
         | Playing when pause -> Menu.pause ()
         | Playing -> ()
         Render.draw view world events dt
+    window.requestAnimationFrame frame |> ignore
+
 window.addEventListener ("keydown", fun _ -> hideTutorial ())
 window.addEventListener ("pointerdown", fun _ -> hideTutorial ())
 window.addEventListener (
