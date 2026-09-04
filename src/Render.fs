@@ -710,9 +710,11 @@ let private drawCrates (vw: View) (w: World) =
         vw.Crates
         w.Crates
 
-let private drawRocks (vw: View) (w: World) =
+let private drawRocks (vw: View) (w: World) dt =
+    let puff = vw.Puff + dt > 0.05
     let mutable k = 0
     for r in w.Rocks do
+        if puff then spawnCone vw r.Pos 0xff9955 4 70. (atan2 -r.Vel.Y -r.Vel.X) 0.7 18.
         if k < vw.Boulders.Length then
             let o = vw.Boulders.[k]
             o.visible <- true
@@ -984,7 +986,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
     drawPads vw w
     drawCrates vw w
     drawMines vw w
-    drawRocks vw w
+    drawRocks vw w dt
     drawPortals vw w
     drawBullets vw w dt
     updateBursts vw dt
