@@ -1,4 +1,4 @@
-﻿module Main
+module Main
 
 open Browser
 open Fable.Core
@@ -13,7 +13,7 @@ async {
     do! CrazyGames.init(Sfx.setCrazyGamesMuted) |> Async.AwaitPromise
     Input.initNetwork ()
     Menu.initUser ()
-    CrazyGames.addRoomJoinListener(fun roomId ->
+    CrazyGames.addJoinRoomListener(fun roomId ->
         if roomId <> "" then
             window.sessionStorage.setItem ("nda-room", roomId)
             window.location.reload ()
@@ -27,25 +27,13 @@ document.getElementById("loader").className <- "done"
 let mutable private adPlaying = false
 
 let requestMidgameAd (onDone: unit -> unit) =
-    CrazyGames.requestAd("midgame", 
-        (fun () ->
-            adPlaying <- true
-            Sfx.setAdMuted true
-            CrazyGames.gameplayStop ()
-        ),
-        (fun () ->
-            adPlaying <- false
-            Sfx.setAdMuted false
-            CrazyGames.gameplayStart ()
-            onDone ()
-        ),
-        (fun error ->
-            adPlaying <- false
-            Sfx.setAdMuted false
-            CrazyGames.gameplayStart ()
-            onDone ()
-        )
-    )
+    adPlaying <- true
+    CrazyGames.gameplayStop ()
+    let finish () =
+        adPlaying <- false
+        Sfx.setAdMuted false
+        onDone ()
+    CrazyGames.requestAd("midgame", (fun () -> Sfx.setAdMuted true), finish, ignore >> finish)
 
 let tutKey = "nda-tut"
 let tutEl = document.getElementById "tut"
@@ -351,14 +339,12 @@ let private clientFrame dt =
 
 let private localFrame (t: float) dt =
     frameEvents <- []
-    if adPlaying then
-        Render.draw view world [] dt
-    else
-        if t - lastHost > 100. then
-            lastHost <- t
-            broadcast ()
+    if t - lastHost > 100. then
+        lastHost <- t
+        broadcast ()
     Sfx.track (Menu.visible ())
-    if Menu.visible () then
+    if adPlaying then Render.draw view world [] dt
+    elif Menu.visible () then
         Sfx.silence ()
         match Menu.update (masked ()) with
         | Some Menu.Rematch when Menu.screen = Menu.Lobby ->
@@ -446,13 +432,10 @@ let private localFrame (t: float) dt =
             if finish <= 0. then
                 banner.className <- "hidden"
                 Menu.note <- endNote
-                let active0 = world.Ships.[0].Active
-                if active0 then
-                    let kills0 = world.Ships.[0].Kills
-                    if kills0 > Menu.highScore then
-                        Menu.highScore <- kills0
-                        Menu.saveProgress ()
-                        CrazyGames.submitLeaderboardScore kills0
+                let kills0 = world.Ships.[0].Kills
+                if world.Ships.[0].Active && kills0 > Menu.highScore then
+                    Menu.highScore <- kills0
+                    Menu.saveProgress ()
                 requestMidgameAd (fun () -> Menu.result endTitle)
         | Playing when pause -> Menu.pause ()
         | Playing -> ()
