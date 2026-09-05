@@ -99,7 +99,7 @@ let private launch (w: World) =
         world <- w
         go true
 
-let private name i = Strings.t.Player i
+let private name i = if Menu.names.[i] = "" then Strings.t.Player i else Menu.names.[i]
 
 let private title (w: World) =
     match w.Phase with
@@ -171,6 +171,7 @@ let private broadcast () =
 let rec frame (t: float) =
     let dt = if last = 0. then 0. else (t - last) / 1000. |> max 0. |> min 0.1
     last <- t
+    for i in 0..3 do view.Names.[i] <- name i
     if t - lastHost > 100. then
         lastHost <- t
         broadcast ()

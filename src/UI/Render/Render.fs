@@ -50,6 +50,7 @@ let create () =
           Crates = Array.init 4 (fun _ -> mkCrate scene)
           Panels = Array.init 4 (mkPanel hud)
           Tags = Array.init 4 (mkTag hud)
+          Names = Array.init 4 Strings.t.Player
           Spawns = spawns
           Intro = 0.
           Border = border

@@ -61,6 +61,19 @@ let init () =
 
 let private key k = keys.Contains k
 
+let private taps = HashSet<string>()
+
+let press (code: string) =
+    keys.Add code |> ignore
+    taps.Add code |> ignore
+    keyboardSeen <- true
+
+let release () =
+    window.requestAnimationFrame (fun _ ->
+        for c in taps do keys.Remove c |> ignore
+        taps.Clear ())
+    |> ignore
+
 let private keyboard () =
     { Aim = None
       Absolute = false

@@ -88,6 +88,7 @@ type View =
       Crates: Object3D[]
       Panels: HTMLElement[]
       Tags: HTMLElement[]
+      Names: string[]
       Spawns: Mesh[]
       mutable Intro: float
       Border: Object3D

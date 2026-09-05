@@ -33,6 +33,8 @@ type Locale =
       KeysLeave: string
       KeysLaunch: string
       RowLabel: string
+      RenameLabel: string
+      RenamePrompt: string
       TeamLabel: string
       ColorLabel: string
       Colors: string[]
@@ -167,6 +169,8 @@ let en =
       KeysLeave = "ESC / B"
       KeysLaunch = "ENTER / START"
       RowLabel = "MENU"
+      RenameLabel = "RENAME"
+      RenamePrompt = "ENTER NAME"
       TeamLabel = "TEAM"
       ColorLabel = "COLOUR"
       Colors = [| "CYAN"; "MAGENTA"; "LIME"; "AMBER" |]
