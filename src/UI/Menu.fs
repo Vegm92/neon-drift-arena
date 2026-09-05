@@ -64,7 +64,7 @@ let private teamColors = [| ""; "#3b7bff"; "#ff3b5c" |]
 let private window' = 11
 let mutable private padUrl = ""
 if padUrl = "" && Input.padUrl <> "" then padUrl <- Input.padUrl
-if padUrl = "" then
+if padUrl = "" && not (isNullOrUndefined Input.hot) then
     window?fetch("/__pad-url")?``then``(fun r -> r?text())?``then``(fun (t: string) -> padUrl <- t) |> ignore
 
 let visible () = shown
