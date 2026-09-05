@@ -9,9 +9,13 @@ npm install
 npm run dev
 ```
 
-Opens Vite on http://localhost:5173 with Fable in watch mode.
+Opens Vite on http://localhost:5173 with Fable in watch mode. The landing page is served at `/`, the game at `/play/` and the phone pad at `/pad.html`.
 
 Requires the .NET 10 SDK (Fable 5.15 ships as a net10.0 tool) and Node 18+.
+
+## Landing page
+
+`index.html` at the root is the marketing page: a muted autoplay loop of `public/trailer.mp4` (a 27 s cut of real bots matches, poster `public/trailer.jpg`), one PLAY IN BROWSER button pointing at `/play/`, four feature rows and the OG card `public/og.jpg`. Every string on it lives in `strings.json`; the `site-strings` hook in `vite.config.js` substitutes `{{key}}` placeholders in dev and build. `npm run build` emits the page, the game and the pad into `dist/`.
 
 ## Controls
 
