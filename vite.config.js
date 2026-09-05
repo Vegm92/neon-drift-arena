@@ -3,9 +3,19 @@ import { readFileSync, writeFileSync } from "node:fs";
 const domain = new URL("src/Core/Domain.fs", import.meta.url);
 const strings = JSON.parse(readFileSync(new URL("strings.json", import.meta.url), "utf8"));
 
+const storeRow = () =>
+  strings.stores
+    .map((s) =>
+      s.url
+        ? `<a class="store" href="${s.url}" target="_blank" rel="noopener">${s.label}</a>`
+        : `<span class="store soon">${s.label}<i>${strings.storeSoon}</i></span>`,
+    )
+    .join("");
+
 const siteStrings = {
   name: "site-strings",
-  transformIndexHtml: (html) => html.replace(/\{\{(\w+)\}\}/g, (_, k) => strings[k] ?? `{{${k}}}`),
+  transformIndexHtml: (html) =>
+    html.replace("{{stores}}", storeRow).replace(/\{\{(\w+)\}\}/g, (_, k) => strings[k] ?? `{{${k}}}`),
 };
 
 const bakeTweaks = {

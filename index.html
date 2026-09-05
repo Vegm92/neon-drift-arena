@@ -6,6 +6,8 @@
 <title>{{metaTitle}}</title>
 <meta name="description" content="{{metaDescription}}">
 <meta property="og:type" content="website">
+<link rel="canonical" href="{{siteUrl}}">
+<meta property="og:url" content="{{siteUrl}}">
 <meta property="og:title" content="{{metaTitle}}">
 <meta property="og:description" content="{{metaDescription}}">
 <meta property="og:image" content="/og.jpg">
@@ -24,12 +26,18 @@
   .hero .tag{position:absolute;left:4.4vw;top:4.4vh;padding:5px 12px;border:1px solid rgba(207,238,255,.35);font-size:11px;letter-spacing:.3em}
   .sound{position:absolute;right:4.4vw;top:4.4vh;padding:6px 12px;border:1px solid rgba(207,238,255,.35);background:rgba(3,3,10,.5);color:#cfe;font:inherit;font-size:11px;letter-spacing:.3em;cursor:pointer}
   .sound .on{display:none}.sound.playing .on{display:inline}.sound.playing .off{display:none}
-  .lockup{position:absolute;left:4.4vw;bottom:7vh;display:flex;flex-direction:column;gap:10px;max-width:620px}
+  .lockup{position:absolute;left:4.4vw;bottom:7vh;display:flex;flex-direction:column;gap:12px;max-width:620px}
   h1{margin:0;font-size:clamp(64px,10.4vw,150px);line-height:.86;letter-spacing:.01em;color:#fff;text-shadow:-4px 0 0 rgba(0,246,255,.75),4px 0 0 rgba(255,43,214,.75),0 0 40px rgba(255,255,255,.25)}
+  .sub{margin:0;font-size:clamp(22px,2.6vw,34px);line-height:1;letter-spacing:.14em;color:#b6ff3b;text-shadow:0 0 22px rgba(182,255,59,.55)}
   .tagline{margin:0;font-size:17px;letter-spacing:.18em;line-height:1.6;text-wrap:pretty}
-  .cta{position:absolute;right:4.4vw;bottom:8vh;display:flex;flex-direction:column;align-items:flex-start;padding:18px 40px 16px 32px;background:#b6ff3b;color:#03030a;text-decoration:none;box-shadow:0 0 48px -8px #b6ff3b}
-  .cta span{font-size:11px;letter-spacing:.3em;font-weight:700}
+  .cta{position:absolute;right:4.4vw;bottom:8vh;display:flex;flex-direction:column;align-items:flex-start;padding:16px 40px 18px 32px;background:#b6ff3b;color:#03030a;text-decoration:none;box-shadow:0 0 48px -8px #b6ff3b}
+  .cta span{font-size:11px;letter-spacing:.3em;font-weight:700;margin-top:8px;opacity:.85}
   .cta b{font-size:44px;line-height:1;letter-spacing:.04em}
+  .cta .nope,.cta i{display:none}
+  .cta i{font-style:normal;font-size:10px;letter-spacing:.22em;margin-top:8px;opacity:.8}
+  .nodesktop .cta{background:#26405e;color:#cfe;box-shadow:none;pointer-events:none}
+  .nodesktop .cta span,.nodesktop .cta .go{display:none}
+  .nodesktop .cta .nope,.nodesktop .cta i{display:block}
   .strip{display:flex;flex-wrap:wrap;justify-content:center;background:#ff2bd6}
   .strip span{padding:12px 40px;font-size:22px;letter-spacing:.12em;color:#03030a;border-right:2px solid rgba(3,3,10,.35)}
   .strip span:last-child{border-right:0}
@@ -52,6 +60,17 @@
   .k4{background-position:97.81% 82.58%;width:210px;transform:rotate(20deg);filter:drop-shadow(0 0 14px #ff9955)}
   footer{display:flex;flex-direction:column;align-items:center;gap:20px;padding:72px 4.4vw 64px}
   footer .cta{position:static}
+  .hub{display:flex;flex-direction:column;align-items:center;gap:18px;width:min(720px,100%);margin-top:12px}
+  .hub .watch{font-size:12px;letter-spacing:.3em;color:#cfe;text-decoration:none;border-bottom:1px solid rgba(207,238,255,.35);padding-bottom:4px}
+  .hub .watch:hover{color:#00f6ff;border-color:#00f6ff}
+  .hub .rule{display:flex;align-items:center;gap:16px;width:100%;font-size:10px;letter-spacing:.32em;opacity:.5}
+  .hub .rule::before,.hub .rule::after{content:"";flex-grow:1;height:1px;background:#1f3550}
+  .stores{display:flex;flex-wrap:wrap;justify-content:center;gap:14px}
+  .store{display:flex;align-items:center;gap:10px;padding:12px 26px;border:1px solid #26405e;color:#cfe;
+    font-size:14px;letter-spacing:.22em;text-decoration:none}
+  a.store:hover{color:#00f6ff;border-color:#00f6ff;box-shadow:0 0 26px -10px #00f6ff}
+  .store.soon{opacity:.45}
+  .store i{font-style:normal;font-size:8px;letter-spacing:.25em;padding:2px 6px;border:1px solid currentColor;opacity:.8}
   .closer{font-size:64px;line-height:1;color:#fff;text-align:center;text-shadow:-3px 0 0 rgba(0,246,255,.6),3px 0 0 rgba(255,43,214,.6)}
   .fine{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 32px;margin-top:12px;font-size:10px;letter-spacing:.25em;opacity:.5;text-align:center}
   @media (max-width:900px){
@@ -62,8 +81,9 @@
     .sound{top:10px;right:12px;font-size:9px;padding:4px 8px}
     .lockup{position:static;padding:8px 20px 0;gap:14px;max-width:none}
     h1{font-size:78px}
+    .sub{font-size:24px;letter-spacing:.1em}
     .tagline{font-size:13px;letter-spacing:.12em}
-    .cta{position:static;align-items:center;margin:0 20px;padding:12px 16px 10px;min-height:64px;box-sizing:border-box}
+    .cta{position:static;align-items:center;margin:0 20px;padding:10px 16px 12px;min-height:64px;box-sizing:border-box}
     .cta span{font-size:10px}.cta b{font-size:36px}
     .strip{margin-top:22px}
     .strip span{padding:8px 14px;font-size:16px;letter-spacing:.1em;border:0}
@@ -78,6 +98,8 @@
     footer{padding:44px 20px 40px;gap:16px}
     footer .cta{align-self:stretch;margin:0}
     .closer{font-size:40px}
+    .hub{gap:14px}
+    .store{padding:10px 18px;font-size:12px}
     .fine{flex-direction:column;gap:8px;font-size:9px}
   }
 </style>
@@ -92,9 +114,10 @@
   <button id="sound" class="sound" type="button"><span class="on">{{soundOn}}</span><span class="off">{{soundOff}}</span></button>
   <div class="lockup">
     <h1 class="display">{{title1}}<br>{{title2}}</h1>
+    <p class="sub display">{{heroSub}}</p>
     <p class="tagline">{{tagline}}</p>
   </div>
-  <a class="cta" href="/play/"><span>{{ctaSmall}}</span><b class="display">{{cta}}</b></a>
+  <a class="cta" href="/play/"><b class="display go">{{cta}}</b><b class="display nope">{{mobileCta}}</b><span>{{ctaSmall}}</span><i>{{mobileNote}}</i></a>
 </header>
 <div class="strip display"><span>{{strip1}}</span><span>{{strip2}}</span><span>{{strip3}}</span><span>{{strip4}}</span></div>
 <main>
@@ -117,13 +140,22 @@
 </main>
 <footer>
   <div class="closer display">{{closer}}</div>
-  <a class="cta" href="/play/"><span>{{ctaSmall}}</span><b class="display">{{cta}}</b></a>
+  <a class="cta" href="/play/"><b class="display go">{{cta}}</b><b class="display nope">{{mobileCta}}</b><span>{{ctaSmall}}</span><i>{{mobileNote}}</i></a>
+  <div class="hub">
+    <a class="watch" href="#trailer">{{watchTrailer}}</a>
+    <div class="rule display">{{storesTitle}}</div>
+    <div class="stores display">{{stores}}</div>
+  </div>
   <div class="fine"><span>{{fine1}}</span><span>{{fine2}}</span><span>{{fine3}}</span></div>
 </footer>
 <script>
   const v = document.getElementById("trailer"), b = document.getElementById("sound");
+  const unmute = () => { v.muted = false; b.classList.add("playing"); if (v.paused) v.play(); };
   b.addEventListener("click", () => { v.muted = !v.muted; b.classList.toggle("playing", !v.muted); if (v.paused) v.play(); });
   v.addEventListener("click", () => { if (v.paused) v.play(); });
+  document.querySelector(".hub .watch").addEventListener("click", () => { scrollTo({ top: 0, behavior: "smooth" }); unmute(); });
+  if (!matchMedia("(any-hover: hover) and (any-pointer: fine)").matches || navigator.userAgentData?.mobile)
+    document.body.classList.add("nodesktop");
 </script>
 </body>
 </html>
