@@ -12,6 +12,8 @@ let private catchKey = "nda-catchup"
 
 let private defaults = Cfg.tunables |> Array.map (fun (_, get, _) -> get ())
 let mutable arenaPick = 0
+let mutable isGuest = true
+let mutable onSignInCompleted : string -> unit = fun _ -> ()
 
 let arenaName () =
     if arenaPick = Sim.layouts.Length then Strings.t.Random else Strings.t.Arenas.[Sim.layout]
@@ -110,6 +112,15 @@ let rows () =
               fun () ->
                   window.localStorage.removeItem tweaksKey
                   window.location.reload ()
+          )
+      if isGuest then
+          yield Header "CRAZYGAMES"
+          yield Action("SIGN IN", fun () ->
+              async {
+                  let! user = CrazyGames.showAuthPrompt() |> Async.AwaitPromise
+                  if not (isNullOrUndefined user) && not (isNullOrUndefined user.username) then
+                      onSignInCompleted user.username
+              } |> Async.StartImmediate
           ) ]
 
 let selectable r =
@@ -171,6 +182,10 @@ let activate r =
 let init () =
     loadTweaks ()
     loadPads ()
+    async {
+        let! available = CrazyGames.isUserAvailable() |> Async.AwaitPromise
+        isGuest <- not available
+    } |> Async.StartImmediate
     match window.localStorage.getItem arenaKey with
     | null -> ()
     | v ->

@@ -27,17 +27,45 @@ let teams: int[] = Array.zeroCreate 4
 let wins: int[] = Array.zeroCreate 4
 let names: string[] = Array.create 4 ""
 
+let mutable highScore = 0
+let mutable matchesPlayed = 0
+
+let loadProgress () =
+    try
+        let w = CrazyGames.dataGetItem "nda-high-score"
+        let m = CrazyGames.dataGetItem "nda-matches-played"
+        highScore <- if isNullOrUndefined w || w = "" then 0 else int w
+        matchesPlayed <- if isNullOrUndefined m || m = "" then 0 else int m
+        printfn "Loaded progress: high score %d, matches %d" highScore matchesPlayed
+    with e ->
+        printfn "Failed to load progress: %s" e.Message
+
+let saveProgress () =
+    try
+        CrazyGames.dataSetItem ("nda-high-score", string highScore)
+        CrazyGames.dataSetItem ("nda-matches-played", string matchesPlayed)
+        printfn "Saved progress: high score %d, matches %d" highScore matchesPlayed
+    with e ->
+        printfn "Failed to save progress: %s" e.Message
+
 let initUser () =
-    (CrazyGames.isUserAvailable())?``then``(fun (available: bool) ->
+    Input.getLocalPlayerName <- fun () -> names.[0]
+    Settings.onSignInCompleted <- fun username -> names.[0] <- username
+    loadProgress ()
+    async {
+        let! available = CrazyGames.isUserAvailable() |> Async.AwaitPromise
+        Settings.isGuest <- not available
         if available then
-            (CrazyGames.getUser())?``then``(fun (user: CrazyGames.CGUser) ->
-                if not (isNullOrUndefined user) && not (isNullOrUndefined user.username) then
-                    names.[0] <- user.username
-            ) |> ignore
-    ) |> ignore
+            let! user = CrazyGames.getUser() |> Async.AwaitPromise
+            if not (isNullOrUndefined user) && not (isNullOrUndefined user.username) then
+                names.[0] <- user.username
+                loadProgress ()
+    } |> Async.StartImmediate
     CrazyGames.addAuthListener(fun (user: CrazyGames.CGUser) ->
         if not (isNullOrUndefined user) && not (isNullOrUndefined user.username) then
             names.[0] <- user.username
+            Settings.isGuest <- false
+            loadProgress ()
     )
 let mutable screen = Lobby
 let mutable note = ""
@@ -95,6 +123,18 @@ let private swallow () =
             held.Add(k + name) |> ignore
     repeatAt <- JS.Constructors.Date.now () + 340.
 
+let mutable private lastBannerRefresh = 0.
+
+let refreshBannersForce (force: bool) =
+    let now = JS.Constructors.Date.now ()
+    if force || now - lastBannerRefresh >= 31000. then
+        lastBannerRefresh <- now
+        CrazyGames.requestBanner("cg-banner-1", 300, 250)
+        CrazyGames.requestBanner("cg-banner-2", 300, 250)
+
+let clearBanners () =
+    CrazyGames.clearAllBanners ()
+
 let private open' s =
     screen <- s
     cursor <- 0
@@ -104,18 +144,22 @@ let private open' s =
 
 let show () = 
     open' Lobby
+    refreshBannersForce true
     CrazyGames.gameplayStop ()
 let pause () = 
     open' Pause
+    refreshBannersForce true
     CrazyGames.gameplayStop ()
 let result (title: string) = 
     open' (Result title)
+    refreshBannersForce true
     CrazyGames.gameplayStop ()
 
 let private hide () =
     shown <- false
     swallow ()
     el.className <- "hidden"
+    clearBanners ()
 
 let private items () =
     match screen with
@@ -160,7 +204,14 @@ let private claim key slot =
         teams.[slot] <- if side 1 <= side 2 then 1 else 2
     else
         playerColor.[slot] <- [ 0..3 ] |> List.find (fun c -> not (colorTaken slot c))
-    if key = botKey then ready.[slot] <- true
+    if key = botKey then 
+        names.[slot] <- Strings.t.Bot
+        ready.[slot] <- true
+    else
+        let devOpt = Input.devices () |> Array.tryFind (fun d -> d.Key = key)
+        match devOpt with
+        | Some d -> if d.Name <> "" then names.[slot] <- d.Name
+        | None -> ()
 
 claim "kb" 0
 claim botKey 1
@@ -232,7 +283,7 @@ let private ship i =
 
 let private cardColor i = if teams.[i] > 0 then teamColors.[teams.[i]] else colors.[playerColor.[i]]
 
-let private displayName i = if names.[i] = "" then Strings.t.Player i else names.[i]
+let private displayName i = if isBot i then Strings.t.Bot elif names.[i] = "" then Strings.t.Player i else names.[i]
 
 let private rename slot =
     let s: string = window?prompt (Strings.t.RenamePrompt, displayName slot)
@@ -344,7 +395,10 @@ let recordWin (winner: int) (team: int) =
     for s in joined do
         if s = winner || (team > 0 && teams.[s] = team) then wins.[s] <- wins.[s] + 1
     let series = wins.[winner] >= Cfg.seriesTo
-    if series then Array.fill wins 0 4 0
+    if series then 
+        Array.fill wins 0 4 0
+        matchesPlayed <- matchesPlayed + 1
+        saveProgress ()
     series
 
 let private tally () =
@@ -405,6 +459,10 @@ let private dropMissing (devices: Input.Device[]) =
 let private updateLobby () =
     let devices = Input.devices ()
     dropMissing devices
+    for d in devices do
+        if d.Slot >= 0 && joined.Contains d.Slot && owner.[d.Slot] = d.Key then
+            if d.Name <> "" && not (isBot d.Slot) then
+                names.[d.Slot] <- d.Name
     let mutable launch = false
     let mutable options = false
     for d in devices do
@@ -519,6 +577,7 @@ let private updateList (title: string) (inputs: Input[]) =
     | None -> None
 
 let update (inputs: Input[]) =
+    refreshBannersForce false
     match screen with
     | Lobby -> if updateLobby () then Some Rematch else None
     | Options ->

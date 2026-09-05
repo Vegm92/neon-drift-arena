@@ -9,7 +9,8 @@ Input.init ()
 Settings.init ()
 Sfx.init ()
 
-(CrazyGames.init(Sfx.setCrazyGamesMuted))?``then``(fun () ->
+async {
+    do! CrazyGames.init(Sfx.setCrazyGamesMuted) |> Async.AwaitPromise
     Input.initNetwork ()
     Menu.initUser ()
     CrazyGames.addRoomJoinListener(fun roomId ->
@@ -17,11 +18,34 @@ Sfx.init ()
             window.sessionStorage.setItem ("nda-room", roomId)
             window.location.reload ()
     )
-) |> ignore
+} |> Async.StartImmediate
 
 let view = Render.create ()
 let banner = document.getElementById "banner"
 document.getElementById("loader").className <- "done"
+
+let mutable private adPlaying = false
+
+let requestMidgameAd (onDone: unit -> unit) =
+    CrazyGames.requestAd("midgame", 
+        (fun () ->
+            adPlaying <- true
+            Sfx.setAdMuted true
+            CrazyGames.gameplayStop ()
+        ),
+        (fun () ->
+            adPlaying <- false
+            Sfx.setAdMuted false
+            CrazyGames.gameplayStart ()
+            onDone ()
+        ),
+        (fun error ->
+            adPlaying <- false
+            Sfx.setAdMuted false
+            CrazyGames.gameplayStart ()
+            onDone ()
+        )
+    )
 
 let tutKey = "nda-tut"
 let tutEl = document.getElementById "tut"
@@ -327,9 +351,12 @@ let private clientFrame dt =
 
 let private localFrame (t: float) dt =
     frameEvents <- []
-    if t - lastHost > 100. then
-        lastHost <- t
-        broadcast ()
+    if adPlaying then
+        Render.draw view world [] dt
+    else
+        if t - lastHost > 100. then
+            lastHost <- t
+            broadcast ()
     Sfx.track (Menu.visible ())
     if Menu.visible () then
         Sfx.silence ()
@@ -419,7 +446,14 @@ let private localFrame (t: float) dt =
             if finish <= 0. then
                 banner.className <- "hidden"
                 Menu.note <- endNote
-                Menu.result endTitle
+                let active0 = world.Ships.[0].Active
+                if active0 then
+                    let kills0 = world.Ships.[0].Kills
+                    if kills0 > Menu.highScore then
+                        Menu.highScore <- kills0
+                        Menu.saveProgress ()
+                        CrazyGames.submitLeaderboardScore kills0
+                requestMidgameAd (fun () -> Menu.result endTitle)
         | Playing when pause -> Menu.pause ()
         | Playing -> ()
         Render.draw view world events dt

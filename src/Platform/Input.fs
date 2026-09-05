@@ -30,18 +30,20 @@ let mutable private room = ""
 let mutable padUrl = ""
 
 let private handlers = Dictionary<string, obj -> unit>()
-let mutable private sock: obj = null
+let mutable private sock: CrazyGames.IRelaySocket = Unchecked.defaultof<CrazyGames.IRelaySocket>
+
+let mutable getLocalPlayerName : unit -> string = fun () -> ""
 
 let rec private connect () =
     let proto = if window.location.protocol = "https:" then "wss://" else "ws://"
-    let s = createNew window?WebSocket (proto + window.location.host + "/relay?room=" + room + (if isPad then "&role=pad" else "&role=host"))
+    let s = CrazyGames.createRelaySocket (proto + window.location.host + "/relay?room=" + room + (if isPad then "&role=pad" else "&role=host"), isPad)
     sock <- s
-    s?onmessage <- fun (e: obj) ->
+    s.onmessage <- fun (e: obj) ->
         let msg = JS.JSON.parse (e?data: string)
         match handlers.TryGetValue(msg?``event``: string) with
         | true, f -> f msg?data
         | _ -> ()
-    s?onclose <- fun (_: obj) -> window.setTimeout (connect, 1000) |> ignore
+    s.onclose <- fun (_: obj) -> window.setTimeout (connect, 1000) |> ignore
 
 let initNetwork () =
     if not (isNullOrUndefined hot) then
@@ -78,8 +80,8 @@ let hotOn (ev: string) (f: obj -> unit) =
 let hotSend (ev: string) (data: obj) =
     if not (isNullOrUndefined hot) then
         try hot?send (ev, data) with _ -> ()
-    elif not (isNull sock) && (sock?readyState: int) = 1 then
-        sock?send (JS.JSON.stringify (createObj [ "event" ==> ev; "data" ==> data ]))
+    elif not (isNull (box sock)) && sock.readyState = 1 then
+        sock.send (JS.JSON.stringify (createObj [ "event" ==> ev; "data" ==> data ]))
 
 let private phones = Dictionary<string, obj * float>()
 let private phoneSlots = Dictionary<string, int>()
@@ -228,7 +230,9 @@ let devices () : Device[] =
            let pr = pref i
            yield { Key = string i; Name = (p?id: string).Split('(').[0].Trim(); Slot = pr.Slot; Input = gamepad p }
        for id, m in livePhones () do
-           yield { Key = "ph:" + id; Name = (if isNullOrUndefined m?input then Strings.t.Phone else Strings.t.Remote); Slot = phoneSlot id; Input = phone m } |]
+           let customName = if isNullOrUndefined m?name then "" else string m?name
+           let name = if customName <> "" then customName else (if isNullOrUndefined m?input then Strings.t.Phone else Strings.t.Remote)
+           yield { Key = "ph:" + id; Name = name; Slot = phoneSlot id; Input = phone m } |]
 
 let private remoteId =
     match window.localStorage.getItem "nda-remote-id" with
@@ -241,7 +245,8 @@ let private remoteId =
 let sendRemote () =
     for d in devices () do
         if d.Input.Present && not (d.Key.StartsWith "ph:") then
-            hotSend "nda:pad" (createObj [ "id" ==> remoteId + d.Key; "input" ==> d.Input ])
+            let localName = if d.Key = "kb" then getLocalPlayerName () else ""
+            hotSend "nda:pad" {| id = remoteId + d.Key; input = d.Input; name = localName |}
 
 let mutable changed = fun () -> ()
 

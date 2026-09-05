@@ -76,7 +76,8 @@ let mutable private engine: Gain = Unchecked.defaultof<Gain>
 let mutable private engineCut: Filter = Unchecked.defaultof<Filter>
 let mutable private crazyGamesMuted = false
 let mutable private localMuted = false
-let isMuted () = crazyGamesMuted || localMuted
+let mutable private adMuted = false
+let isMuted () = crazyGamesMuted || localMuted || adMuted
 
 let private volume = 0.32
 let private rnd = System.Random()
@@ -94,6 +95,10 @@ let private apply () =
 
 let setCrazyGamesMuted (v: bool) =
     crazyGamesMuted <- v
+    apply ()
+
+let setAdMuted (v: bool) =
+    adMuted <- v
     apply ()
 
 let level k = levels.[k]
