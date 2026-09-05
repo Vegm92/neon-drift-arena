@@ -108,27 +108,62 @@ let private title (w: World) =
         Strings.t.Wins(if s.Team > 0 then [| ""; Strings.t.Blue; Strings.t.Red |].[s.Team] else name i)
     | _ -> Strings.t.Draw
 
+let private accuracy (s: Ship) =
+    if s.Shots = 0 then 0 else int (100. * float s.Hits / float s.Shots)
+
+let private statRow winner pos (s: Ship) =
+    let pips =
+        String.concat "" [ for k in 1 .. Cfg.stocks -> if k <= s.Stocks then "<i></i>" else "<i class=\"gone\"></i>" ]
+    sprintf
+        "<div class=\"line%s\" style=\"color:#%06x\"><div class=\"pos\">%d</div><div class=\"who\"><svg viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linejoin=\"round\"><path d=\"M24 4 41 40 24 32 7 40Z\"/></svg><b>%s</b></div><div class=\"num big\">%d</div><div class=\"acc\"><div class=\"bar\"><i style=\"width:%d%%\"></i></div><span>%d%%</span></div><div class=\"num\">%d</div><div class=\"num\">%d</div><div class=\"stocks\">%s</div></div>"
+        (if s.Id = winner then " lead" elif s.Stocks = 0 then " out" else "")
+        (RenderTypes.shipColor s)
+        pos
+        (name s.Id)
+        s.Kills
+        (accuracy s)
+        (accuracy s)
+        s.Grabs
+        s.Rings
+        pips
+
+let private awardRow slot label text =
+    sprintf "<div class=\"award\" style=\"color:#%06x\"><b>%s</b><span>%s</span></div>" RenderTypes.colors.[slot] label text
+
 let private stats (w: World) =
     let act = w.Ships |> Array.filter (fun s -> s.Active)
-    let lines = ResizeArray()
-    match act |> Array.sortByDescending (fun s -> s.Kills) |> Array.tryHead with
-    | Some s when s.Kills > 0 -> lines.Add(Strings.t.MostKills (name s.Id) s.Kills)
-    | _ -> ()
-    let aim =
+    let winner =
+        match w.Phase with
+        | Over(Some i) -> i
+        | _ -> -1
+    let rows =
         act
-        |> Array.filter (fun s -> s.Shots >= 5)
-        |> Array.sortByDescending (fun s -> float s.Hits / float s.Shots)
-        |> Array.tryHead
+        |> Array.sortByDescending (fun s -> s.Id = winner, s.Stocks, s.Kills)
+        |> Array.mapi (fun i s -> statRow winner (i + 1) s)
+        |> String.concat ""
+    let awards = ResizeArray()
+    match act |> Array.sortByDescending (fun s -> s.Kills) |> Array.tryHead with
+    | Some s when s.Kills > 0 -> awards.Add(awardRow 0 Strings.t.AwardKills (Strings.t.MostKills (name s.Id) s.Kills))
+    | _ -> ()
+    let aim = act |> Array.filter (fun s -> s.Shots >= 5) |> Array.sortByDescending accuracy |> Array.tryHead
     match aim with
-    | Some s -> lines.Add(Strings.t.BestAim (name s.Id) (int (100. * float s.Hits / float s.Shots)))
+    | Some s -> awards.Add(awardRow 1 Strings.t.AwardAim (Strings.t.BestAim (name s.Id) (accuracy s)))
     | None -> ()
     match act |> Array.sortByDescending (fun s -> s.Rings) |> Array.tryHead with
-    | Some s when s.Rings > 0 -> lines.Add(Strings.t.MostRings (name s.Id) s.Rings)
+    | Some s when s.Rings > 0 -> awards.Add(awardRow 2 Strings.t.AwardRings (Strings.t.MostRings (name s.Id) s.Rings))
     | _ -> ()
     match act |> Array.tryFind (fun s -> s.Grabs = 0) with
-    | Some s -> lines.Add(Strings.t.NoCrates(name s.Id))
+    | Some s -> awards.Add(awardRow 3 Strings.t.AwardCrates (Strings.t.NoCrates(name s.Id)))
     | None -> ()
-    lines |> String.concat "\n"
+    let head =
+        sprintf
+            "<div class=\"hdr\"><span></span><span></span><span>%s</span><span>%s</span><span>%s</span><span>%s</span><span>%s</span></div>"
+            Strings.t.ColKills
+            Strings.t.ColAccuracy
+            Strings.t.ColCrates
+            Strings.t.ColRings
+            Strings.t.ColStocks
+    sprintf "<div class=\"table\">%s%s</div><div class=\"awards\">%s</div>" head rows (String.concat "" awards)
 
 let private flash (cls: string) =
     banner.className <- ""

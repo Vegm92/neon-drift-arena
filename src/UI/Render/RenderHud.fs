@@ -69,8 +69,9 @@ let drawHud (vw: View) (w: World) dt =
                 (1. + k * 0.09)
         el.className <-
             sprintf
-                "panel p%d%s%s%s"
+                "panel p%d%s%s%s%s"
                 i
+                (if i % 2 = 1 then " r" else "")
                 (if s.Active then "" else " off")
                 (if Sim.hurting s then " hurt" else "")
                 (if s.Locked > 0. then " cooked" else "")
