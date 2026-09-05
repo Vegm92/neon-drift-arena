@@ -2,13 +2,12 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
  && apt-get install -y --no-install-recommends nodejs \
  && rm -rf /var/lib/apt/lists/*
-RUN dotnet tool install --global fable --version 5.15.0
-ENV PATH="${PATH}:/root/.dotnet/tools"
+RUN dotnet tool install fable --version 5.15.0 --tool-path /opt/fable
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-RUN dotnet fable src -o build && npx vite build
+RUN /opt/fable/fable src -o build && npx vite build
 
 FROM node:22-alpine
 WORKDIR /app
