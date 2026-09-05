@@ -1,6 +1,6 @@
 # Neon Drift Arena
 
-Fable 5 (F# → JS) + Vite + Three.js couch brawler. Read `README.md` for rules, controls and layout.
+Fable 5 (F# → JS) + Vite + Three.js couch brawler. `README.md` is the commercial front page; read `GAMEPLAY.md` for rules and controls and `DEVELOPING.md` for build, deploy and file layout.
 
 ## Commands
 
