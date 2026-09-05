@@ -36,14 +36,17 @@ let frameCamera (vw: View) (w: World) dt =
     let hX = ((hi.X - lo.X) / 2. + pad) / (t * vw.Camera.aspect)
     let h = max hX hY |> max minCamH |> min maxCamH
     let zoomed = (maxCamH - h) / (maxCamH - minCamH)
-    let center = center * zoomed
-    let k = 1. - exp (-4. * dt)
+    let ease r = 1. - exp (-r * dt)
+    let center, h, kc, kh =
+        match w.Phase with
+        | Over(Some i) -> w.Ships.[i].Pos, victoryCamH, ease 7., ease 1.6
+        | _ -> center * zoomed, h, ease 4., ease 4.
     if vw.Intro > introTime * 0.2 then
         flyby vw dt
     else
         vw.Intro <- max 0. (vw.Intro - dt)
-        vw.Cam <- vw.Cam + (center - vw.Cam) * k
-        vw.CamH <- vw.CamH + (h - vw.CamH) * k
+        vw.Cam <- vw.Cam + (center - vw.Cam) * kc
+        vw.CamH <- vw.CamH + (h - vw.CamH) * kh
     vw.Jolt <- max 0. (vw.Jolt - dt * 3.)
     let j = vw.Jolt * vw.Jolt * vw.CamH * 0.02
     let jx, jy = (rnd.NextDouble() - 0.5) * j, (rnd.NextDouble() - 0.5) * j

@@ -240,8 +240,8 @@ let rec frame (t: float) =
         match world.Phase with
         | Over _ when not ending ->
             ending <- true
-            finish <- 1.5
-            slowmo <- 1.5
+            finish <- Cfg.victoryTime
+            slowmo <- 0.6
             endTitle <- title world
             endNote <- stats world
             match world.Phase with
