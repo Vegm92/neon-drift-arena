@@ -25,6 +25,7 @@ type Action =
 let joined = HashSet<int>()
 let teams: int[] = Array.zeroCreate 4
 let wins: int[] = Array.zeroCreate 4
+let names: string[] = Array.create 4 ""
 let mutable screen = Lobby
 let mutable note = ""
 let mutable private shown = true
@@ -38,6 +39,7 @@ let mutable private practiceMode = false
 let practice () = practiceMode
 let mutable private optRows: Settings.Row list = []
 let mutable private optCursor = 0
+let mutable private optTop = 0
 let mutable private optBack = Lobby
 let mutable private repeatAt = 0.
 let private held = HashSet<string>()
@@ -200,6 +202,12 @@ let private ship i =
 
 let private cardColor i = if teams.[i] > 0 then teamColors.[teams.[i]] else colors.[playerColor.[i]]
 
+let private displayName i = if names.[i] = "" then Strings.t.Player i else names.[i]
+
+let private rename slot =
+    let s: string = window?prompt (Strings.t.RenamePrompt, displayName slot)
+    if not (isNull s) then names.[slot] <- s.Trim()
+
 let phase () =
     if not shown then "play"
     else match screen with Lobby -> "lobby" | _ -> "menu"
@@ -207,7 +215,7 @@ let phase () =
 let padCard (key: string) : obj =
     match [ 0..3 ] |> List.tryFind (fun s -> joined.Contains s && owner.[s] = key) with
     | Some i ->
-        createObj [ "slot" ==> i; "name" ==> Strings.t.Player i; "color" ==> cardColor i; "ship" ==> ship i; "pick" ==> pickName i; "ready" ==> ready.[i] ]
+        createObj [ "slot" ==> i; "name" ==> displayName i; "color" ==> cardColor i; "ship" ==> ship i; "pick" ==> pickName i; "ready" ==> ready.[i] ]
     | None -> null
 
 let private qr () =
@@ -249,11 +257,11 @@ let private renderLobby (devices: Input.Device[]) =
               let foot =
                   if not inGame then ""
                   elif ready.[i] then sprintf "<div class=\"foot\">%s %s</div>" Strings.t.Ready (String.replicate wins.[i] "★")
-                  else sprintf "<div class=\"foot pick\">&#9664; %s &#9654;</div>" (pickName i)
+                  else sprintf "<div class=\"foot pick\"><span data-dir=\"-1\">&#9664;</span> %s <span data-dir=\"1\">&#9654;</span></div>" (pickName i)
               let cls = (if inGame then " in" else "") + (if inGame && onRow.[i] then " away" else "")
               sprintf
-                  "<div class=\"slot%s\" style=\"color:%s\"><b>%s</b><div class=\"art\">%s</div><div class=\"dev\">%s</div>%s</div>"
-                  cls color (Strings.t.Player i) (if inGame then ship i else plus) name foot ]
+                  "<div class=\"slot%s\" data-slot=\"%d\" style=\"color:%s\"><b>%s</b><div class=\"art\">%s</div><div class=\"dev\">%s</div>%s</div>"
+                  cls i color (if inGame then displayName i else Strings.t.Player i) (if inGame then ship i else plus) name foot ]
         |> String.concat ""
     let mode = Strings.t.Mode |> List.map (sprintf "<span>%s</span>") |> String.concat ""
     let go = canStart ()
@@ -263,7 +271,7 @@ let private renderLobby (devices: Input.Device[]) =
         |> Seq.sort
         |> Seq.map (fun s ->
             let c = cardColor s
-            sprintf "<i style=\"color:%s\">%s</i>" c (Strings.t.Player s))
+            sprintf "<i style=\"color:%s\">%s</i>" c (displayName s))
         |> String.concat ""
     let picks =
         [ Strings.t.ModeLabel, modeName (), true
@@ -275,11 +283,12 @@ let private renderLobby (devices: Input.Device[]) =
         |> List.mapi (fun i (top, t, ok) ->
             let sel = i = lobbyPick && who <> ""
             let cls = (if sel then " sel" else "") + (if ok then "" else " dim") + (if i = 5 && go then " go" else "")
-            sprintf "<div class=\"item%s\"><em>%s</em><b>%s</b><div class=\"who\">%s</div></div>" cls top t (if sel then who else ""))
+            sprintf "<div class=\"item%s\" data-pick=\"%d\"><em>%s</em><b>%s</b><div class=\"who\">%s</div></div>" cls i top t (if sel then who else ""))
         |> String.concat ""
     let hints =
         [ Strings.t.KeysJoin, Strings.t.Join + " / " + Strings.t.Ready
           "&#9664; / &#9654;", (if teamMode then Strings.t.TeamLabel else Strings.t.ColorLabel)
+          "&#9650;", Strings.t.RenameLabel
           "&#9660;", Strings.t.RowLabel
           Strings.t.KeysLeave, Strings.t.Leave ]
         |> List.map (fun (k, l) -> hint k l)
@@ -310,13 +319,13 @@ let recordWin (winner: int) (team: int) =
 let private tally () =
     joined
     |> Seq.sort
-    |> Seq.map (fun s -> sprintf "<i style=\"color:%s\">%s %s</i>" (cardColor s) (Strings.t.Player s) (String.replicate wins.[s] "★"))
+    |> Seq.map (fun s -> sprintf "<i style=\"color:%s\">%s %s</i>" (cardColor s) (displayName s) (String.replicate wins.[s] "★"))
     |> String.concat ""
 
 let private renderList (title: string) =
     let list =
         items ()
-        |> List.mapi (fun i (label, _) -> sprintf "<div class=\"item%s\"><b>%s</b></div>" (if i = cursor then " sel" else "") label)
+        |> List.mapi (fun i (label, _) -> sprintf "<div class=\"item%s\" data-i=\"%d\"><b>%s</b></div>" (if i = cursor then " sel" else "") i label)
         |> String.concat ""
     let hints =
         (match screen with
@@ -330,7 +339,9 @@ let private renderList (title: string) =
 
 let private renderOptions () =
     let n = optRows.Length
-    let top = max 0 (min (n - window') (optCursor - window' / 2))
+    if optCursor < optTop then optTop <- optCursor
+    elif optCursor >= optTop + window' then optTop <- optCursor - window' + 1
+    let top = optTop
     let rows =
         optRows
         |> List.indexed
@@ -341,7 +352,7 @@ let private renderOptions () =
                 | Settings.Header _ -> "row hdr"
                 | Settings.Note _ -> "row note"
                 | _ -> if i = optCursor then "row sel" else "row"
-            sprintf "<div class=\"%s\"><span>%s</span><b>%s</b></div>" cls (Settings.label r) (Settings.value r))
+            sprintf "<div class=\"%s\" data-i=\"%d\"><span>%s</span><b data-dir=\"1\">%s</b></div>" cls i (Settings.label r) (Settings.value r))
         |> String.concat ""
     el.innerHTML <-
         sprintf "<h1>%s</h1><div class=\"rows\">%s</div><div class=\"hint\">%s%s</div>"
@@ -353,6 +364,7 @@ let private openOptions () =
     optBack <- screen
     optRows <- Settings.rows ()
     optCursor <- optRows |> List.findIndex Settings.selectable
+    optTop <- 0
     open' Options
 
 let private dropMissing (devices: Input.Device[]) =
@@ -402,6 +414,7 @@ let private updateLobby () =
                 if teamMode then teams.[d.Slot] <- 3 - teams.[d.Slot]
                 else cycleColor d.Slot (if right then 1 else -1)
             if down then onRow.[d.Slot] <- true
+            elif up then rename d.Slot
             elif back then (if ready.[d.Slot] then ready.[d.Slot] <- false else leave d.Slot)
             elif start && canStart () then launch <- true
             elif fire || start then ready.[d.Slot] <- true
@@ -481,3 +494,66 @@ let update (inputs: Input[]) =
         None
     | Pause -> updateList Strings.t.Paused inputs
     | Result title -> updateList title inputs
+
+let private hit (e: Browser.Types.Event) (attr: string) =
+    (e.target :?> Browser.Types.Element).closest (sprintf "[data-%s]" attr)
+    |> Option.map (fun t -> int (t.getAttribute ("data-" + attr)))
+
+let private kb () = Input.keyboardSlot
+let private kbIn () = kb () >= 0 && joined.Contains(kb ()) && owner.[kb ()] = "kb"
+let private arrow d = Input.press (if d < 0 then "ArrowLeft" else "ArrowRight")
+
+let private pick i =
+    match screen with
+    | Options -> if Settings.selectable optRows.[i] then optCursor <- i
+    | _ -> cursor <- i
+
+el.addEventListener ("contextmenu", fun e -> e.preventDefault ())
+el.addEventListener ("pointerup", fun _ -> Input.release ())
+
+el.addEventListener (
+    "wheel",
+    fun e ->
+        let down = (e :?> Browser.Types.WheelEvent).deltaY > 0.
+        match hit e "dir", hit e "slot", hit e "i" with
+        | Some _, Some s, _ when kbIn () && s = kb () -> arrow (if down then -1 else 1)
+        | Some _, None, Some i ->
+            pick i
+            arrow (if down then -1 else 1)
+        | _ when screen <> Lobby -> Input.press (if down then "ArrowDown" else "ArrowUp")
+        | _ -> ()
+        Input.release ()
+)
+
+el.addEventListener (
+    "pointermove",
+    fun e ->
+        match hit e "i", hit e "pick" with
+        | Some i, _ -> pick i
+        | _, Some p when kbIn () && onRow.[kb ()] -> lobbyPick <- p
+        | _ -> ()
+)
+
+el.addEventListener (
+    "pointerdown",
+    fun e ->
+        if (e :?> Browser.Types.MouseEvent).button = 2. then Input.press "Escape"
+        else
+            match hit e "dir", hit e "slot", hit e "pick", hit e "i" with
+            | Some d, Some s, _, _ -> if kbIn () && s = kb () then arrow d
+            | Some d, None, _, Some i ->
+                pick i
+                arrow d
+            | _, Some s, _, _ when not (kbIn ()) ->
+                if not (joined.Contains s) then Input.keyboardSlot <- s
+                Input.press "Space"
+            | _, Some s, _, _ when s = kb () -> if onRow.[s] then onRow.[s] <- false else Input.press "Space"
+            | _, _, Some p, _ when kbIn () ->
+                onRow.[kb ()] <- true
+                lobbyPick <- p
+                Input.press "Space"
+            | _, _, _, Some i ->
+                pick i
+                Input.press "Space"
+            | _ -> ()
+)

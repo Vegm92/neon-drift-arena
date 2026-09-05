@@ -50,6 +50,7 @@ let create () =
           Crates = Array.init 4 (fun _ -> mkCrate scene)
           Panels = Array.init 4 (mkPanel hud)
           Tags = Array.init 4 (mkTag hud)
+          Names = Array.init 4 Strings.t.Player
           Spawns = spawns
           Intro = 0.
           Border = border
@@ -58,6 +59,7 @@ let create () =
           Banner = document.getElementById "banner"
           Vignette = document.getElementById "vignette"
           Bursts = []
+          Shards = []
           Flashes = []
           Hp = Array.create 4 hpMax
           Shake = Array.zeroCreate 4
@@ -97,6 +99,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
         | MineLive p -> spawnRing vw p 0xff2b4d mineMagnet 0.2 0.35
         | Blast p ->
             spawnBurst vw p 0xff6a2b 40 300.
+            spawnSmoke vw p 10 50. 30.
             spawnRing vw p 0xff6a2b mineBlast 1.3 0.45
             vw.Spike <- max vw.Spike 0.8
         | Wave(p, a, i) ->
@@ -131,16 +134,17 @@ let draw (vw: View) (w: World) (events: Event list) dt =
                     atan2 d.Y d.X
                 else
                     rnd.NextDouble() * Math.PI * 2.
-            spawnFlash vw p 0xffffff 70. 0.22
-            spawnCone vw p hex 70 380. dir 0.8 7.
-            spawnCone vw p hex 40 140. dir Math.PI 13.
-            spawnCone vw p 0xffffff 30 220. dir Math.PI 7.
-            spawnBolts vw p hex 0. Math.PI 140.
-            spawnRing vw p 0xffffff 30. 9. 0.4
-            spawnRing vw p hex 40. 4. 0.7
-            vw.Spike <- max vw.Spike 1.4
+            spawnFlash vw p 0xffa04d 16. 0.1
+            spawnShards vw p hex 9
+            spawnCone vw p 0xff6a14 52 320. dir Math.PI 10.
+            spawnCone vw p 0xffc23d 22 150. dir Math.PI 12.
+            spawnCone vw p hex 40 380. dir 0.8 7.
+            spawnSmoke vw p 12 60. 42.
+            spawnRing vw p 0xff8a2b 44. 2.6 0.34
+            spawnRing vw p hex 34. 2.4 0.46
+            vw.Spike <- max vw.Spike 0.85
             vw.Jolt <- 1.
-            vw.Tint <- 1.
+            vw.Tint <- 0.75
             vw.TintHex <- sprintf "#%06x" (if ring then 0x3d5cff else hex)
         | Downed(victim, by, wpn, ring) -> feedLine vw w victim by wpn ring
         | Shot _ -> ()
@@ -157,6 +161,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
     drawHole vw w dt
     drawBullets vw w dt
     updateBursts vw dt
+    updateShards vw dt
     updateFlashes vw dt
     frameCamera vw w dt
     drawTags vw w

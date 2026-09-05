@@ -28,7 +28,7 @@ let icon (w: Weapon) ring =
     sprintf "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"%s\"/></svg>" path
 
 let feedLine (vw: View) (w: World) victim by wpn ring =
-    let tag i cls = sprintf "<b class=\"%s\" style=\"color:#%06x\">%s</b>" cls (shipColor w.Ships.[i]) (Strings.t.Player i)
+    let tag i cls = sprintf "<b class=\"%s\" style=\"color:#%06x\">%s</b>" cls (shipColor w.Ships.[i]) vw.Names.[i]
     let wep i r = sprintf "<span style=\"color:#%06x\">%s</span>" (shipColor w.Ships.[i]) (icon wpn r)
     let line = document.createElement "div"
     line.innerHTML <-
@@ -75,6 +75,7 @@ let drawHud (vw: View) (w: World) dt =
                 (if s.Active then "" else " off")
                 (if Sim.hurting s then " hurt" else "")
                 (if s.Locked > 0. then " cooked" else "")
+        el.querySelector(".name")?textContent <- vw.Names.[i]
         el.querySelector(".name")?style?color <- sprintf "#%06x" (shipColor s)
         el.querySelector(".hp i")?style?width <- sprintf "%.0f%%" (max 0. s.Hp / hpMax * 100.)
         el.querySelector(".shield i")?style?width <- sprintf "%.0f%%" (s.Shield / shieldAmount * 100.)
@@ -106,6 +107,7 @@ let drawTags (vw: View) (w: World) =
         let show = (s.Alive && s.Invuln > 0.) || Sim.launcher s
         el.hidden <- not show
         if show then
+            el.textContent <- vw.Names.[i]
             let p = (three.Vector3(s.Pos.X, 0., s.Pos.Y)).project vw.Camera
             let x = (p.x + 1.) / 2. * window.innerWidth
             let y = (1. - p.y) / 2. * window.innerHeight - 44.

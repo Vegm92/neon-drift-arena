@@ -60,6 +60,16 @@ type ShipView =
 type Burst =
     { Points: Mesh
       Vel: float[]
+      Decay: float
+      mutable Life: float }
+
+type Shard =
+    { Obj: Mesh
+      Spin: float
+      Span: float
+      mutable Pos: V2
+      mutable Vel: V2
+      mutable Puff: float
       mutable Life: float }
 
 type Flash =
@@ -88,6 +98,7 @@ type View =
       Crates: Object3D[]
       Panels: HTMLElement[]
       Tags: HTMLElement[]
+      Names: string[]
       Spawns: Mesh[]
       mutable Intro: float
       Border: Object3D
@@ -96,6 +107,7 @@ type View =
       Banner: HTMLElement
       Vignette: HTMLElement
       mutable Bursts: Burst list
+      mutable Shards: Shard list
       mutable Flashes: Flash list
       Hp: float[]
       Shake: float[]
