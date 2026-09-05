@@ -74,7 +74,9 @@ let mutable private send: Gain = Unchecked.defaultof<Gain>
 let mutable private noiseBuf: Buffer = Unchecked.defaultof<Buffer>
 let mutable private engine: Gain = Unchecked.defaultof<Gain>
 let mutable private engineCut: Filter = Unchecked.defaultof<Filter>
-let mutable muted = false
+let mutable private crazyGamesMuted = false
+let mutable private localMuted = false
+let isMuted () = crazyGamesMuted || localMuted
 
 let private volume = 0.32
 let private rnd = System.Random()
@@ -84,10 +86,15 @@ let mutable private levels = ResizeArray [ 1.; 1. ]
 let private music = document.createElement "audio" :?> HTMLAudioElement
 
 let private apply () =
+    let m = isMuted ()
     music.volume <- 0.35 * levels.[1]
-    music.muted <- muted
+    music.muted <- m
     if not (isNullOrUndefined (box ctx)) then
-        master.gain.value <- (if muted then 0. else volume * levels.[0])
+        master.gain.value <- (if m then 0. else volume * levels.[0])
+
+let setCrazyGamesMuted (v: bool) =
+    crazyGamesMuted <- v
+    apply ()
 
 let level k = levels.[k]
 
@@ -154,7 +161,7 @@ let private ready () =
         music.onended <- fun _ -> pick ()
         pick ()
     elif ctx.state = "suspended" then ctx.resume ()
-    not muted
+    not (isMuted ())
 
 let track menu =
     if menu <> inMenu then
@@ -372,7 +379,7 @@ let init () =
         "keydown",
         fun e ->
             if (e :?> KeyboardEvent).key = "m" then
-                muted <- not muted
+                localMuted <- not localMuted
                 apply ()
     )
     window.addEventListener (

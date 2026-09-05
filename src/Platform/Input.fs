@@ -26,18 +26,8 @@ let private newRoom () : string = jsNative
 
 let private isPad = window.location.pathname.EndsWith "pad.html"
 
-let private room =
-    if not (isNullOrUndefined hot) then ""
-    elif isPad then window.location.hash.TrimStart '#'
-    else
-        match window.sessionStorage.getItem "nda-room" with
-        | null ->
-            let code = newRoom ()
-            window.sessionStorage.setItem ("nda-room", code)
-            code
-        | code -> code
-
-let padUrl = if isPad || room = "" then "" else window.location.origin + "/pad.html#" + room
+let mutable private room = ""
+let mutable padUrl = ""
 
 let private handlers = Dictionary<string, obj -> unit>()
 let mutable private sock: obj = null
@@ -53,7 +43,34 @@ let rec private connect () =
         | _ -> ()
     s?onclose <- fun (_: obj) -> window.setTimeout (connect, 1000) |> ignore
 
-if room <> "" then connect ()
+let initNetwork () =
+    if not (isNullOrUndefined hot) then
+        room <- ""
+        padUrl <- ""
+    elif isPad then
+        room <- window.location.hash.TrimStart '#'
+        padUrl <- ""
+        if room <> "" then connect ()
+    else
+        let params' = CrazyGames.getInviteParams()
+        let cgRoom =
+            if not (isNullOrUndefined params') && not (isNullOrUndefined params'?roomId) then
+                string params'?roomId
+            else ""
+        if cgRoom <> "" then
+            room <- cgRoom
+            window.sessionStorage.setItem ("nda-room", room)
+        else
+            match window.sessionStorage.getItem "nda-room" with
+            | null ->
+                let code = newRoom ()
+                window.sessionStorage.setItem ("nda-room", code)
+                room <- code
+            | code -> room <- code
+        padUrl <- if room = "" then "" else window.location.origin + "/pad.html#" + room
+        if room <> "" then
+            connect ()
+            CrazyGames.updateRoom (room, true)
 
 let hotOn (ev: string) (f: obj -> unit) =
     if not (isNullOrUndefined hot) then hot?on (ev, f) else handlers.[ev] <- f
@@ -95,7 +112,15 @@ let init () =
     )
     window.addEventListener ("keyup", fun e -> keys.Remove (e :?> KeyboardEvent).code |> ignore)
     window.addEventListener ("blur", fun _ -> keys.Clear())
-    hotOn "nda:pad" (fun m -> phones.[string m?id] <- (m, JS.Constructors.Date.now ()))
+    hotOn "nda:pad" (fun m ->
+        let id = string m?id
+        let now = JS.Constructors.Date.now ()
+        let mutable liveCount = 0
+        for KeyValue(_, (_, seen)) in phones do
+            if now - seen < 2000. then liveCount <- liveCount + 1
+        if liveCount < 4 || phones.ContainsKey id then
+            phones.[id] <- (m, now)
+    )
 
 let private key k = keys.Contains k
 
@@ -205,7 +230,13 @@ let devices () : Device[] =
        for id, m in livePhones () do
            yield { Key = "ph:" + id; Name = (if isNullOrUndefined m?input then Strings.t.Phone else Strings.t.Remote); Slot = phoneSlot id; Input = phone m } |]
 
-let private remoteId = string (int (JS.Math.random () * 1e8))
+let private remoteId =
+    match window.localStorage.getItem "nda-remote-id" with
+    | null ->
+        let id = string (int (JS.Math.random () * 1e8))
+        window.localStorage.setItem ("nda-remote-id", id)
+        id
+    | id -> id
 
 let sendRemote () =
     for d in devices () do

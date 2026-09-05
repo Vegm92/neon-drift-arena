@@ -26,6 +26,19 @@ let joined = HashSet<int>()
 let teams: int[] = Array.zeroCreate 4
 let wins: int[] = Array.zeroCreate 4
 let names: string[] = Array.create 4 ""
+
+let initUser () =
+    (CrazyGames.isUserAvailable())?``then``(fun (available: bool) ->
+        if available then
+            (CrazyGames.getUser())?``then``(fun (user: CrazyGames.CGUser) ->
+                if not (isNullOrUndefined user) && not (isNullOrUndefined user.username) then
+                    names.[0] <- user.username
+            ) |> ignore
+    ) |> ignore
+    CrazyGames.addAuthListener(fun (user: CrazyGames.CGUser) ->
+        if not (isNullOrUndefined user) && not (isNullOrUndefined user.username) then
+            names.[0] <- user.username
+    )
 let mutable screen = Lobby
 let mutable note = ""
 let mutable private shown = true
@@ -49,7 +62,8 @@ let private el = document.getElementById "menu"
 let private colors = [| "#00f6ff"; "#ff2bd6"; "#b6ff3b"; "#ffb347" |]
 let private teamColors = [| ""; "#3b7bff"; "#ff3b5c" |]
 let private window' = 11
-let mutable private padUrl = Input.padUrl
+let mutable private padUrl = ""
+if padUrl = "" && Input.padUrl <> "" then padUrl <- Input.padUrl
 if padUrl = "" then
     window?fetch("/__pad-url")?``then``(fun r -> r?text())?``then``(fun (t: string) -> padUrl <- t) |> ignore
 
@@ -88,9 +102,15 @@ let private open' s =
     swallow ()
     el.className <- (match s with Lobby | Options -> "" | _ -> "play")
 
-let show () = open' Lobby
-let pause () = open' Pause
-let result (title: string) = open' (Result title)
+let show () = 
+    open' Lobby
+    CrazyGames.gameplayStop ()
+let pause () = 
+    open' Pause
+    CrazyGames.gameplayStop ()
+let result (title: string) = 
+    open' (Result title)
+    CrazyGames.gameplayStop ()
 
 let private hide () =
     shown <- false
@@ -141,6 +161,9 @@ let private claim key slot =
     else
         playerColor.[slot] <- [ 0..3 ] |> List.find (fun c -> not (colorTaken slot c))
     if key = botKey then ready.[slot] <- true
+
+claim "kb" 0
+claim botKey 1
 
 let private toggleBots () =
     match [ 0..3 ] |> List.tryFind (fun i -> not (joined.Contains i)) with
@@ -226,6 +249,7 @@ let padCard (key: string) : obj =
     | None -> null
 
 let private qr () =
+    if padUrl = "" && Input.padUrl <> "" then padUrl <- Input.padUrl
     if padUrl = "" then ""
     else
         let wasOpen = el.querySelector "details.qr[open]" |> isNull |> not

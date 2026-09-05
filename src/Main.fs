@@ -8,6 +8,17 @@ open Domain
 Input.init ()
 Settings.init ()
 Sfx.init ()
+
+(CrazyGames.init(Sfx.setCrazyGamesMuted))?``then``(fun () ->
+    Input.initNetwork ()
+    Menu.initUser ()
+    CrazyGames.addRoomJoinListener(fun roomId ->
+        if roomId <> "" then
+            window.sessionStorage.setItem ("nda-room", roomId)
+            window.location.reload ()
+    )
+) |> ignore
+
 let view = Render.create ()
 let banner = document.getElementById "banner"
 document.getElementById("loader").className <- "done"
@@ -86,6 +97,7 @@ let private go intro =
     Array.fill lowStock 0 4 false
     Array.fill hyped 0 4 false
     Menu.note <- ""
+    CrazyGames.gameplayStart ()
 
 let private launch (w: World) =
     Sim.practice <- Menu.practice ()

@@ -11,7 +11,8 @@
     <Compile Include="Core\Strings.fs" />
     <Compile Include="Core\Sim.fs" />
     <!-- Platform: thin browser bindings -->
-    <Compile Include="Platform\Input.fs" />
+    <Compile Include="Platform/CrazyGames.fs" />
+    <Compile Include="Platform/Input.fs" />
     <Compile Include="Platform\Three.fs" />
     <Compile Include="Platform\Sfx.fs" />
     <!-- UI: browser-dependent game screens -->
