@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "dotnet fable watch src -o build --run npx vite --host",
     "build": "dotnet fable src -o build && vite build",
-    "check": "dotnet run --project test"
+    "check": "dotnet run --project test",
+    "deploy": "node deploy.mjs"
   },
   "dependencies": {
     "qrcode": "^1.5.4",

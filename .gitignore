@@ -10,3 +10,4 @@ PRD.md
 .claude/
 .playwright-mcp/
 .config/
+.deploy/
