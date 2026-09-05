@@ -1,4 +1,4 @@
-module Main
+﻿module Main
 
 open Browser
 open Fable.Core.JsInterop
