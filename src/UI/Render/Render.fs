@@ -99,7 +99,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
         | MineLive p -> spawnRing vw p 0xff2b4d mineMagnet 0.2 0.35
         | Blast p ->
             spawnBurst vw p 0xff6a2b 40 300.
-            spawnSmoke vw p 12 70. 26.
+            spawnSmoke vw p 10 50. 30.
             spawnRing vw p 0xff6a2b mineBlast 1.3 0.45
             vw.Spike <- max vw.Spike 0.8
         | Wave(p, a, i) ->
@@ -134,14 +134,14 @@ let draw (vw: View) (w: World) (events: Event list) dt =
                     atan2 d.Y d.X
                 else
                     rnd.NextDouble() * Math.PI * 2.
-            spawnFlash vw p 0xffb066 30. 0.14
+            spawnFlash vw p 0xffa04d 16. 0.1
             spawnShards vw p hex 9
             spawnCone vw p 0xff6a14 52 320. dir Math.PI 10.
-            spawnCone vw p 0xffc23d 30 150. dir Math.PI 16.
+            spawnCone vw p 0xffc23d 22 150. dir Math.PI 12.
             spawnCone vw p hex 40 380. dir 0.8 7.
-            spawnSmoke vw p 22 90. 34.
-            spawnRing vw p 0xff8a2b 34. 6. 0.45
-            spawnRing vw p hex 40. 4. 0.7
+            spawnSmoke vw p 12 60. 42.
+            spawnRing vw p 0xff8a2b 44. 2.6 0.34
+            spawnRing vw p hex 34. 2.4 0.46
             vw.Spike <- max vw.Spike 0.85
             vw.Jolt <- 1.
             vw.Tint <- 0.75

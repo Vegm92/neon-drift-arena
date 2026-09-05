@@ -44,17 +44,25 @@ let spawnCone (vw: View) (p: V2) hex n speed dir spread size =
         1.
         1.4
 
+let private puffTex =
+    lazy
+        three.loadTexture
+            "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><radialGradient id='g'><stop offset='0' stop-color='white'/><stop offset='0.55' stop-color='white' stop-opacity='0.45'/><stop offset='1' stop-color='white' stop-opacity='0'/></radialGradient><circle cx='32' cy='32' r='32' fill='url(%23g)'/></svg>"
+
 let spawnSmoke (vw: View) (p: V2) n speed size =
-    emit
-        vw
-        p
-        (three.PointsMaterial(box {| color = 0x6a6e78; size = size; transparent = true; opacity = 0.5; depthWrite = false |}))
-        n
-        speed
-        0.
-        Math.PI
-        0.5
-        0.3
+    let mat =
+        three.PointsMaterial(
+            box
+                {| color = 0x585c66
+                   size = size
+                   map = puffTex.Value
+                   transparent = true
+                   opacity = 0.45
+                   depthWrite = false |}
+        )
+    for _ in 1..n do
+        let off = ofAngle (rnd.NextDouble() * Math.PI * 2.) * (rnd.NextDouble() * size * 0.8)
+        emit vw (p + off) mat 1 speed 0. Math.PI 0.45 0.24
 
 let spawnBurst (vw: View) (p: V2) hex n speed =
     spawnCone vw p hex n speed 0. Math.PI 7.
@@ -103,7 +111,7 @@ let spawnShards (vw: View) (p: V2) hex n =
               Spin = (rnd.NextDouble() - 0.5) * 16.
               Span = span
               Pos = p
-              Vel = ofAngle (rnd.NextDouble() * Math.PI * 2.) * (90. + rnd.NextDouble() * 210.)
+              Vel = ofAngle (rnd.NextDouble() * Math.PI * 2.) * (160. + rnd.NextDouble() * 320.)
               Puff = 0.
               Life = span }
             :: vw.Shards
@@ -176,14 +184,14 @@ let updateShards (vw: View) dt =
                 vw.Scene.remove s.Obj
                 false
             else
-                s.Vel <- s.Vel * max 0. (1. - 2.4 * dt)
+                s.Vel <- s.Vel * max 0. (1. - 1.5 * dt)
                 s.Pos <- s.Pos + s.Vel * dt
                 s.Obj.position.set (s.Pos.X, 4., s.Pos.Y)
                 s.Obj.rotation.y <- s.Obj.rotation.y + s.Spin * dt
                 s.Obj.material.opacity <- min 1. (2. * s.Life / s.Span)
                 s.Puff <- s.Puff - dt
                 if s.Puff <= 0. then
-                    s.Puff <- 0.07
+                    s.Puff <- 0.1
                     spawnCone vw s.Pos 0xff8a2b 2 26. 0. Math.PI 6.
-                    spawnSmoke vw s.Pos 1 22. 24.
+                    spawnSmoke vw s.Pos 1 16. 30.
                 true)
