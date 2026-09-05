@@ -7,7 +7,7 @@ open Domain.Cfg
 open Three
 open RenderTypes
 
-let spawnCone (vw: View) (p: V2) hex n speed dir spread size =
+let private emit (vw: View) (p: V2) (mat: Material) n speed dir spread life decay =
     let g = three.BufferGeometry()
     g.setAttribute (
         "position",
@@ -26,15 +26,35 @@ let spawnCone (vw: View) (p: V2) hex n speed dir spread size =
         let s = speed * (0.3 + rnd.NextDouble())
         vel.[k * 2] <- cos a * s
         vel.[k * 2 + 1] <- sin a * s
-    let pts =
-        three.Points(
-            g,
-            three.PointsMaterial(
-                box {| color = hex; size = size; transparent = true; opacity = 1.; blending = three.AdditiveBlending |}
-            )
-        )
+    let pts = three.Points(g, mat)
     vw.Scene.add pts
-    vw.Bursts <- { Points = pts; Vel = vel; Life = 1. } :: vw.Bursts
+    vw.Bursts <- { Points = pts; Vel = vel; Decay = decay; Life = life } :: vw.Bursts
+
+let spawnCone (vw: View) (p: V2) hex n speed dir spread size =
+    emit
+        vw
+        p
+        (three.PointsMaterial(
+            box {| color = hex; size = size; transparent = true; opacity = 1.; blending = three.AdditiveBlending |}
+        ))
+        n
+        speed
+        dir
+        spread
+        1.
+        1.4
+
+let spawnSmoke (vw: View) (p: V2) n speed size =
+    emit
+        vw
+        p
+        (three.PointsMaterial(box {| color = 0x6a6e78; size = size; transparent = true; opacity = 0.5; depthWrite = false |}))
+        n
+        speed
+        0.
+        Math.PI
+        0.5
+        0.3
 
 let spawnBurst (vw: View) (p: V2) hex n speed =
     spawnCone vw p hex n speed 0. Math.PI 7.
@@ -68,6 +88,26 @@ let spawnRing (vw: View) (p: V2) hex r grow span =
     m.position.set (p.X, 3., p.Y)
     addFlash vw m grow span
 
+let spawnShards (vw: View) (p: V2) hex n =
+    for k in 1..n do
+        let span = 1.1 + rnd.NextDouble() * 0.9
+        let m =
+            three.Mesh(
+                three.CircleGeometry(4. + rnd.NextDouble() * 5., 3) |> flat,
+                glowMat (if k % 2 = 0 then hex else 0xff7a1e) 1.
+            )
+        m.position.set (p.X, 4., p.Y)
+        vw.Scene.add m
+        vw.Shards <-
+            { Obj = m
+              Spin = (rnd.NextDouble() - 0.5) * 16.
+              Span = span
+              Pos = p
+              Vel = ofAngle (rnd.NextDouble() * Math.PI * 2.) * (90. + rnd.NextDouble() * 210.)
+              Puff = 0.
+              Life = span }
+            :: vw.Shards
+
 let spawnFlash (vw: View) (p: V2) hex r span =
     let m = three.Mesh(three.RingGeometry(0., r, 32) |> flat, glowMat hex 1.)
     m.position.set (p.X, 3., p.Y)
@@ -98,7 +138,7 @@ let updateBursts (vw: View) dt =
     vw.Bursts <-
         vw.Bursts
         |> List.filter (fun b ->
-            b.Life <- b.Life - dt * 1.4
+            b.Life <- b.Life - dt * b.Decay
             if b.Life <= 0. then
                 vw.Scene.remove b.Points
                 false
@@ -125,4 +165,25 @@ let updateFlashes (vw: View) dt =
                 let s = 1. + f.Grow * k
                 f.Obj.scale.set (s, 1., s)
                 f.Obj.material.opacity <- 1. - k
+                true)
+
+let updateShards (vw: View) dt =
+    vw.Shards <-
+        vw.Shards
+        |> List.filter (fun s ->
+            s.Life <- s.Life - dt
+            if s.Life <= 0. then
+                vw.Scene.remove s.Obj
+                false
+            else
+                s.Vel <- s.Vel * max 0. (1. - 2.4 * dt)
+                s.Pos <- s.Pos + s.Vel * dt
+                s.Obj.position.set (s.Pos.X, 4., s.Pos.Y)
+                s.Obj.rotation.y <- s.Obj.rotation.y + s.Spin * dt
+                s.Obj.material.opacity <- min 1. (2. * s.Life / s.Span)
+                s.Puff <- s.Puff - dt
+                if s.Puff <= 0. then
+                    s.Puff <- 0.07
+                    spawnCone vw s.Pos 0xff8a2b 2 26. 0. Math.PI 6.
+                    spawnSmoke vw s.Pos 1 22. 24.
                 true)
