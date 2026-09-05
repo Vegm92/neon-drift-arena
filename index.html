@@ -30,8 +30,8 @@
   h1{margin:0;font-size:clamp(64px,10.4vw,150px);line-height:.86;letter-spacing:.01em;color:#fff;text-shadow:-4px 0 0 rgba(0,246,255,.75),4px 0 0 rgba(255,43,214,.75),0 0 40px rgba(255,255,255,.25)}
   .sub{margin:0;font-size:clamp(22px,2.6vw,34px);line-height:1;letter-spacing:.14em;color:#b6ff3b;text-shadow:0 0 22px rgba(182,255,59,.55)}
   .tagline{margin:0;font-size:17px;letter-spacing:.18em;line-height:1.6;text-wrap:pretty}
-  .cta{position:absolute;right:4.4vw;bottom:8vh;display:flex;flex-direction:column;align-items:flex-start;padding:18px 40px 16px 32px;background:#b6ff3b;color:#03030a;text-decoration:none;box-shadow:0 0 48px -8px #b6ff3b}
-  .cta span{font-size:11px;letter-spacing:.3em;font-weight:700}
+  .cta{position:absolute;right:4.4vw;bottom:8vh;display:flex;flex-direction:column;align-items:flex-start;padding:16px 40px 18px 32px;background:#b6ff3b;color:#03030a;text-decoration:none;box-shadow:0 0 48px -8px #b6ff3b}
+  .cta span{font-size:11px;letter-spacing:.3em;font-weight:700;margin-top:8px;opacity:.85}
   .cta b{font-size:44px;line-height:1;letter-spacing:.04em}
   .cta .nope,.cta i{display:none}
   .cta i{font-style:normal;font-size:10px;letter-spacing:.22em;margin-top:8px;opacity:.8}
@@ -83,7 +83,7 @@
     h1{font-size:78px}
     .sub{font-size:24px;letter-spacing:.1em}
     .tagline{font-size:13px;letter-spacing:.12em}
-    .cta{position:static;align-items:center;margin:0 20px;padding:12px 16px 10px;min-height:64px;box-sizing:border-box}
+    .cta{position:static;align-items:center;margin:0 20px;padding:10px 16px 12px;min-height:64px;box-sizing:border-box}
     .cta span{font-size:10px}.cta b{font-size:36px}
     .strip{margin-top:22px}
     .strip span{padding:8px 14px;font-size:16px;letter-spacing:.1em;border:0}
@@ -117,7 +117,7 @@
     <p class="sub display">{{heroSub}}</p>
     <p class="tagline">{{tagline}}</p>
   </div>
-  <a class="cta" href="/play/"><span>{{ctaSmall}}</span><b class="display go">{{cta}}</b><b class="display nope">{{mobileCta}}</b><i>{{mobileNote}}</i></a>
+  <a class="cta" href="/play/"><b class="display go">{{cta}}</b><b class="display nope">{{mobileCta}}</b><span>{{ctaSmall}}</span><i>{{mobileNote}}</i></a>
 </header>
 <div class="strip display"><span>{{strip1}}</span><span>{{strip2}}</span><span>{{strip3}}</span><span>{{strip4}}</span></div>
 <main>
@@ -140,7 +140,7 @@
 </main>
 <footer>
   <div class="closer display">{{closer}}</div>
-  <a class="cta" href="/play/"><span>{{ctaSmall}}</span><b class="display go">{{cta}}</b><b class="display nope">{{mobileCta}}</b><i>{{mobileNote}}</i></a>
+  <a class="cta" href="/play/"><b class="display go">{{cta}}</b><b class="display nope">{{mobileCta}}</b><span>{{ctaSmall}}</span><i>{{mobileNote}}</i></a>
   <div class="hub">
     <a class="watch" href="#trailer">{{watchTrailer}}</a>
     <div class="rule display">{{storesTitle}}</div>
