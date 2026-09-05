@@ -7,7 +7,7 @@
     "build": "dotnet fable src -o build && vite build",
     "check": "dotnet run --project test",
     "check:relay": "node test/relay-check.mjs",
-    "deploy": "node deploy.mjs"
+    "deploy": "railway up --ci --service site"
   },
   "dependencies": {
     "qrcode": "^1.5.4",
