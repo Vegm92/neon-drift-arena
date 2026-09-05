@@ -1,8 +1,10 @@
 {
   "metaTitle": "Neon Drift Arena · Free 4-player couch brawler in your browser",
   "metaDescription": "Four ships, one couch. Asteroids drift, a blaster that kicks back, phones as controllers. Free, no install, last ship flying wins.",
+  "siteUrl": "https://neondriftarena.com/",
   "title1": "NEON DRIFT",
   "title2": "ARENA",
+  "heroSub": "4 PLAYERS. 1 ARENA.",
   "tagline": "Four ships. One couch. Asteroids drift, a blaster that kicks back, and a phone for whoever lost the pad war.",
   "tag": "REAL GAMEPLAY · 0:30",
   "soundOn": "SOUND ON",
@@ -10,6 +12,8 @@
   "videoAlt": "Thirty seconds of a four-ship match in Neon Drift Arena",
   "ctaSmall": "FREE · NO INSTALL",
   "cta": "PLAY IN BROWSER",
+  "mobileCta": "DESKTOP ONLY",
+  "mobileNote": "OPEN NEONDRIFTARENA.COM ON A COMPUTER",
   "strip1": "FREE IN YOUR BROWSER",
   "strip2": "2 TO 4 PLAYERS ON ONE SCREEN",
   "strip3": "KEYBOARD · GAMEPAD · PHONE",
@@ -27,5 +31,26 @@
   "closer": "GRAB THE PADS. SIT DOWN.",
   "fine1": "A GAME BY VICTOR GRANDA",
   "fine2": "F# · FABLE · THREE.JS",
-  "fine3": "NEEDS A MODERN DESKTOP BROWSER"
+  "fine3": "NEEDS A MODERN DESKTOP BROWSER",
+  "watchTrailer": "WATCH TRAILER",
+  "storesTitle": "ALSO ON",
+  "storeSoon": "SOON",
+  "stores": [
+    {
+      "label": "STEAM",
+      "url": ""
+    },
+    {
+      "label": "CRAZYGAMES",
+      "url": ""
+    },
+    {
+      "label": "ITCH.IO",
+      "url": ""
+    }
+  ],
+  "gateTitle": "DESKTOP ONLY",
+  "gateBody": "Neon Drift Arena is a four-player couch game: it needs a keyboard or gamepads and a screen everyone can see. Your phone is welcome as a controller — open the game on a computer and scan the QR code in the lobby.",
+  "gateBack": "BACK TO THE SITE",
+  "gateAnyway": "LET ME IN ANYWAY"
 }

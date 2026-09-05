@@ -193,6 +193,15 @@
   #menu .row.note{opacity:.45;font-size:11px}
   #menu .row b{color:#00f6ff;font-weight:400}
   #menu .hint{font-size:11px;opacity:.7;white-space:pre-line;line-height:2}
+  #gate{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:20px;padding:32px;text-align:center;background:#03030a}
+  #gate[hidden]{display:none}
+  #gate h1{margin:0;font-family:"Arial Narrow",Impact,sans-serif;font-size:clamp(38px,11vw,72px);line-height:1;
+    letter-spacing:.06em;color:#fff;text-shadow:-3px 0 0 rgba(0,246,255,.75),3px 0 0 rgba(255,43,214,.75)}
+  #gate p{margin:0;max-width:34em;font-size:13px;line-height:1.9;letter-spacing:.06em;opacity:.8;text-wrap:pretty}
+  #gate .back{padding:14px 28px;background:#b6ff3b;color:#03030a;font-size:13px;letter-spacing:.24em;
+    text-decoration:none;box-shadow:0 0 40px -10px #b6ff3b}
+  #gate .anyway{font-size:10px;letter-spacing:.24em;color:#cfe;opacity:.45}
 </style>
 </head>
 <body>
@@ -202,6 +211,19 @@
 <div id="banner" class="hidden"></div>
 <div id="tut" class="hidden"></div>
 <div id="menu"></div>
-<script type="module" src="/build/Main.js"></script>
+<div id="gate" hidden>
+  <h1>{{gateTitle}}</h1>
+  <p>{{gateBody}}</p>
+  <a class="back" href="/">{{gateBack}}</a>
+  <a class="anyway" href="?desktop=1">{{gateAnyway}}</a>
+</div>
+<script type="module">
+  const desktop = matchMedia("(any-hover: hover) and (any-pointer: fine)").matches && !navigator.userAgentData?.mobile;
+  if (desktop || new URLSearchParams(location.search).has("desktop")) import("/build/Main.js");
+  else {
+    document.getElementById("loader").classList.add("done");
+    document.getElementById("gate").hidden = false;
+  }
+</script>
 </body>
 </html>
