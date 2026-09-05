@@ -5,6 +5,8 @@ open Browser.Types
 open Fable.Core
 open Fable.Core.JsInterop
 
+Input.initNetwork ()
+
 let private stickRadius = 70.
 let private heartbeat = 500.
 
@@ -23,8 +25,6 @@ let mutable private phase = ""
 let mutable private card: obj = null
 let mutable private stats: obj = null
 let private root = document.getElementById "pad"
-
-Input.initNetwork ()
 
 let private flush () =
     Input.hotSend "nda:pad" state
