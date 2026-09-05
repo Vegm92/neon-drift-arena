@@ -21,10 +21,48 @@ let pref i =
 [<Emit("import.meta.hot")>]
 let hot: obj = jsNative
 
-let hotOn (ev: string) (f: obj -> unit) = if not (isNullOrUndefined hot) then hot?on (ev, f)
+[<Emit("Math.random().toString(36).slice(2, 6).toUpperCase()")>]
+let private newRoom () : string = jsNative
+
+let private isPad = window.location.pathname.EndsWith "pad.html"
+
+let private room =
+    if not (isNullOrUndefined hot) then ""
+    elif isPad then window.location.hash.TrimStart '#'
+    else
+        match window.sessionStorage.getItem "nda-room" with
+        | null ->
+            let code = newRoom ()
+            window.sessionStorage.setItem ("nda-room", code)
+            code
+        | code -> code
+
+let padUrl = if isPad || room = "" then "" else window.location.origin + "/pad.html#" + room
+
+let private handlers = Dictionary<string, obj -> unit>()
+let mutable private sock: obj = null
+
+let rec private connect () =
+    let proto = if window.location.protocol = "https:" then "wss://" else "ws://"
+    let s = createNew window?WebSocket (proto + window.location.host + "/relay?room=" + room + (if isPad then "&role=pad" else "&role=host"))
+    sock <- s
+    s?onmessage <- fun (e: obj) ->
+        let msg = JS.JSON.parse (e?data: string)
+        match handlers.TryGetValue(msg?``event``: string) with
+        | true, f -> f msg?data
+        | _ -> ()
+    s?onclose <- fun (_: obj) -> window.setTimeout (connect, 1000) |> ignore
+
+if room <> "" then connect ()
+
+let hotOn (ev: string) (f: obj -> unit) =
+    if not (isNullOrUndefined hot) then hot?on (ev, f) else handlers.[ev] <- f
+
 let hotSend (ev: string) (data: obj) =
     if not (isNullOrUndefined hot) then
         try hot?send (ev, data) with _ -> ()
+    elif not (isNull sock) && (sock?readyState: int) = 1 then
+        sock?send (JS.JSON.stringify (createObj [ "event" ==> ev; "data" ==> data ]))
 
 let private phones = Dictionary<string, obj * float>()
 let private phoneSlots = Dictionary<string, int>()

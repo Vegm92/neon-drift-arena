@@ -45,8 +45,9 @@ let private el = document.getElementById "menu"
 let private colors = [| "#00f6ff"; "#ff2bd6"; "#b6ff3b"; "#ffb347" |]
 let private teamColors = [| ""; "#3b7bff"; "#ff3b5c" |]
 let private window' = 11
-let mutable private padUrl = ""
-window?fetch("/__pad-url")?``then``(fun r -> r?text())?``then``(fun (t: string) -> padUrl <- t) |> ignore
+let mutable private padUrl = Input.padUrl
+if padUrl = "" then
+    window?fetch("/__pad-url")?``then``(fun r -> r?text())?``then``(fun (t: string) -> padUrl <- t) |> ignore
 
 let visible () = shown
 

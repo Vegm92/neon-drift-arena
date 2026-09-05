@@ -6,6 +6,7 @@
     "dev": "dotnet fable watch src -o build --run npx vite --host",
     "build": "dotnet fable src -o build && vite build",
     "check": "dotnet run --project test",
+    "check:relay": "node test/relay-check.mjs",
     "deploy": "node deploy.mjs"
   },
   "dependencies": {
@@ -13,6 +14,7 @@
     "three": "^0.170.0"
   },
   "devDependencies": {
-    "vite": "^6.0.0"
+    "vite": "^6.0.0",
+    "ws": "^8.21.3"
   }
 }
