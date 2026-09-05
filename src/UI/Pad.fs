@@ -5,6 +5,8 @@ open Browser.Types
 open Fable.Core
 open Fable.Core.JsInterop
 
+Input.initNetwork ()
+
 let private stickRadius = 70.
 let private heartbeat = 500.
 

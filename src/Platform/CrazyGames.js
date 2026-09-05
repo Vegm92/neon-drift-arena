@@ -67,12 +67,8 @@ export function gameplayStop() {
 export function getInviteParams() {
   if (sdk && sdk.game) {
     try {
-      if (sdk.game.getInviteLinkParameters) {
-        return sdk.game.getInviteLinkParameters() || {};
-      }
-      if (sdk.game.inviteLinkParameters) {
-        return sdk.game.inviteLinkParameters || {};
-      }
+      const p = sdk.game.getInviteLinkParameters ? sdk.game.getInviteLinkParameters() : sdk.game.inviteLinkParameters;
+      if (p && p.roomId) return p;
     } catch (e) {
       console.error(e);
     }
