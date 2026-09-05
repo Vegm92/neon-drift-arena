@@ -20,8 +20,8 @@ let rockPool = 8
 let portalPool = 2
 let portalHex = 0xb36bff
 let holeHex = 0xd48cff
-let maxCamH = (arenaHalf + 100.) / tan (20. * Math.PI / 180.)
-let minCamH = maxCamH * 0.75
+let maxCamH () = (arenaHalf + 100.) / tan (20. * Math.PI / 180.)
+let minCamH () = maxCamH () * 0.75
 let rnd = Random()
 let sheet = 1536., 1024.
 let cell = 530., 450.
@@ -87,6 +87,8 @@ type View =
       Ships: ShipView[]
       mutable Pads: Mesh[]
       mutable Rocks: Object3D[]
+      mutable Road: Object3D option
+      mutable Marks: Mesh[]
       mutable Layout: int
       Bullets: Mesh[]
       Mines: Object3D[]
@@ -99,9 +101,11 @@ type View =
       Panels: HTMLElement[]
       Tags: HTMLElement[]
       Names: string[]
-      Spawns: Mesh[]
+      mutable Spawns: Mesh[]
       mutable Intro: float
-      Border: Object3D
+      mutable Border: Object3D
+      mutable Frame: Object3D
+      mutable Size: float
       Clock: HTMLElement
       Feed: HTMLElement
       Banner: HTMLElement

@@ -163,7 +163,7 @@ let private gamepad (gp: obj) =
       Back = pressed 1
       Present = true }
 
-let private phone (m: obj) =
+let private phoneRaw (m: obj) =
     let flag k = (m?(k): bool) = true
     let num k = let v: float = m?(k) in if isNullOrUndefined v then 0. else v
     let x, y = num "x", num "y"
@@ -181,6 +181,9 @@ let private phone (m: obj) =
       Start = flag "start"
       Back = flag "back"
       Present = true }
+
+let private phone (m: obj) =
+    if isNullOrUndefined m?input then phoneRaw m else unbox<Input> m?input
 
 let private livePhones () =
     let now = JS.Constructors.Date.now ()
@@ -200,11 +203,24 @@ let devices () : Device[] =
            let pr = pref i
            yield { Key = string i; Name = (p?id: string).Split('(').[0].Trim(); Slot = pr.Slot; Input = gamepad p }
        for id, m in livePhones () do
-           yield { Key = "ph:" + id; Name = Strings.t.Phone; Slot = phoneSlot id; Input = phone m } |]
+           yield { Key = "ph:" + id; Name = (if isNullOrUndefined m?input then Strings.t.Phone else Strings.t.Remote); Slot = phoneSlot id; Input = phone m } |]
+
+let private remoteId = string (int (JS.Math.random () * 1e8))
+
+let sendRemote () =
+    for d in devices () do
+        if d.Input.Present && not (d.Key.StartsWith "ph:") then
+            hotSend "nda:pad" (createObj [ "id" ==> remoteId + d.Key; "input" ==> d.Input ])
 
 let mutable changed = fun () -> ()
 
 let assign key slot =
+    if slot <> autoSlot then
+        if keyboardSlot = slot then keyboardSlot <- autoSlot
+        for id in Seq.toArray phoneSlots.Keys do
+            if phoneSlots.[id] = slot then phoneSlots.[id] <- autoSlot
+        for i in Seq.toArray prefs.Keys do
+            if prefs.[i].Slot = slot then prefs.[i] <- { prefs.[i] with Slot = autoSlot }
     if key = "kb" then keyboardSlot <- slot
     elif key.StartsWith "ph:" then phoneSlots.[key.Substring 3] <- slot
     else prefs.[int key] <- { pref (int key) with Slot = slot }

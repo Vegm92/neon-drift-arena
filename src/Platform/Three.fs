@@ -126,8 +126,6 @@ type Lib =
     abstract LineSegments: BufferGeometry * Material -> Mesh
     [<Emit("new $0.Points($1,$2)")>]
     abstract Points: BufferGeometry * Material -> Mesh
-    [<Emit("new $0.GridHelper($1,$2,$3,$4)")>]
-    abstract GridHelper: float * int * int * int -> Object3D
     [<Emit("$0.AdditiveBlending")>]
     abstract AdditiveBlending: int
     [<Emit("new $0.TextureLoader().load($1)")>]

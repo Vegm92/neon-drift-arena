@@ -107,15 +107,26 @@ let main _ =
             |> Array.forall (fun a ->
                 abs a.Pos.X + a.Radius < arenaHalf
                 && abs a.Pos.Y + a.Radius < arenaHalf
-                && abs a.Pos.X + abs a.Pos.Y + a.Radius < diagLimit))
-        check (tag "the core has an open approach") (
-            [ 0. .. 45. .. 315. ]
-            |> List.exists (fun d ->
-                let a = d * System.Math.PI / 180.
-                ray (v (cos a) (sin a))))
-        check (tag "one shield core") ((initial.Pads |> Array.filter (fun p -> p.Kind = 2)).Length = 1)
-        check (tag "four heal pads") ((initial.Pads |> Array.filter (fun p -> p.Kind = 1)).Length = 4)
-        check (tag "eight crate spots") (cratePositions.Length = 8)
+                && abs a.Pos.X + abs a.Pos.Y + a.Radius < diagLimit ()))
+        if isTrack i then
+            check (tag "every gate is on the road") (road |> Array.forall (fun g -> abs g.X + trackWidth / 2. < arenaHalf && abs g.Y + trackWidth / 2. < arenaHalf && abs g.X + abs g.Y + trackWidth / 2. < diagLimit ()))
+            check (tag "checkpoints sit on road points") (gates |> Array.forall (fun g -> Array.contains g road) && gates.[0] = road.[0])
+            check (tag "the road never doubles back on itself") (
+                corners
+                |> Array.mapi (fun i g -> i, g)
+                |> Array.forall (fun (i, g) ->
+                    corners |> Array.mapi (fun j h -> j, h) |> Array.forall (fun (j, h) -> abs (i - j) <= 1 || abs (i - j) >= corners.Length - 1 || len (g - h) > trackWidth * 0.9)))
+            check (tag "the road is smoothed through every corner") (road.Length = corners.Length * 4 && corners |> Array.forall (fun c -> Array.contains c road))
+            check (tag "a race track is a big arena") (arenaHalf = raceHalf)
+        else
+            check (tag "the core has an open approach") (
+                [ 0. .. 45. .. 315. ]
+                |> List.exists (fun d ->
+                    let a = d * System.Math.PI / 180.
+                    ray (v (cos a) (sin a))))
+            check (tag "one shield core") ((initial.Pads |> Array.filter (fun p -> p.Kind = 2)).Length = 1)
+            check (tag "four heal pads") ((initial.Pads |> Array.filter (fun p -> p.Kind = 1)).Length = 4)
+            check (tag "eight crate spots") (cratePositions.Length = 8)
     setLayout 0
 
     let strafer = Array.init 4 (fun i -> if i = 0 then { present with Strafe = 1. } else present)
@@ -366,5 +377,52 @@ let main _ =
         { w0 with Time = matchTime + 1. } |> place 0 w0.Pads.[healPad].Pos 0. |> edit 0 (fun s -> { s with Hp = 10. })
         |> step dt (all present)
     check "heal pads sleep in sudden death" (starving.Ships.[0].Hp = 10.)
+
+    race <- true
+    setLayout (layouts |> Array.findIndex (fun l -> l.Track.IsSome))
+    let grid = step dt (all present) initial
+    check "race grid sits behind the start gate" (grid.Ships |> Array.forall (fun s -> s.Active && len (s.Pos - gates.[0]) < 400.))
+    let skip = grid |> place 0 gates.[2] 0. |> step dt (all present)
+    check "a gate out of order does not count" (skip.Ships.[0].Next = 1)
+    let lapOnce w = Seq.fold (fun w g -> w |> place 0 gates.[g % gates.Length] 0. |> step dt (all present)) w (seq { 1 .. gates.Length })
+    let lap1 = lapOnce grid
+    check "passing every gate in order counts a lap" (lap1.Ships.[0].Laps = 1 && lap1.Ships.[0].Next = 1)
+    let crashed = lap1 |> edit 0 (fun s -> { s with Hp = 0. }) |> run (int (respawnDelay / dt) + 2) (all present)
+    check "a race crash keeps stocks, laps and respawns at the last gate" (crashed.Ships.[0].Alive && crashed.Ships.[0].Stocks = stocks && crashed.Ships.[0].Laps = 1 && len (crashed.Ships.[0].Pos - gates.[0]) < 1.)
+    let won = Seq.fold (fun w _ -> lapOnce w) crashed (seq { 2 .. int laps })
+    let first = won.Ships.[0]
+    check "finishing every lap parks the ship and marks the time" (first.Finish > 0. && not first.Alive && won.Phase = Playing)
+    check "the finish is announced with a place" (won.Events |> List.exists (function Finished(0, 1) -> true | _ -> false))
+    let flag = run (int (raceGrace / dt) + 2) (all present) won
+    check "the race ends for everyone after the grace period" (flag.Phase = Over(Some 0))
+    let sprint (p: V2) = (grid |> place 0 p 0. |> run 360 thruster).Ships.[0].Vel |> len
+    check "off the road a ship is slower than on it" (sprint (v 200. -600.) < sprint gates.[0] * 0.7)
+    let ahead = lap1 |> edit 1 (fun s -> { s with Pos = gates.[3]; Next = 4 })
+    check "a lap ahead ranks first, then the ship with more gates behind it" ((rank ahead.Ships).[0..1] = [| 0; 1 |])
+    check "a finished ship ranks above everyone still racing" (Sim.rank won.Ships |> Array.head = 0 && Sim.place won.Ships 0 = 1)
+    for t in 0 .. tracks.Length - 1 do
+        setLayout (layouts.Length - tracks.Length + t)
+        let solo = { initial with Ships = initial.Ships |> Array.mapi (fun i s -> if i = 1 then { freshShip 1 with Invuln = 0. } else s) }
+        let lapped = Seq.fold (fun w _ -> step dt (Array.init 4 (fun i -> if i = 1 then bot w 1 else noInput)) w) solo (seq { 1 .. 120 * 90 })
+        check (sprintf "track %d: a lone bot laps the circuit within 90 s" t) (lapped.Ships.[1].Laps >= 1)
+    setLayout (layouts |> Array.findIndex (fun l -> l.Track.IsSome))
+    let quiet = grid |> place 0 gates.[0] 0. |> step dt shooter
+    check "the blaster stays silent in a race" (quiet.Bullets.IsEmpty)
+    let crated = grid |> place 0 grid.Crates.[0].Pos 0. |> step dt (all present)
+    check "race crates only hand out stun weapons" (Array.contains crated.Ships.[0].Weapon raceArsenal && (crated.Ships.[0].Weapon <> Swarm || crated.Ships.[0].Ammo = 1))
+    let seeker = { Owner = 1; Pos = gates.[0] - v 30. 0.; Vel = v 400. 0.; Life = 1.; Kind = 2; Damage = seekerDamage }
+    let stung = { grid with Bullets = [ seeker ] } |> place 0 gates.[0] 0. |> edit 0 (fun s -> { s with Invuln = 0. }) |> run 12 (all present)
+    check "a race hit stuns instead of hurting" (stung.Ships.[0].Stun > 0. && stung.Ships.[0].Hp = hpMax)
+    let minePos = gates.[0] + v 0. 200.
+    let laid = { grid with Mines = [ { Owner = 1; Pos = minePos; Vel = zero; Fuse = -1. } ] } |> edit 0 (fun s -> { s with Invuln = 0. })
+    let waiting = laid |> place 0 (minePos + v 80. 0.) 0. |> run 30 (all present)
+    check "a race mine stays put and dormant beside a ship" (waiting.Mines.Length = 1 && waiting.Mines.Head.Fuse < 0. && waiting.Mines.Head.Pos = minePos)
+    let touched = laid |> place 0 (minePos + v 20. 0.) 0. |> step dt (all present)
+    check "a race mine blasts on contact" (touched.Mines.IsEmpty && touched.Ships.[0].Stun > 0.)
+    let missile = { Owner = 1; Pos = gates.[0] + v -300. 0.; Vel = v 400. 0.; Life = 2.; Kind = 2; Damage = seekerDamage }
+    let straight = { grid with Bullets = [ missile ] } |> place 0 (gates.[0] + v 0. 250.) 0. |> run 30 (all present)
+    check "a race missile flies straight past a target off its line" (straight.Bullets |> List.forall (fun b -> b.Vel.Y = 0.))
+    race <- false
+    setLayout 0
 
     0

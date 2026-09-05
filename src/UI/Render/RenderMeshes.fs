@@ -188,7 +188,7 @@ let mkBullet (scene: Object3D) =
 
 let private octagon (scale: float) =
     let a = arenaHalf * scale
-    let c = (diagLimit - arenaHalf) * scale
+    let c = (diagLimit () - arenaHalf) * scale
     [| for x, y in [ a, c; c, a; -c, a; -a, c; -a, -c; -c, -a; c, -a; a, -c ] do
            yield! [ x; 0.; y ] |]
 
@@ -200,16 +200,14 @@ let private mkLoop (scene: Object3D) scale hex opacity y =
     scene.add l
     l
 
-let mkArena (scene: Object3D) =
+let mkFrame (scene: Object3D) =
+    let frame = three.Group()
     let border = three.Group()
     mkLoop border 1. 0x00f6ff 1. 0. |> ignore
     mkLoop border 0.985 0xff2bd6 0.35 0. |> ignore
-    scene.add border
-    mkLoop scene 0.62 0x15294d 0.7 -0.5 |> ignore
-    let grid = three.GridHelper(arenaHalf * 2., 27, 0x101a38, 0x0a0f22)
-    grid.position.y <- -1.
-    scene.add grid
-    let cut = diagLimit - arenaHalf
+    frame.add border
+    mkLoop frame 0.62 0x15294d 0.7 -0.5 |> ignore
+    let cut = diagLimit () - arenaHalf
     for sx in [ 1.; -1. ] do
         for sy in [ 1.; -1. ] do
             let g = three.BufferGeometry()
@@ -224,20 +222,25 @@ let mkArena (scene: Object3D) =
             )
             let m = three.Mesh(g, three.MeshBasicMaterial(box {| color = 0x000000 |}))
             m.position.y <- -0.9
-            scene.add m
+            frame.add m
     let core = three.Group()
     core.add (three.Mesh(three.RingGeometry(96., 100., 6) |> flat, glowMat 0xfff45c 0.8))
     core.add (three.Mesh(three.RingGeometry(150., 152., 48) |> flat, glowMat 0x00f6ff 0.35))
     core.position.y <- -0.5
-    scene.add core
+    frame.add core
     let spawns =
         Array.init 4 (fun i ->
             let p = Sim.spawnPos i
             let m = three.Mesh(three.RingGeometry(120., 124., 8) |> flat, glowMat colors.[i] 0.5)
             m.position.set (p.X, -0.5, p.Y)
             m.rotation.z <- Math.PI / 8.
-            scene.add m
+            frame.add m
             m)
+    scene.add frame
+    border, spawns, frame
+
+let mkArena (scene: Object3D) =
+    let border, spawns, frame = mkFrame scene
     let n = 1500
     let stars = three.BufferGeometry()
     stars.setAttribute (
@@ -253,11 +256,57 @@ let mkArena (scene: Object3D) =
     scene.add (
         three.Points(stars, three.PointsMaterial(box {| color = 0x9fb3ff; size = 3.; transparent = true; opacity = 0.7 |}))
     )
-    border, spawns
+    border, spawns, frame
+
+let private mkRoad (scene: Object3D) =
+    let g = Sim.road
+    let n = g.Length
+    let half = Sim.trackWidth / 2.
+    let edge (side: float) =
+        [| for i in 0 .. n - 1 do
+               let d = norm (g.[(i + 1) % n] - g.[(i + n - 1) % n])
+               let p = g.[i] + v -d.Y d.X * (side * half)
+               yield! [ p.X; -0.5; p.Y ] |]
+    let road = three.Group()
+    for side, hex, alpha in [ 1., 0x00f6ff, 0.55; -1., 0xff2bd6, 0.55 ] do
+        let geo = three.BufferGeometry()
+        geo.setAttribute ("position", three.Float32BufferAttribute(edge side, 3))
+        road.add (three.LineLoop(geo, lineMat hex alpha))
+    let d = norm (g.[1] - g.[0])
+    let a, b = g.[0] + v -d.Y d.X * half, g.[0] - v -d.Y d.X * half
+    let start = three.BufferGeometry()
+    start.setAttribute ("position", three.Float32BufferAttribute([| a.X; -0.4; a.Y; b.X; -0.4; b.Y |], 3))
+    road.add (three.Line(start, lineMat 0xfff45c 1.))
+    for i in 1 .. n - 1 do
+        let d = norm (g.[(i + 1) % n] - g.[i - 1])
+        let a, b = g.[i] + v -d.Y d.X * (half * 0.25), g.[i] - v -d.Y d.X * (half * 0.25)
+        let tick = three.BufferGeometry()
+        tick.setAttribute ("position", three.Float32BufferAttribute([| a.X; -0.5; a.Y; b.X; -0.5; b.Y |], 3))
+        road.add (three.Line(tick, lineMat 0x9fb3ff 0.25))
+    scene.add road
+    road
+
+let private mkMark (scene: Object3D) i (p: V2) =
+    let m = three.Mesh(three.RingGeometry(gateRadius - 6., gateRadius, 48) |> flat, glowMat (if i = 0 then 0xfff45c else portalHex) 0.2)
+    m.position.set (p.X, 1.5, p.Y)
+    scene.add m
+    m
 
 let syncArena (vw: View) =
     if vw.Layout <> Sim.layout then
         vw.Layout <- Sim.layout
+        if vw.Size <> arenaHalf then
+            vw.Size <- arenaHalf
+            vw.Scene.remove vw.Frame
+            let border, spawns, frame = mkFrame vw.Scene
+            vw.Border <- border
+            vw.Spawns <- spawns
+            vw.Frame <- frame
+        vw.Road |> Option.iter vw.Scene.remove
+        vw.Road <- if Sim.road.Length > 1 then Some(mkRoad vw.Scene) else None
+        for m in vw.Marks do
+            vw.Scene.remove m
+        vw.Marks <- Sim.gates |> Array.mapi (mkMark vw.Scene)
         for o in vw.Rocks do
             vw.Scene.remove o
         for m in vw.Pads do

@@ -13,7 +13,12 @@ let private smooth x = x * x * (3. - 2. * x)
 
 let flyby (vw: View) (w: World) dt =
     vw.Intro <- vw.Intro - dt
-    let stops = w.Ships |> Array.filter (fun s -> s.Active) |> Array.map (fun s -> Sim.spawnPos s.Id)
+    let stops =
+        if Sim.race && Sim.gates.Length > 0 then
+            let n = min 8 Sim.gates.Length
+            Array.init (n + 1) (fun i -> Sim.gates.[i * Sim.gates.Length / n % Sim.gates.Length])
+        else
+            w.Ships |> Array.filter (fun s -> s.Active) |> Array.map (fun s -> Sim.spawnPos s.Id)
     if stops.Length > 0 then
         let segs = max 1 (stops.Length - 1)
         let t = 1. - vw.Intro / introTime
@@ -21,7 +26,7 @@ let flyby (vw: View) (w: World) dt =
         let seg = int u
         let a, b = stops.[seg], stops.[min (seg + 1) (stops.Length - 1)]
         vw.Cam <- a + (b - a) * smooth (u - float seg)
-    vw.CamH <- minCamH * 0.5
+    vw.CamH <- minCamH () * 0.5
 
 let frameCamera (vw: View) (w: World) dt =
     let alive = w.Ships |> Array.filter (fun s -> s.Alive)
@@ -37,8 +42,8 @@ let frameCamera (vw: View) (w: World) dt =
     let t = tan (20. * Math.PI / 180.)
     let hY = ((hi.Y - lo.Y) / 2. + pad) / t
     let hX = ((hi.X - lo.X) / 2. + pad) / (t * vw.Camera.aspect)
-    let h = max hX hY |> max minCamH |> min maxCamH
-    let zoomed = (maxCamH - h) / (maxCamH - minCamH)
+    let h = max hX hY |> max (minCamH ()) |> min (maxCamH ())
+    let zoomed = (maxCamH () - h) / (maxCamH () - minCamH ())
     let ease r = 1. - exp (-r * dt)
     let center, h, kc, kh =
         match w.Phase with

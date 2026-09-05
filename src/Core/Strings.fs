@@ -12,6 +12,7 @@ type Locale =
       PadLegend: (string list * string) list
       Gamepad: string
       Phone: string
+      Remote: string
       ScanToJoin: string
       PadConnecting: string
       PadFire: string
@@ -42,6 +43,12 @@ type Locale =
       Ffa: string
       Teams: string
       Practice: string
+      Race: string
+      Lap: string -> int -> int -> string
+      ColTime: string
+      Dnf: string
+      Finish: string -> string -> string
+      Places: string[]
       NeedOne: string
       Start: string
       NeedPlayers: string
@@ -74,6 +81,8 @@ type Locale =
       WBlaster: string
       WRail: string
       WMines: string
+      WContact: string
+      WMissile: string
       WSwarm: string
       WPulse: string
       WScatter: string
@@ -157,6 +166,7 @@ let en =
           [ "B" ], "BACK" ]
       Gamepad = "GAMEPAD"
       Phone = "PHONE"
+      Remote = "LAN PC"
       ScanToJoin = "SCAN TO PLAY FROM YOUR PHONE"
       PadConnecting = "CONNECTING"
       PadFire = "FIRE"
@@ -193,6 +203,12 @@ let en =
       Ffa = "FREE FOR ALL"
       Teams = "TEAMS"
       Practice = "PRACTICE"
+      Race = "RACE"
+      Lap = sprintf "%s · LAP %d/%d"
+      ColTime = "TIME"
+      Dnf = "DNF"
+      Finish = sprintf "%s FINISHES %s"
+      Places = [| "1ST"; "2ND"; "3RD"; "4TH" |]
       NeedOne = "NEED 1 PLAYER"
       Start = "START"
       NeedPlayers = "NEED 2 PLAYERS"
@@ -213,7 +229,7 @@ let en =
       Save = "SAVE TO CODE"
       Settings = "SETTINGS"
       Arena = "ARENA"
-      Arenas = [| "CORE RING"; "CROSS BASTIONS"; "PINWHEEL"; "TWIN GAUNTLET"; "OPEN BELT" |]
+      Arenas = [| "CORE RING"; "CROSS BASTIONS"; "PINWHEEL"; "TWIN GAUNTLET"; "OPEN BELT"; "GRAND PRIX"; "HAIRPIN"; "INFINITY" |]
       Random = "RANDOM"
       Mutator = "MUTATOR"
       Mutators = [| "NONE"; "RAILS ONLY"; "TURBO"; "ICE" |]
@@ -225,6 +241,8 @@ let en =
       WBlaster = "BLASTER"
       WRail = "RAILGUN"
       WMines = "MAG MINES"
+      WContact = "CONTACT MINES"
+      WMissile = "MISSILE"
       WSwarm = "SEEKERS"
       WPulse = "REPULSOR"
       WScatter = "SCATTER GUN"

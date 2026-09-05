@@ -27,7 +27,7 @@ let create () =
     let bloom = bloomPass (three.Vector2(w, h), 1.3, 0.5, 0.12)
     composer.addPass (renderPass (scene, camera))
     composer.addPass (box bloom)
-    let border, spawns = mkArena scene
+    let border, spawns, frame = mkArena scene
     let hole, horizon, halo = mkHole scene
     let hud = document.getElementById "hud"
     let vw =
@@ -39,6 +39,8 @@ let create () =
           Ships = Array.init 4 (mkShip scene)
           Pads = [||]
           Rocks = [||]
+          Road = None
+          Marks = [||]
           Layout = -1
           Bullets = Array.init bulletPool (fun _ -> mkBullet scene)
           Mines = Array.init minePool (fun _ -> mkMine scene)
@@ -54,6 +56,8 @@ let create () =
           Spawns = spawns
           Intro = 0.
           Border = border
+          Frame = frame
+          Size = arenaHalf
           Clock = document.getElementById "clock"
           Feed = document.getElementById "feed"
           Banner = document.getElementById "banner"
@@ -70,7 +74,7 @@ let create () =
           Tint = 0.
           TintHex = "#ffffff"
           Cam = zero
-          CamH = maxCamH }
+          CamH = maxCamH () }
     syncArena vw
     window.addEventListener ("resize", fun _ -> resize vw)
     vw
@@ -147,6 +151,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
             vw.Tint <- 0.75
             vw.TintHex <- sprintf "#%06x" (if ring then 0x3d5cff else hex)
         | Downed(victim, by, wpn, ring) -> feedLine vw w victim by wpn ring
+        | Finished(i, _) -> spawnBurst vw w.Ships.[i].Pos (shipColor w.Ships.[i]) 40 260.
         | Shot _ -> ()
     drawSmoke vw w dt
     Array.iter2 (drawShip w.Time vw) vw.Ships w.Ships
@@ -166,6 +171,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
     frameCamera vw w dt
     drawTags vw w
     drawSpawns vw w
+    drawMarks vw w
     drawHud vw w dt
     drawTint vw dt
     drawPost vw dt
