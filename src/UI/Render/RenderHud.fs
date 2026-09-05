@@ -35,6 +35,11 @@ let feedLine (vw: View) (w: World) victim by wpn ring =
         if by >= 0 && by <> victim then tag by "" + wep by ring + tag victim "dead"
         else wep victim (ring || wpn <> Singularity) + tag victim "dead"
     vw.Feed?prepend line
+    if by >= 0 && by <> victim then
+        let panel = vw.Panels.[by]
+        panel?style?animation <- "none"
+        panel?offsetWidth |> ignore
+        panel?style?animation <- "score .7s ease-out"
     while vw.Feed.children.length > 4 do
         vw.Feed?lastElementChild?remove ()
     window.setTimeout ((fun () -> line.remove ()), 5000) |> ignore

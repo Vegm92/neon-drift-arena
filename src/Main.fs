@@ -130,9 +130,15 @@ let private stats (w: World) =
     | None -> ()
     lines |> String.concat "\n"
 
+let private flash (cls: string) =
+    banner.className <- ""
+    banner?offsetWidth |> ignore
+    banner.className <- cls
+
 let private say text =
     shoutText <- text
     shout <- 1.4
+    flash "shout"
     Sfx.cue Sfx.Alert
 
 let private announce (w: World) (events: Event list) =
@@ -198,9 +204,18 @@ let rec frame (t: float) =
         let prev = ceil countdown |> int
         countdown <- countdown - dt
         let cur = ceil countdown |> int
-        if cur <> prev then Sfx.cue (if cur = 0 then Sfx.Go else Sfx.Tick)
-        banner.textContent <- string (ceil countdown |> int)
-        banner.className <- if countdown > 0. then "" else "hidden"
+        if cur <> prev then
+            Sfx.cue (if cur = 0 then Sfx.Go else Sfx.Tick)
+            if cur = 0 then
+                shoutText <- Strings.t.Go
+                shout <- 0.7
+                view.Tint <- 0.9
+                view.TintHex <- "#ffffff"
+                view.Spike <- 1.2
+                flash "shout go"
+            else
+                flash "count"
+        if countdown > 0. then banner.textContent <- string cur
         Render.draw view world [] dt
     else
         slowmo <- max 0. (slowmo - dt)
@@ -232,7 +247,6 @@ let rec frame (t: float) =
         shout <- max 0. (shout - dt)
         if shout > 0. then
             banner.textContent <- shoutText
-            banner.className <- ""
         else
             banner.className <- "hidden"
         Sfx.play events
