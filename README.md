@@ -9,9 +9,13 @@ npm install
 npm run dev
 ```
 
-Opens Vite on http://localhost:5173 with Fable in watch mode.
+Opens Vite on http://localhost:5173 with Fable in watch mode. The landing page is served at `/`, the game at `/play/` and the phone pad at `/pad.html`.
 
 Requires the .NET 10 SDK (Fable 5.15 ships as a net10.0 tool) and Node 18+.
+
+## Landing page
+
+`index.html` at the root is the marketing page: a muted autoplay loop of `public/trailer.mp4` (a 27 s cut of real bots matches, poster `public/trailer.jpg`), one PLAY IN BROWSER button pointing at `/play/`, four feature rows and the OG card `public/og.jpg`. Every string on it lives in `strings.json`; the `site-strings` hook in `vite.config.js` substitutes `{{key}}` placeholders in dev and build. `npm run build` emits the page, the game and the pad into `dist/`. The root `Dockerfile` builds it on Railway (a .NET 10 + Node stage runs Fable and Vite, a Node image serves `dist/`): the `site` service of the `neon-drift-arena` project deploys it from GitHub on every push (https://site-production-a98b.up.railway.app), and `npm run deploy` uploads the working tree for a one-off build. `deploy/server.mjs` serves those files gzipped and carries the phone-pad relay on `/relay`, so the pad works on the deployed build too.
 
 ## Controls
 
@@ -31,7 +35,7 @@ The lobby opens on load. Each device presses Fire or A to claim one of the four 
 
 ## Play from your phone
 
-`npm run dev` serves the game on the LAN (`--host`). The lobby shows a QR code with the pad URL (`http://<lan-ip>:5173/pad.html`); the pause menu shows it again. A phone that opens it becomes a controller: JOIN, then ◀ ▶ picks the colour (or side in TEAMS), the big button readies up, BACK and START match the gamepad buttons. In play the left half is a floating stick — the ship turns toward the thumb at the keyboard turn rate and thrusts once the thumb is near the rim (`padAimOn` / `padThrustOn` in TUNING) — the middle column shows that player's hull, boost, stocks and kills, and the right panel holds the SPECIAL, BOOST and FIRE hexes (hold them) with a strafe slider underneath; ☰ in the header pauses. Pause and result menus turn the phone into ▲ ▼ OK BACK. A phone silent for 2 s drops out of the lobby. Messages travel over Vite's HMR WebSocket, so the pad only works under the dev server, not a static build.
+`npm run dev` serves the game on the LAN (`--host`). The lobby shows a QR code with the pad URL (`http://<lan-ip>:5173/pad.html`); the pause menu shows it again. A phone that opens it becomes a controller: JOIN, then ◀ ▶ picks the colour (or side in TEAMS), the big button readies up, BACK and START match the gamepad buttons. In play the left half is a floating stick — the ship turns toward the thumb at the keyboard turn rate and thrusts once the thumb is near the rim (`padAimOn` / `padThrustOn` in TUNING) — the middle column shows that player's hull, boost, stocks and kills, and the right panel holds the SPECIAL, BOOST and FIRE hexes (hold them) with a strafe slider underneath; ☰ in the header pauses. Pause and result menus turn the phone into ▲ ▼ OK BACK. A phone silent for 2 s drops out of the lobby. Under the dev server messages travel over Vite's HMR WebSocket. On the deployed build there is no HMR, so the host page mints a four-character room code (kept in `sessionStorage`), the QR points at `https://<site>/pad.html#<code>`, and both ends meet on `/relay` in `deploy/server.mjs`, which only ever forwards a room's phones to that room's host. The relay carries pad input, nothing else - the match still runs entirely in the host browser.
 
 ## Rules
 

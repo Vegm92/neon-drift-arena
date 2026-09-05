@@ -1,6 +1,12 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 const domain = new URL("src/Core/Domain.fs", import.meta.url);
+const strings = JSON.parse(readFileSync(new URL("strings.json", import.meta.url), "utf8"));
+
+const siteStrings = {
+  name: "site-strings",
+  transformIndexHtml: (html) => html.replace(/\{\{(\w+)\}\}/g, (_, k) => strings[k] ?? `{{${k}}}`),
+};
 
 const bakeTweaks = {
   name: "bake-tweaks",
@@ -43,4 +49,7 @@ const phonePad = {
   },
 };
 
-export default { plugins: [bakeTweaks, phonePad] };
+export default {
+  plugins: [siteStrings, bakeTweaks, phonePad],
+  build: { rollupOptions: { input: { main: "index.html", play: "play/index.html", pad: "pad.html" } } },
+};
