@@ -120,6 +120,8 @@ type Locale =
       LaunchReady: string
       LaunchWait: string
       Bot: string
+      CrazyGames: string
+      SignIn: string
       AddBot: string
       ClearBots: string
       Tuning: string
@@ -280,6 +282,8 @@ let en =
       LaunchReady = "LAUNCHER · FIRE HURLS A ROCK"
       LaunchWait = "LAUNCHER · RELOADING"
       Bot = "BOT"
+      CrazyGames = "CRAZYGAMES"
+      SignIn = "SIGN IN"
       AddBot = "ADD BOT"
       ClearBots = "CLEAR BOTS"
       Tuning = "TUNING"

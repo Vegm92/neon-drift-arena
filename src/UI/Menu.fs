@@ -53,13 +53,11 @@ let initUser () =
     Settings.onSignInCompleted <- fun username -> names.[0] <- username
     loadProgress ()
     async {
-        let! available = CrazyGames.isUserAvailable() |> Async.AwaitPromise
-        Settings.isGuest <- not available
-        if available then
-            let! user = CrazyGames.getUser() |> Async.AwaitPromise
-            if not (isNullOrUndefined user) && not (isNullOrUndefined user.username) then
-                names.[0] <- user.username
-                loadProgress ()
+        let! user = CrazyGames.getUser() |> Async.AwaitPromise
+        Settings.isGuest <- isNullOrUndefined user
+        if not (isNullOrUndefined user) && not (isNullOrUndefined user.username) then
+            names.[0] <- user.username
+            loadProgress ()
     } |> Async.StartImmediate
     CrazyGames.addAuthListener(fun (user: CrazyGames.CGUser) ->
         if not (isNullOrUndefined user) && not (isNullOrUndefined user.username) then
@@ -123,18 +121,6 @@ let private swallow () =
             held.Add(k + name) |> ignore
     repeatAt <- JS.Constructors.Date.now () + 340.
 
-let mutable private lastBannerRefresh = 0.
-
-let refreshBannersForce (force: bool) =
-    let now = JS.Constructors.Date.now ()
-    if force || now - lastBannerRefresh >= 31000. then
-        lastBannerRefresh <- now
-        CrazyGames.requestBanner("cg-banner-1", 300, 250)
-        CrazyGames.requestBanner("cg-banner-2", 300, 250)
-
-let clearBanners () =
-    CrazyGames.clearAllBanners ()
-
 let private open' s =
     screen <- s
     cursor <- 0
@@ -142,24 +128,20 @@ let private open' s =
     swallow ()
     el.className <- (match s with Lobby | Options -> "" | _ -> "play")
 
-let show () = 
+let show () =
     open' Lobby
-    refreshBannersForce true
     CrazyGames.gameplayStop ()
-let pause () = 
+let pause () =
     open' Pause
-    refreshBannersForce true
     CrazyGames.gameplayStop ()
-let result (title: string) = 
+let result (title: string) =
     open' (Result title)
-    refreshBannersForce true
     CrazyGames.gameplayStop ()
 
 let private hide () =
     shown <- false
     swallow ()
     el.className <- "hidden"
-    clearBanners ()
 
 let private items () =
     match screen with
@@ -204,7 +186,7 @@ let private claim key slot =
         teams.[slot] <- if side 1 <= side 2 then 1 else 2
     else
         playerColor.[slot] <- [ 0..3 ] |> List.find (fun c -> not (colorTaken slot c))
-    if key = botKey then 
+    if key = botKey then
         names.[slot] <- Strings.t.Bot
         ready.[slot] <- true
     else
@@ -395,7 +377,7 @@ let recordWin (winner: int) (team: int) =
     for s in joined do
         if s = winner || (team > 0 && teams.[s] = team) then wins.[s] <- wins.[s] + 1
     let series = wins.[winner] >= Cfg.seriesTo
-    if series then 
+    if series then
         Array.fill wins 0 4 0
         matchesPlayed <- matchesPlayed + 1
         saveProgress ()
@@ -577,7 +559,6 @@ let private updateList (title: string) (inputs: Input[]) =
     | None -> None
 
 let update (inputs: Input[]) =
-    refreshBannersForce false
     match screen with
     | Lobby -> if updateLobby () then Some Rematch else None
     | Options ->

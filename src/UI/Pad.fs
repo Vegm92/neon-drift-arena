@@ -24,6 +24,8 @@ let mutable private card: obj = null
 let mutable private stats: obj = null
 let private root = document.getElementById "pad"
 
+Input.initNetwork ()
+
 let private flush () =
     Input.hotSend "nda:pad" state
     dirty <- false

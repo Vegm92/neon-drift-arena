@@ -114,8 +114,8 @@ let rows () =
                   window.location.reload ()
           )
       if isGuest then
-          yield Header "CRAZYGAMES"
-          yield Action("SIGN IN", fun () ->
+          yield Header Strings.t.CrazyGames
+          yield Action(Strings.t.SignIn, fun () ->
               async {
                   let! user = CrazyGames.showAuthPrompt() |> Async.AwaitPromise
                   if not (isNullOrUndefined user) && not (isNullOrUndefined user.username) then
@@ -182,10 +182,6 @@ let activate r =
 let init () =
     loadTweaks ()
     loadPads ()
-    async {
-        let! available = CrazyGames.isUserAvailable() |> Async.AwaitPromise
-        isGuest <- not available
-    } |> Async.StartImmediate
     match window.localStorage.getItem arenaKey with
     | null -> ()
     | v ->

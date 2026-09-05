@@ -27,23 +27,27 @@ let private newRoom () : string = jsNative
 let private isPad = window.location.pathname.EndsWith "pad.html"
 
 let mutable private room = ""
+
+let private relayOrigin =
+    let h = window.location.hostname
+    if h = "localhost" || h.EndsWith ".railway.app" || h.EndsWith "neondriftarena.com" || System.Char.IsDigit h.[0] then window.location.origin
+    else "https://neondriftarena.com"
 let mutable padUrl = ""
 
 let private handlers = Dictionary<string, obj -> unit>()
-let mutable private sock: CrazyGames.IRelaySocket = Unchecked.defaultof<CrazyGames.IRelaySocket>
+let mutable private sock: obj = null
 
 let mutable getLocalPlayerName : unit -> string = fun () -> ""
 
 let rec private connect () =
-    let proto = if window.location.protocol = "https:" then "wss://" else "ws://"
-    let s = CrazyGames.createRelaySocket (proto + window.location.host + "/relay?room=" + room + (if isPad then "&role=pad" else "&role=host"), isPad)
+    let s = createNew window?WebSocket (relayOrigin.Replace("http", "ws") + "/relay?room=" + room + (if isPad then "&role=pad" else "&role=host"))
     sock <- s
-    s.onmessage <- fun (e: obj) ->
+    s?onmessage <- fun (e: obj) ->
         let msg = JS.JSON.parse (e?data: string)
         match handlers.TryGetValue(msg?``event``: string) with
         | true, f -> f msg?data
         | _ -> ()
-    s.onclose <- fun (_: obj) -> window.setTimeout (connect, 1000) |> ignore
+    s?onclose <- fun (_: obj) -> window.setTimeout (connect, 1000) |> ignore
 
 let initNetwork () =
     if not (isNullOrUndefined hot) then
@@ -54,11 +58,7 @@ let initNetwork () =
         padUrl <- ""
         if room <> "" then connect ()
     else
-        let params' = CrazyGames.getInviteParams()
-        let cgRoom =
-            if not (isNullOrUndefined params') && not (isNullOrUndefined params'?roomId) then
-                string params'?roomId
-            else ""
+        let cgRoom = CrazyGames.getInviteRoom ()
         if cgRoom <> "" then
             room <- cgRoom
             window.sessionStorage.setItem ("nda-room", room)
@@ -69,7 +69,7 @@ let initNetwork () =
                 window.sessionStorage.setItem ("nda-room", code)
                 room <- code
             | code -> room <- code
-        padUrl <- if room = "" then "" else window.location.origin + "/pad.html#" + room
+        padUrl <- if room = "" then "" else relayOrigin + "/pad.html#" + room
         if room <> "" then
             connect ()
             CrazyGames.updateRoom (room, true)
@@ -80,8 +80,8 @@ let hotOn (ev: string) (f: obj -> unit) =
 let hotSend (ev: string) (data: obj) =
     if not (isNullOrUndefined hot) then
         try hot?send (ev, data) with _ -> ()
-    elif not (isNull (box sock)) && sock.readyState = 1 then
-        sock.send (JS.JSON.stringify (createObj [ "event" ==> ev; "data" ==> data ]))
+    elif not (isNull sock) && (sock?readyState: int) = 1 then
+        sock?send (JS.JSON.stringify (createObj [ "event" ==> ev; "data" ==> data ]))
 
 let private phones = Dictionary<string, obj * float>()
 let private phoneSlots = Dictionary<string, int>()
