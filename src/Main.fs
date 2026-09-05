@@ -227,7 +227,7 @@ let rec frame (t: float) =
         inputs
         |> Array.iteri (fun i inp ->
             if Menu.rising (sprintf "s%d" i) "start" inp.Start then pause <- true)
-        if events |> List.exists (function Explode _ -> true | _ -> false) then hitstop <- 0.055
+        if events |> List.exists (function Explode _ -> true | _ -> false) then hitstop <- 0.09
         announce world events
         shout <- max 0. (shout - dt)
         if shout > 0. then
@@ -240,8 +240,8 @@ let rec frame (t: float) =
         match world.Phase with
         | Over _ when not ending ->
             ending <- true
-            finish <- 1.5
-            slowmo <- 1.5
+            finish <- Cfg.victoryTime
+            slowmo <- 0.6
             endTitle <- title world
             endNote <- stats world
             match world.Phase with
@@ -257,6 +257,7 @@ let rec frame (t: float) =
         | Playing when pause -> Menu.pause ()
         | Playing -> ()
         Render.draw view world events dt
+    window.requestAnimationFrame frame |> ignore
 window.addEventListener ("keydown", fun _ -> hideTutorial ())
 window.addEventListener ("pointerdown", fun _ -> hideTutorial ())
 window.addEventListener (

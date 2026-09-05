@@ -10,7 +10,7 @@ open Domain.Cfg
 open Three
 open RenderTypes
 
-let private icon (w: Weapon) ring =
+let icon (w: Weapon) ring =
     let path =
         if ring then "M8 32 L48 32 M34 18 L48 32 L34 46"
         else
@@ -28,28 +28,23 @@ let private icon (w: Weapon) ring =
     sprintf "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"%s\"/></svg>" path
 
 let feedLine (vw: View) (w: World) victim by wpn ring =
-    let tag i = sprintf "<b style=\"color:#%06x\">%s</b>" (shipColor w.Ships.[i]) (Strings.t.Player i)
+    let tag i cls = sprintf "<b class=\"%s\" style=\"color:#%06x\">%s</b>" cls (shipColor w.Ships.[i]) (Strings.t.Player i)
+    let wep i r = sprintf "<span style=\"color:#%06x\">%s</span>" (shipColor w.Ships.[i]) (icon wpn r)
     let line = document.createElement "div"
     line.innerHTML <-
-        if by >= 0 && by <> victim then tag by + icon wpn ring + tag victim
-        else tag victim + icon wpn (ring || wpn <> Singularity)
+        if by >= 0 && by <> victim then tag by "" + wep by ring + tag victim "dead"
+        else wep victim (ring || wpn <> Singularity) + tag victim "dead"
     vw.Feed?prepend line
     while vw.Feed.children.length > 4 do
         vw.Feed?lastElementChild?remove ()
     window.setTimeout ((fun () -> line.remove ()), 5000) |> ignore
 
-let private weaponLabel (s: Ship) =
-    match s.Weapon with
-    | Blaster
-    | Collision
-    | Rock
-    | Singularity -> Strings.t.WBlaster
-    | Rail -> Strings.t.Loaded Strings.t.WRail s.Ammo
-    | Mines -> Strings.t.Loaded Strings.t.WMines s.Ammo
-    | Swarm -> Strings.t.Loaded Strings.t.WSwarm s.Ammo
-    | Pulse -> Strings.t.Loaded Strings.t.WPulse s.Ammo
-    | Scatter -> Strings.t.Loaded Strings.t.WScatter s.Ammo
-    | Tractor -> Strings.t.Loaded Strings.t.WTractor s.Ammo
+let private weaponHtml (s: Ship) =
+    if Sim.launcher s then
+        sprintf "<span class=\"%s\">%s</span>" (if s.LaunchCd <= 0. then "ready" else "wait") (icon Rock false)
+    else
+        let n = if weaponAmmo s.Weapon > 0 then s.Ammo else 0
+        icon s.Weapon false + sprintf "<span class=\"ammo\">%s</span>" (String.replicate n "●")
 
 let drawHud (vw: View) (w: World) dt =
     w.Ships
@@ -79,10 +74,14 @@ let drawHud (vw: View) (w: World) dt =
         el.querySelector(".shield i")?style?width <- sprintf "%.0f%%" (s.Shield / shieldAmount * 100.)
         el.querySelector(".boost i")?style?width <- sprintf "%.0f%%" (s.Boost / boostMax * 100.)
         el.querySelector(".heat i")?style?width <- sprintf "%.0f%%" (s.Heat / heatMax * 100.)
-        (el.querySelector ".stocks" :?> HTMLElement).textContent <- String.replicate (max 0 s.Stocks) "◆"
-        (el.querySelector ".wep" :?> HTMLElement).textContent <-
-            if Sim.launcher s then (if s.LaunchCd <= 0. then Strings.t.LaunchReady else Strings.t.LaunchWait)
-            else weaponLabel s)
+        let stocks = el.querySelector ".stocks" :?> HTMLElement
+        stocks.textContent <- String.replicate (max 0 s.Stocks) "◆"
+        stocks?style?color <- sprintf "#%06x" (shipColor s)
+        let wep = el.querySelector ".wep" :?> HTMLElement
+        let html = weaponHtml s
+        if wep?dataset?html <> html then
+            wep?dataset?html <- html
+            wep.innerHTML <- html)
 
 let drawTint (vw: View) dt =
     vw.Tint <- max 0. (vw.Tint - dt * 1.6)

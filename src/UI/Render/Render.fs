@@ -64,6 +64,7 @@ let create () =
           Smoke = Array.zeroCreate 4
           Puff = 0.
           Spike = 0.
+          Jolt = 0.
           Tint = 0.
           TintHex = "#ffffff"
           Cam = zero
@@ -130,10 +131,15 @@ let draw (vw: View) (w: World) (events: Event list) dt =
                     atan2 d.Y d.X
                 else
                     rnd.NextDouble() * Math.PI * 2.
-            spawnCone vw p hex 46 340. dir 0.8 7.
-            spawnCone vw p 0xffffff 22 180. dir Math.PI 7.
-            spawnRing vw p hex 40. 3.2 0.6
-            vw.Spike <- max vw.Spike 1.
+            spawnFlash vw p 0xffffff 70. 0.22
+            spawnCone vw p hex 70 380. dir 0.8 7.
+            spawnCone vw p hex 40 140. dir Math.PI 13.
+            spawnCone vw p 0xffffff 30 220. dir Math.PI 7.
+            spawnBolts vw p hex 0. Math.PI 140.
+            spawnRing vw p 0xffffff 30. 9. 0.4
+            spawnRing vw p hex 40. 4. 0.7
+            vw.Spike <- max vw.Spike 1.4
+            vw.Jolt <- 1.
             vw.Tint <- 1.
             vw.TintHex <- sprintf "#%06x" (if ring then 0x3d5cff else hex)
         | Downed(victim, by, wpn, ring) -> feedLine vw w victim by wpn ring
