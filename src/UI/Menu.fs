@@ -519,7 +519,8 @@ el.addEventListener (
         | Some _, None, Some i ->
             pick i
             arrow (if down then -1 else 1)
-        | _ -> Input.press (if down then "ArrowDown" else "ArrowUp")
+        | _ when screen <> Lobby -> Input.press (if down then "ArrowDown" else "ArrowUp")
+        | _ -> ()
         Input.release ()
 )
 
