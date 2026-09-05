@@ -34,6 +34,8 @@ type Locale =
       KeysLeave: string
       KeysLaunch: string
       RowLabel: string
+      RenameLabel: string
+      RenamePrompt: string
       TeamLabel: string
       ColorLabel: string
       Colors: string[]
@@ -86,6 +88,7 @@ type Locale =
       WScatter: string
       WTractor: string
       Loaded: string -> int -> string
+      Go: string
       FirstBlood: string
       DoubleKill: string
       RingOut: string
@@ -191,6 +194,8 @@ let en =
       KeysLeave = "ESC / B"
       KeysLaunch = "ENTER / START"
       RowLabel = "MENU"
+      RenameLabel = "RENAME"
+      RenamePrompt = "ENTER NAME"
       TeamLabel = "TEAM"
       ColorLabel = "COLOUR"
       Colors = [| "CYAN"; "MAGENTA"; "LIME"; "AMBER" |]
@@ -243,6 +248,7 @@ let en =
       WScatter = "SCATTER GUN"
       WTractor = "TRACTOR"
       Loaded = fun n a -> sprintf "%s x%d" n a
+      Go = "GO"
       FirstBlood = "FIRST BLOOD"
       DoubleKill = "DOUBLE KILL"
       RingOut = "RING OUT"

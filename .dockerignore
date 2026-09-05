@@ -1,0 +1,16 @@
+.git
+.claude
+.config
+.fable
+.playwright-mcp
+.deploy
+node_modules
+build
+dist
+bin
+obj
+test
+*.log
+CONTEXT.md
+REFERENCES.md
+PRD.md

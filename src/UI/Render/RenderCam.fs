@@ -1,4 +1,4 @@
-module RenderCam
+﻿module RenderCam
 
 open System
 open Browser
@@ -11,15 +11,21 @@ open RenderTypes
 
 let private smooth x = x * x * (3. - 2. * x)
 
-let flyby (vw: View) dt =
+let flyby (vw: View) (w: World) dt =
     vw.Intro <- vw.Intro - dt
-    let t = 1. - vw.Intro / introTime
-    let n = if Sim.race then min 8 Sim.gates.Length else 3
-    let stop i = if Sim.race then Sim.gates.[i * Sim.gates.Length / n % Sim.gates.Length] else Sim.spawnPos i
-    let u = min (float n - 0.001) (t / 0.8 * float n)
-    let seg = int u
-    let a, b = stop seg, stop (seg + 1)
-    vw.Cam <- a + (b - a) * smooth (u - float seg)
+    let stops =
+        if Sim.race && Sim.gates.Length > 0 then
+            let n = min 8 Sim.gates.Length
+            Array.init (n + 1) (fun i -> Sim.gates.[i * Sim.gates.Length / n % Sim.gates.Length])
+        else
+            w.Ships |> Array.filter (fun s -> s.Active) |> Array.map (fun s -> Sim.spawnPos s.Id)
+    if stops.Length > 0 then
+        let segs = max 1 (stops.Length - 1)
+        let t = 1. - vw.Intro / introTime
+        let u = min (float segs - 0.001) (t / 0.8 * float segs) |> max 0.
+        let seg = int u
+        let a, b = stops.[seg], stops.[min (seg + 1) (stops.Length - 1)]
+        vw.Cam <- a + (b - a) * smooth (u - float seg)
     vw.CamH <- minCamH () * 0.5
 
 let frameCamera (vw: View) (w: World) dt =
@@ -38,16 +44,22 @@ let frameCamera (vw: View) (w: World) dt =
     let hX = ((hi.X - lo.X) / 2. + pad) / (t * vw.Camera.aspect)
     let h = max hX hY |> max (minCamH ()) |> min (maxCamH ())
     let zoomed = (maxCamH () - h) / (maxCamH () - minCamH ())
-    let center = center * zoomed
-    let k = 1. - exp (-4. * dt)
+    let ease r = 1. - exp (-r * dt)
+    let center, h, kc, kh =
+        match w.Phase with
+        | Over(Some i) -> w.Ships.[i].Pos, victoryCamH, ease 7., ease 1.6
+        | _ -> center * zoomed, h, ease 4., ease 4.
     if vw.Intro > introTime * 0.2 then
-        flyby vw dt
+        flyby vw w dt
     else
         vw.Intro <- max 0. (vw.Intro - dt)
-        vw.Cam <- vw.Cam + (center - vw.Cam) * k
-        vw.CamH <- vw.CamH + (h - vw.CamH) * k
-    vw.Camera.position.set (vw.Cam.X, vw.CamH, vw.Cam.Y + vw.CamH * 0.3)
-    vw.Camera.lookAt (vw.Cam.X, 0., vw.Cam.Y)
+        vw.Cam <- vw.Cam + (center - vw.Cam) * kc
+        vw.CamH <- vw.CamH + (h - vw.CamH) * kh
+    vw.Jolt <- max 0. (vw.Jolt - dt * 3.)
+    let j = vw.Jolt * vw.Jolt * vw.CamH * 0.02
+    let jx, jy = (rnd.NextDouble() - 0.5) * j, (rnd.NextDouble() - 0.5) * j
+    vw.Camera.position.set (vw.Cam.X + jx, vw.CamH, vw.Cam.Y + vw.CamH * 0.3 + jy)
+    vw.Camera.lookAt (vw.Cam.X + jx, 0., vw.Cam.Y + jy)
 
 let aspect () =
     let w, h = window.innerWidth, window.innerHeight

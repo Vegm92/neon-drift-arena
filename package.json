@@ -5,13 +5,16 @@
   "scripts": {
     "dev": "dotnet fable watch src -o build --run npx vite --host",
     "build": "dotnet fable src -o build && vite build",
-    "check": "dotnet run --project test"
+    "check": "dotnet run --project test",
+    "check:relay": "node test/relay-check.mjs",
+    "deploy": "railway up --ci --service site"
   },
   "dependencies": {
     "qrcode": "^1.5.4",
     "three": "^0.170.0"
   },
   "devDependencies": {
-    "vite": "^6.0.0"
+    "vite": "^6.0.0",
+    "ws": "^8.21.3"
   }
 }

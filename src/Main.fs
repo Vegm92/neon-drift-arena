@@ -1,4 +1,4 @@
-module Main
+﻿module Main
 
 open Browser
 open Fable.Core
@@ -101,7 +101,7 @@ let private launch (w: World) =
         world <- w
         go true
 
-let private name i = Strings.t.Player i
+let private name i = if Menu.names.[i] = "" then Strings.t.Player i else Menu.names.[i]
 
 let private title (w: World) =
     match w.Phase with
@@ -169,9 +169,15 @@ let private stats (w: World) =
             (if Sim.race then Strings.t.ColTime else Strings.t.ColStocks)
     sprintf "<div class=\"table\">%s%s</div><div class=\"awards\">%s</div>" head rows (String.concat "" awards)
 
+let private flash (cls: string) =
+    banner.className <- ""
+    banner?offsetWidth |> ignore
+    banner.className <- cls
+
 let private say text =
     shoutText <- text
     shout <- 1.4
+    flash "shout"
     Sfx.cue Sfx.Alert
 
 let private announce (w: World) (events: Event list) =
@@ -337,9 +343,18 @@ let private localFrame (t: float) dt =
         let prev = ceil countdown |> int
         countdown <- countdown - dt
         let cur = ceil countdown |> int
-        if cur <> prev then Sfx.cue (if cur = 0 then Sfx.Go else Sfx.Tick)
-        banner.textContent <- string (ceil countdown |> int)
-        banner.className <- if countdown > 0. then "" else "hidden"
+        if cur <> prev then
+            Sfx.cue (if cur = 0 then Sfx.Go else Sfx.Tick)
+            if cur = 0 then
+                shoutText <- Strings.t.Go
+                shout <- 0.7
+                view.Tint <- 0.9
+                view.TintHex <- "#ffffff"
+                view.Spike <- 1.2
+                flash "shout go"
+            else
+                flash "count"
+        if countdown > 0. then banner.textContent <- string cur
         Render.draw view world [] dt
     else
         slowmo <- max 0. (slowmo - dt)
@@ -367,12 +382,11 @@ let private localFrame (t: float) dt =
         inputs
         |> Array.iteri (fun i inp ->
             if Menu.rising (sprintf "s%d" i) "start" inp.Start then pause <- true)
-        if events |> List.exists (function Explode _ -> true | _ -> false) then hitstop <- 0.055
+        if events |> List.exists (function Explode _ -> true | _ -> false) then hitstop <- 0.09
         announce world events
         shout <- max 0. (shout - dt)
         if shout > 0. then
             banner.textContent <- shoutText
-            banner.className <- ""
         else
             banner.className <- "hidden"
         Sfx.play events
@@ -380,8 +394,8 @@ let private localFrame (t: float) dt =
         match world.Phase with
         | Over _ when not ending ->
             ending <- true
-            finish <- 1.5
-            slowmo <- 1.5
+            finish <- Cfg.victoryTime
+            slowmo <- 0.6
             endTitle <- title world
             endNote <- stats world
             match world.Phase with
@@ -401,6 +415,7 @@ let private localFrame (t: float) dt =
 let rec frame (t: float) =
     let dt = if last = 0. then 0. else (t - last) / 1000. |> max 0. |> min 0.1
     last <- t
+    for i in 0..3 do view.Names.[i] <- name i
     if client () then
         wasClient <- true
         clientFrame dt
@@ -413,7 +428,6 @@ let rec frame (t: float) =
         localFrame t dt
         sendState ()
     window.requestAnimationFrame frame |> ignore
-
 window.addEventListener ("keydown", fun _ -> hideTutorial ())
 window.addEventListener ("pointerdown", fun _ -> hideTutorial ())
 window.addEventListener (

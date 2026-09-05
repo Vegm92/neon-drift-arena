@@ -317,21 +317,11 @@ let syncArena (vw: View) =
 let mkPanel (hud: HTMLElement) i =
     let el = document.createElement "div"
     el.className <- sprintf "panel p%d off" i
-    el.setAttribute ("style", sprintf "color:#%06x" colors.[i])
-    let gauge cls label =
-        sprintf
-            "<div class=\"lbl\"><span>%s</span><span class=\"v %s-v\"></span></div><div class=\"bar %s\"><i></i></div>"
-            label
-            cls
-            cls
     el.innerHTML <-
         sprintf
-            "<div class=\"top\"><svg viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linejoin=\"round\"><path d=\"M24 4 41 40 24 32 7 40Z\"/></svg><b class=\"name\">%s</b><div class=\"stocks\"></div></div><div class=\"gauges\">%s%s%s%s</div><div class=\"wep\"></div>"
+            "<div class=\"name\" style=\"color:#%06x\">%s</div><div class=\"bar hp\"><i></i></div><div class=\"bar shield\"><i></i></div><div class=\"bar boost\"><i></i></div><div class=\"bar heat\"><i></i></div><div class=\"stocks\"></div><div class=\"wep\"></div>"
+            colors.[i]
             (Strings.t.Player i)
-            (gauge "hp" Strings.t.HudHull)
-            (gauge "shield" Strings.t.HudShield)
-            (gauge "boost" Strings.t.HudBoost)
-            (gauge "heat" Strings.t.HudHeat)
     hud.appendChild el |> ignore
     el
 
