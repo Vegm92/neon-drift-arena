@@ -20,6 +20,10 @@ let rockPool = 8
 let portalPool = 2
 let portalHex = 0xb36bff
 let holeHex = 0xd48cff
+// Kill flash: kept low and short, and confined to the screen edges, for photosensitivity.
+let killTint = 0.3
+let tintFade = 2.2
+let tintEdgePx = 90
 let maxCamH () = (arenaHalf + 100.) / tan (20. * Math.PI / 180.)
 let minCamH () = maxCamH () * 0.75
 let rnd = Random()
