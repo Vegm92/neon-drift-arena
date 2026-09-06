@@ -228,10 +228,10 @@ let drawHole (vw: View) (w: World) dt =
         vw.Hole.visible <- true
         vw.Hole.position.set (h.Pos.X, 0., h.Pos.Y)
         let fade = min 1. (h.Life / 1.5) * min 1. ((holeLife - h.Life) * 2.)
-        vw.Horizon.material.opacity <- fade * (0.7 + 0.3 * sin (w.Time * 7.))
-        vw.Horizon.rotation.z <- w.Time * 1.5
+        vw.Horizon.material.opacity <- fade * (0.85 + 0.15 * sin (w.Time * 7.))
+        vw.Horizon.rotation.y <- w.Time * 1.5
         vw.Halo.material.opacity <- fade * 0.2
-        vw.Halo.rotation.z <- -w.Time * 0.4
+        vw.Halo.rotation.y <- -w.Time * 0.4
         if vw.Puff + dt > 0.05 then
             let a = rnd.NextDouble() * Math.PI * 2.
             spawnCone vw (h.Pos + ofAngle a * (holeCore * 8.)) holeHex 3 260. (a + Math.PI + 0.5) 0.25 14.
