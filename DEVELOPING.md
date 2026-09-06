@@ -54,7 +54,7 @@ LAN mirror clients (`nda:state`, host-authoritative) ride the Vite dev socket on
 
 ## Tuning
 
-Every tunable in `Cfg` is a row in SETTINGS > TUNING, adjusted with left/right in steps of a twentieth of the code default and clamped to three times it. Changes save to `localStorage` (`nda-tweaks`) immediately; RESET clears it and reloads with the code defaults. Reverse thrust is `reverseFactor` × thrust.
+SETTINGS > TUNING is a developer tool and only appears with `?dev=1` in the URL, mirroring `?desktop=1`; without it players see CONTROLLERS, ARENA and AUDIO only. Behind the flag every tunable in `Cfg` is a row, adjusted with left/right in steps of a twentieth of the code default and clamped to three times it. Changes save to `localStorage` (`nda-tweaks`) immediately; RESET clears it and reloads with the code defaults. Reverse thrust is `reverseFactor` × thrust.
 
 ## Layout
 

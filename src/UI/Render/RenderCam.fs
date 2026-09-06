@@ -42,8 +42,18 @@ let frameCamera (vw: View) (w: World) dt =
     let t = tan (20. * Math.PI / 180.)
     let hY = ((hi.Y - lo.Y) / 2. + pad) / t
     let hX = ((hi.X - lo.X) / 2. + pad) / (t * vw.Camera.aspect)
-    let h = max hX hY |> max (minCamH ()) |> min (maxCamH ())
-    let zoomed = (maxCamH () - h) / (maxCamH () - minCamH ())
+    // Ships still in the match. Stocks only drop in STOCK BATTLE, so this stays
+    // steady across a respawn there and counts the unfinished racers in RACE;
+    // in PRACTICE nothing is ever spent, so it is simply the joined slots.
+    let remaining =
+        w.Ships
+        |> Array.filter (fun s -> s.Active && s.Stocks > 0 && s.Finish = 0.)
+        |> Array.length
+    let floorH = if remaining <= duelShips then minCamH () * duelCamFactor else minCamH ()
+    // floorH is only a floor: hX/hY still hold every alive ship in frame.
+    let h = max hX hY |> max floorH |> min (maxCamH ())
+    // Below minCamH the recentre ramp is done, so sit on the ships, never past them.
+    let zoomed = min 1. ((maxCamH () - h) / (maxCamH () - minCamH ()))
     let ease r = 1. - exp (-r * dt)
     let center, h, kc, kh =
         match w.Phase with

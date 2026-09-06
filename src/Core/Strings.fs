@@ -7,7 +7,10 @@ type Locale =
       Rematch: string
       TitleMain: string
       TitleSub: string
-      Mode: string list
+      ModeFfa: string list
+      ModeTeams: string list
+      ModeRace: int -> string list
+      ModePractice: string list
       KbLegend: (string list * string) list
       PadLegend: (string list * string) list
       Gamepad: string
@@ -130,6 +133,7 @@ type Locale =
       Sounds: string
       On: string
       Off: string
+      MoreUp: string
       More: string
       OptHint: string
       TutTitle: string
@@ -148,7 +152,10 @@ let en =
       Rematch = "REMATCH"
       TitleMain = "NEON DRIFT"
       TitleSub = "ARENA"
-      Mode = [ "STOCK BATTLE"; "3 LIVES"; "LAST SHIP FLYING WINS" ]
+      ModeFfa = [ "STOCK BATTLE"; "3 LIVES"; "LAST SHIP FLYING WINS" ]
+      ModeTeams = [ "TEAM BATTLE"; "3 LIVES"; "LAST TEAM FLYING WINS" ]
+      ModeRace = fun laps -> [ "CIRCUIT RACE"; sprintf "%d LAPS" laps; "FIRST ACROSS THE LINE WINS" ]
+      ModePractice = [ "TARGET RANGE"; "NO STOCKS"; "EVERY WEAPON IN ORDER" ]
       KbLegend =
         [ [ "W"; "S" ], "THRUST / REVERSE"
           [ "A"; "D" ], "TURN"
@@ -292,6 +299,7 @@ let en =
       Sounds = "SOUNDS"
       On = "ON"
       Off = "OFF"
+      MoreUp = "▲ MORE ABOVE"
       More = "▼ MORE BELOW"
       OptHint = "W S / STICK  ·  MOVE        A D / STICK  ·  ADJUST        SPACE / A  ·  TOGGLE        ESC / B  ·  BACK"
       TutTitle = "HOW TO PLAY"

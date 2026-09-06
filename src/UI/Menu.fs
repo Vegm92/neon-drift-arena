@@ -257,6 +257,12 @@ let private modeName () =
     elif teamMode then Strings.t.Teams
     else Strings.t.Ffa
 
+let private modeTagline () =
+    if practiceMode then Strings.t.ModePractice
+    elif raceMode then Strings.t.ModeRace(int Cfg.laps)
+    elif teamMode then Strings.t.ModeTeams
+    else Strings.t.ModeFfa
+
 let private pickName i =
     if teamMode then Strings.t.Team(teamName teams.[i]) else Strings.t.Colors.[playerColor.[i]]
 
@@ -331,7 +337,7 @@ let private renderLobby (devices: Input.Device[]) =
                   "<div class=\"slot%s\" data-slot=\"%d\" style=\"color:%s\">%s<div class=\"art\">%s</div><div class=\"dev\">%s</div>%s</div>"
                   cls i color nameHtml (if inGame then ship i else plus) name foot ]
         |> String.concat ""
-    let mode = Strings.t.Mode |> List.map (sprintf "<span>%s</span>") |> String.concat ""
+    let mode = modeTagline () |> List.map (sprintf "<span>%s</span>") |> String.concat ""
     let go = canStart ()
     let who =
         joined
@@ -433,8 +439,10 @@ let private renderOptions () =
             sprintf "<div class=\"%s\" data-i=\"%d\"><span>%s</span><b data-dir=\"1\">%s</b></div>" cls i (Settings.label r) (Settings.value r))
         |> String.concat ""
     el.innerHTML <-
-        sprintf "<h1>%s</h1><div class=\"rows\">%s</div><div class=\"hint\">%s%s</div>"
-            Strings.t.Settings rows
+        sprintf "<h1>%s</h1><div class=\"cue\">%s</div><div class=\"rows\">%s</div><div class=\"hint\">%s%s</div>"
+            Strings.t.Settings
+            (if top > 0 then Strings.t.MoreUp else "")
+            rows
             (if top + window' < n then Strings.t.More + "\n" else "")
             (Strings.optHint ())
 
