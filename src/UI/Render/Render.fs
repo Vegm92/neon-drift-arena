@@ -73,6 +73,7 @@ let create () =
           Jolt = 0.
           Tint = 0.
           TintHex = "#ffffff"
+          KillCd = 0.
           Cam = zero
           CamH = maxCamH () }
     syncArena vw
@@ -146,9 +147,13 @@ let draw (vw: View) (w: World) (events: Event list) dt =
             spawnSmoke vw p 12 60. 42.
             spawnRing vw p 0xff8a2b 44. 2.6 0.34
             spawnRing vw p hex 34. 2.4 0.46
-            vw.Spike <- max vw.Spike 0.85
+            // A takedown inside `killGap` of the last one flashes at a fraction of the
+            // strength, so a double kill never lands two full flashes in a second.
+            let damp = if vw.KillCd > 0. then killRepeat else 1.
+            vw.KillCd <- killGap
+            vw.Spike <- max vw.Spike (killSpike * damp)
             vw.Jolt <- 1.
-            vw.Tint <- killTint
+            vw.Tint <- max vw.Tint (killTint * damp)
             vw.TintHex <- sprintf "#%06x" (if ring then 0x3d5cff else hex)
         | Downed(victim, by, wpn, ring) -> feedLine vw w victim by wpn ring
         | Finished(i, _) -> spawnBurst vw w.Ships.[i].Pos (shipColor w.Ships.[i]) 40 260.

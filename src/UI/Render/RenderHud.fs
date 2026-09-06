@@ -94,10 +94,11 @@ let drawHud (vw: View) (w: World) dt =
             wep.innerHTML <- html)
 
 let drawTint (vw: View) dt =
+    vw.KillCd <- max 0. (vw.KillCd - dt)
     vw.Tint <- if screenFx then max 0. (vw.Tint - dt * tintFade) else 0.
     vw.Vignette?style?opacity <- string vw.Tint
     if vw.Tint > 0. then
-        vw.Vignette?style?boxShadow <- sprintf "inset 0 0 %dpx 0 %s" tintEdgePx vw.TintHex
+        vw.Vignette?style?boxShadow <- sprintf "inset 0 0 %.1fvmin 0 %s" tintEdgeVmin vw.TintHex
 
 let drawPost (vw: View) dt =
     vw.Spike <- if screenFx then max 0. (vw.Spike - dt * 2.6) else 0.
