@@ -181,6 +181,9 @@ let main _ =
     check "overheat locks the blaster" (cook.Ships.[0].Locked > 0.)
     check "overheat emits a cue" (cook.Events |> List.exists (function Cooked _ -> true | _ -> false))
     check "locked blaster does not fire" ((run 5 firing cook).Bullets.Length = cook.Bullets.Length)
+    let thawing = run (int (heatMax / heatCool / dt) - 2) firing cook
+    check "the lock outlives the heat bar" (thawing.Ships.[0].Locked > 0. && thawing.Ships.[0].Heat > 0.)
+    check "the blaster returns only once fully cool" ((run 4 firing thawing).Ships.[0].Heat < heatPerShot * 1.01)
 
     check "crate spots are clear" (cratePositions |> Array.forall (fun p -> clear p (crateRadius + shipRadius)))
     check "four crates at all times" (initial.Crates.Length = 4)

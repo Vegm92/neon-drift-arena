@@ -127,8 +127,7 @@ module Cfg =
 
     let heatMax = 100.
     let mutable heatPerShot = 15.
-    let mutable heatCool = 33.
-    let mutable overheatLock = 1.5
+    let mutable heatCool = 50.
 
     let mutable hurtBelow = 25.
     let mutable hurtFactor = 0.75
@@ -234,7 +233,6 @@ module Cfg =
            "asteroidSpin", (fun () -> asteroidSpin), (fun x -> asteroidSpin <- x)
            "heatPerShot", (fun () -> heatPerShot), (fun x -> heatPerShot <- x)
            "heatCool", (fun () -> heatCool), (fun x -> heatCool <- x)
-           "overheatLock", (fun () -> overheatLock), (fun x -> overheatLock <- x)
            "hurtBelow", (fun () -> hurtBelow), (fun x -> hurtBelow <- x)
            "hurtFactor", (fun () -> hurtFactor), (fun x -> hurtFactor <- x)
            "healAmount", (fun () -> healAmount), (fun x -> healAmount <- x)
