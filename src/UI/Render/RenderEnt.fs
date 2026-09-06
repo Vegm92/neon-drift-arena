@@ -63,7 +63,7 @@ let drawShip t (vw: View) (sv: ShipView) (s: Ship) =
         sv.Retro.scale.set (r, 1., r)
         if s.Reversing then
             for c in sv.Retro.children do
-                c?material?color?setHex (shipColor s)
+                c?material?color?setHex (0xffffff - shipColor s)
         let railing = s.Weapon = Rail && s.Charge > 0.
         sv.Coil.visible <- railing
         sv.Laser.visible <- railing
