@@ -10,3 +10,7 @@ PRD.md
 .claude/
 .playwright-mcp/
 .config/
+
+qa/screenshots/
+qa/sweep.json
+

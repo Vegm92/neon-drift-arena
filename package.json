@@ -7,13 +7,15 @@
     "build": "dotnet fable src -o build && vite build",
     "check": "dotnet run --project test",
     "check:relay": "node test/relay-check.mjs",
-    "deploy": "railway up --ci --service site"
+    "deploy": "railway up --ci --service site",
+    "qa:sweep": "node scripts/qa-playwright-sweep.mjs"
   },
   "dependencies": {
     "qrcode": "^1.5.4",
     "three": "^0.170.0"
   },
   "devDependencies": {
+    "playwright-core": "^1.63.0",
     "vite": "^6.0.0",
     "ws": "^8.21.3"
   }
