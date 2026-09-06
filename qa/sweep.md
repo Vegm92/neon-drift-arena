@@ -1,0 +1,171 @@
+# QA sweep raw notes (2026-09-06T01:12:27.012Z)
+
+Base: http://localhost:4173
+
+## Notes
+- **landing**: {"video":{"paused":false,"muted":true,"readyState":4,"currentTime":13.9},"cta":"PLAY FREE NO DOWNLOAD REQUIRED","nodesktop":false,"stores":["store soon:STEAM SOON","store soon:CRAZYGAMES SOON","store soon:ITCH.IO SOON"],"og":{"image":"/og.jpg","title":"Neon Drift Arena · Free 4-player couch brawler in your browser","desc":"Four ships, one couch. Asteroids drift, a blaster that kicks back, phones as controllers. Free, no install, last ship flying wins.","twitter":"summary_large_image"},"placeholders":[],"h1":"\"Bebas Neue\", \"Arial Narrow\", Impact, sans-serif"}
+- **landing**: body exceeds viewport 1920x3220 vs 1920x1080
+- **landing**: smallest text 8.0px at 1920x1080
+- **tutorial**: smallest text 13.0px at 1920x1080
+- **lobby-initial**: {"slots":["slot in | User1 KEYBOARD ◀ CYAN ▶","slot in | BOT BOT READY","slot | P3 PRESS FIRE TO JOIN","slot | P4 PRESS FIRE TO JOIN"],"row":[":FREE FOR ALL",":CORE RING",":NONE",":ADD BOT",":SETTINGS","dim:START"],"sel":null,"go":false,"away":false,"note":"ALL PLAYERS MUST READY UP"}
+- **lobby**: smallest text 10.0px at 1920x1080
+- **lobby**: ◀▶ while READY: "slot in | User1 KEYBOARD READY"
+- **lobby-full**: {"slots":["slot in away | User1 KEYBOARD READY","slot in | BOT BOT READY","slot in | BOT BOT READY","slot in | BOT BOT READY"],"row":[":FREE FOR ALL",":CORE RING",":NONE","sel:CLEAR BOTS",":SETTINGS","go:START"],"sel":"3","go":true,"away":true,"note":""}
+- **lobby-full**: smallest text 10.0px at 1920x1080
+- **lobby-full-1366**: smallest text 10.0px at 1366x768
+- **mode-TEAMS**: {"slots":["slot in away | User1 KEYBOARD ◀ BLUE TEAM ▶","slot in | BOT BOT ◀ RED TEAM ▶","slot in | BOT BOT ◀ BLUE TEAM ▶","slot in | BOT BOT ◀ RED TEAM ▶"],"row":["sel:TEAMS",":CORE RING",":NONE",":CLEAR BOTS",":SETTINGS","dim:START"],"sel":"0","go":false,"away":true,"note":"ALL PLAYERS MUST READY UP"}
+- **mode-PRACTICE**: {"slots":["slot in away | User1 KEYBOARD ◀ CYAN ▶","slot in | BOT BOT ◀ MAGENTA ▶","slot in | BOT BOT ◀ LIME ▶","slot in | BOT BOT ◀ AMBER ▶"],"row":["sel:PRACTICE",":CORE RING",":NONE",":CLEAR BOTS",":SETTINGS","go:START"],"sel":"0","go":true,"away":true,"note":""}
+- **mode-RACE**: {"slots":["slot in away | User1 KEYBOARD ◀ CYAN ▶","slot in | BOT BOT ◀ MAGENTA ▶","slot in | BOT BOT ◀ LIME ▶","slot in | BOT BOT ◀ AMBER ▶"],"row":["sel:RACE",":GRAND PRIX",":NONE",":CLEAR BOTS",":SETTINGS","dim:START"],"sel":"0","go":false,"away":true,"note":"ALL PLAYERS MUST READY UP"}
+- **mode-FREE FOR ALL**: {"slots":["slot in away | User1 KEYBOARD ◀ CYAN ▶","slot in | BOT BOT ◀ MAGENTA ▶","slot in | BOT BOT ◀ LIME ▶","slot in | BOT BOT ◀ AMBER ▶"],"row":["sel:FREE FOR ALL",":CORE RING",":NONE",":CLEAR BOTS",":SETTINGS","dim:START"],"sel":"0","go":false,"away":true,"note":"ALL PLAYERS MUST READY UP"}
+- **arena-row**: ARENA cycle (FFA): CORE RING → CROSS BASTIONS → PINWHEEL → TWIN GAUNTLET → OPEN BELT → RANDOM → CORE RING
+- **mutator-row**: MUTATOR cycle: NONE → RAILS ONLY → TURBO → ICE
+- **qr**: {"url":"http://192.168.1.128:4173/pad.html","svgPx":0,"open":false}
+- **settings**: smallest text 11.0px at 1920x1080
+- **settings**: {"rows":11,"hint":"▼ MORE BELOW\nW S / STICK · MOVE A D / STICK · ADJUST SPACE / A · TOGGLE ESC / B · BACK","sel":"KEYBOARD\nP1"}
+- **settings-bottom**: ["holeLife 15.0","holeG 9.00e+6","holeCore 30.0","shrinkTime 40.0"]
+- **settings-adjust**: after ▶▶ on last selected row: shrinkTime 44.0
+- **settings-1366**: smallest text 11.0px at 1366x768
+- **settings-back**: after ESC: {"slots":["slot in away | User1 KEYBOARD ◀ CYAN ▶","slot in | BOT BOT ◀ MAGENTA ▶","slot in | BOT BOT ◀ LIME ▶","slot in | BOT BOT ◀ AMBER ▶"],"row":[":FREE FOR ALL",":CROSS BASTIONS",":NONE",":CLEAR BOTS","sel:SETTINGS","dim:START"],"sel":"4","go":false,"away":true,"note":"ALL PLAYERS MUST READY UP"}
+- **ffa-launch**: START not lit after MODE change with bots in the lobby (note reads "ALL PLAYERS MUST READY UP"); cards: slot in | BOT BOT ◀ MAGENTA ▶ / slot in | BOT BOT ◀ LIME ▶ / slot in | BOT BOT ◀ AMBER ▶
+- **ffa-launch**: after re-adding bots START lit = true
+- **hud**: smallest text 11.0px at 1920x1080
+- **hud**: {"clock":"2:28","panels":["panel p0 | User1 ◆◆◆","panel p1 r | BOT ◆◆◆","panel p2 | BOT ◆◆◆","panel p3 r | BOT ◆◆◆"]}
+- **flash**: kill-fx: mean luma 14.9 → 35.2 → 35.1 → 33.8 → 32.8 → 31.4 · bright(>180) 0.004 → 0.005 → 0.005 → 0.005 → 0.004 → 0.005 · changed-area per 16ms step 0.378, 0.034, 0.03, 0.032, 0.021
+- **kill-feed**: {"feed":"BOT User1","banner":"hidden FIRST BLOOD"}
+- **low-hp**: {"panel0":"panel p0 hurt","hp":18}
+- **wormhole**: {"ax":160.5078253113096,"ay":-755.129947766498,"bx":-192.95422885804206,"by":-348.09864344147957,"life":11.433333333333366}
+- **wormhole**: ship warped A→B: true
+- **black-hole**: {"x":115.53213754807982,"y":940.9337517559733}
+- **flash**: black-hole horizon (close-up, 16ms steps): mean 3.4 → 3 → 2.8 → 2.5 → 2.4 → 2.2 · bright 0 → 0 → 0 → 0 → 0 → 0 · changed-area 0.018, 0.017, 0.016, 0.016, 0.015
+- **pause**: smallest text 10.0px at 1920x1080
+- **pause**: {"items":["item sel:RESUME","item:SETTINGS","item:RESTART MATCH","item:QUIT TO LOBBY"],"qr":true,"hints":"W S STICK MOVE SPACE A SELECT ESC B BACK"}
+- **sudden-death**: {"clock":"sudden SUDDEN DEATH","banner":"DOUBLE KILL","bounds":0.4971590909090935}
+- **launcher**: {"rocks":2,"wep":"<span class=\"wait\"><svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" st","launchCd":5.8499999999999925}
+- **result**: smallest text 9.0px at 1920x1080
+- **result**: {"title":"BOT WINS","tally":"User1 ★ BOT ★ BOT BOT ★★","hints":"W S STICK MOVE SPACE A SELECT ESC B BACK SPACE A JOIN ESC B LEAVE","awards":["MOST KILLS BOT TOOK DOWN 3 SHIPS","BEST AIM BOT LANDED 73% OF SHOTS","RING-OUTS User1 FLEW OUT 1 TIMES","EMPTY HANDED User1 NEVER OPENED A CRATE"]}
+- **result-1366**: smallest text 9.0px at 1366x768
+- **race-lobby**: ARENA cycle (RACE): GRAND PRIX → HAIRPIN → INFINITY → RANDOM → GRAND PRIX
+- **race-launch**: START not lit after MODE change with bots in the lobby (note reads "ALL PLAYERS MUST READY UP"); cards: slot in | BOT BOT ◀ MAGENTA ▶ / slot in | BOT BOT ◀ LIME ▶ / slot in | BOT BOT ◀ AMBER ▶
+- **race-launch**: after re-adding bots START lit = true
+- **race-hud**: {"clock":"0:02","panels":["4TH · LAP 1/3","3RD · LAP 1/3","2ND · LAP 1/3","1ST · LAP 1/3"]}
+- **race**: gates: 10
+- **practice-lobby**: {"slots":["slot in | User1 KEYBOARD ◀ CYAN ▶","slot | P2 PRESS FIRE TO JOIN","slot | P3 PRESS FIRE TO JOIN","slot | P4 PRESS FIRE TO JOIN"],"row":[":PRACTICE",":CORE RING",":NONE",":ADD BOT",":SETTINGS","go:START"],"sel":null,"go":true,"away":false,"note":""}
+- **flash**: weapon-1-release: mean luma 11.4 → 40.5 → 48.6 → 47.7 → 47 → 45.9 · bright(>180) 0.011 → 0.063 → 0.061 → 0.061 → 0.061 → 0.061 · changed-area per 16ms step 0.267, 0.207, 0.016, 0.016, 0.015
+- **weapon-1**: RAILGUN · {"wep":"●","ammo":1,"bullets":0,"mines":1}
+- **weapon-2**: MAG MINES · {"wep":"●●●","ammo":3,"bullets":0,"mines":2}
+- **weapon-3**: SEEKERS · {"wep":"●●","ammo":2,"bullets":1,"mines":1}
+- **weapon-4**: REPULSOR · {"wep":"●●","ammo":2,"bullets":0,"mines":1}
+- **weapon-5**: SCATTER GUN · {"wep":"●","ammo":1,"bullets":0,"mines":1}
+- **flash**: weapon-6-release: mean luma 11.6 → 11.6 → 11.6 → 11.6 → 11.5 → 11.5 · bright(>180) 0.013 → 0.013 → 0.013 → 0.014 → 0.013 → 0.014 · changed-area per 16ms step 0, 0.001, 0, 0.001, 0.001
+- **weapon-6**: TRACTOR · {"wep":"●●","ammo":2,"bullets":0,"mines":1}
+- **flash**: target-kill-fx: mean luma 5.7 → 37.9 → 38.2 → 38.2 → 38 → 37.5 · bright(>180) 0.003 → 0.036 → 0.04 → 0.043 → 0.041 → 0.04 · changed-area per 16ms step 0.459, 0.026, 0.03, 0.038, 0.042
+- **pad**: phase text: NEON DRIFT ARENA JOIN
+- **pad-card**: PHONE ◀ MAGENTA ▶ BACK START
+- **pad-lobby-host**: {"slots":["slot in | User1 KEYBOARD ◀ CYAN ▶","slot in | PHONE PHONE READY","slot | P3 PRESS FIRE TO JOIN","slot | P4 PRESS FIRE TO JOIN"],"row":[":FREE FOR ALL",":CORE RING",":NONE",":ADD BOT",":SETTINGS","dim:START"],"sel":null,"go":false,"away":false,"note":"ALL PLAYERS MUST READY UP"}
+- **pad-landscape**: {"text":"NEON DRIFT ARENA MOBILE ☰ MOVE TURN • PUSH OUT = THRUST SPECIAL BOOST FIRE ◀ STRAFE ▶ LTURN + THRUST RTFIRE BBOOST SPSPECIAL ◀▶STRAFE ☰PAUSE","stick":true,"vw":863,"vh":360}
+- **hud-1366**: smallest text 11.0px at 1366x768
+- **pad-pause**: ◀ ▲ ▼ ▶ OK BACK
+- **landing-mobile**: Pixel 7 emulation → nodesktop=true; any-hover:false any-pointer-fine:false uaData.mobile:true
+- **landing-mobile**: CTA: DESKTOP ONLY OPEN NEONDRIFTARENA.COM ON A COMPUTER · body scrollWidth 412 vs 412
+- **gate**: {"gateShown":true,"text":"DESKTOP ONLY Neon Drift Arena is a four-player couch game: it needs a keyboard or gamepads and a screen everyone can see. Your phone is welcome as a controller — open the game on a computer and scan the QR code in the lobby. BACK TO THE SITE LET ME IN ANYWAY","loader":"done"}
+
+## Console errors / warnings
+- none
+
+## Screenshots
+- 01-landing-hero.jpg
+- 02-landing-full.jpg
+- 03-tutorial-first-run.jpg
+- 04-lobby-initial.jpg
+- 05-lobby-kb-ready.jpg
+- 06-lobby-row-addbot.jpg
+- 07-lobby-full-away.jpg
+- 08-lobby-full-1366.jpg
+- 09-lobby-mode-teams.jpg
+- 10-lobby-mode-practice.jpg
+- 11-lobby-mode-race.jpg
+- 12-lobby-mode-freeforall.jpg
+- 13-lobby-row-arena.jpg
+- 14-lobby-row-mutator.jpg
+- 15-lobby-qr-closed.jpg
+- 16-lobby-qr-open.jpg
+- 17-settings-top.jpg
+- 18-settings-arena-audio.jpg
+- 19-settings-tuning-mid.jpg
+- 20-settings-bottom.jpg
+- 21-settings-1366.jpg
+- 22-intro-flyby-early.jpg
+- 23-intro-flyby-late.jpg
+- 24-go-shout.jpg
+- 25-hud-early.jpg
+- 26-danger-arc-wide.jpg
+- 27-danger-arc-close.jpg
+- 28-kill-fx-f0.jpg
+- 29-kill-fx-f1.jpg
+- 30-kill-fx-f2.jpg
+- 31-kill-feed-banner.jpg
+- 32-low-hp-wide.jpg
+- 33-low-hp-close.jpg
+- 34-wormhole-wide.jpg
+- 35-wormhole-close.jpg
+- 36-wormhole-warp-exit.jpg
+- 37-black-hole-wide.jpg
+- 38-black-hole-close.jpg
+- 39-black-hole-pull-arc.jpg
+- 40-pause-menu.jpg
+- 41-pause-qr-open.jpg
+- 42-resume-countdown.jpg
+- 43-sudden-death-shout.jpg
+- 44-sudden-death-border.jpg
+- 45-launcher-wide.jpg
+- 46-launcher-chevron.jpg
+- 47-launcher-rock.jpg
+- 48-launcher-rock-wide.jpg
+- 49-victory-cam.jpg
+- 50-result-screen.jpg
+- 51-result-screen-1366.jpg
+- 52-race-lobby.jpg
+- 53-race-intro-gates.jpg
+- 54-race-hud.jpg
+- 55-race-finish-line.jpg
+- 56-race-next-portal.jpg
+- 57-practice-lobby.jpg
+- 58-practice-range.jpg
+- 59-practice-range-close.jpg
+- 60-weapon-1-armed-hud.jpg
+- 61-weapon-1-charging.jpg
+- 62-weapon-1-release-f0.jpg
+- 63-weapon-1-release-f1.jpg
+- 64-weapon-1-release-f2.jpg
+- 65-weapon-2-armed-hud.jpg
+- 66-weapon-2-fired.jpg
+- 67-weapon-3-armed-hud.jpg
+- 68-weapon-3-fired.jpg
+- 69-weapon-4-armed-hud.jpg
+- 70-weapon-4-fired.jpg
+- 71-weapon-5-armed-hud.jpg
+- 72-weapon-5-fired.jpg
+- 73-weapon-6-armed-hud.jpg
+- 74-weapon-6-charging.jpg
+- 75-weapon-6-release-f0.jpg
+- 76-weapon-6-release-f1.jpg
+- 77-weapon-6-release-f2.jpg
+- 78-practice-crate-wide.jpg
+- 79-target-kill-fx-f0.jpg
+- 80-target-kill-fx-f1.jpg
+- 81-target-kill-fx-f2.jpg
+- 82-practice-kill-feed.jpg
+- 83-practice-sudden-death.jpg
+- 84-practice-launcher.jpg
+- 85-pad-portrait-join.jpg
+- 86-pad-card.jpg
+- 87-pad-card-colour.jpg
+- 88-pad-card-ready.jpg
+- 89-lobby-with-phone.jpg
+- 90-pad-play-portrait.jpg
+- 91-pad-play-landscape-fresh.jpg
+- 92-hud-1366.jpg
+- 93-pad-pause-menu.jpg
+- 94-landing-mobile-top.jpg
+- 95-landing-mobile-full.jpg
+- 96-play-gate-mobile.jpg
