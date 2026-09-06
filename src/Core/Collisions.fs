@@ -57,7 +57,7 @@ let resolveBullets (ships: Ship[]) (bullets: Bullet list) =
                 if s.[i].Invuln <= 0. then
                     s.[b.Owner] <- { s.[b.Owner] with Hits = s.[b.Owner].Hits + 1 }
                 s.[i] <- { s.[i] with Vel = s.[i].Vel + norm b.Vel * bulletKnockback } |> tag b.Owner (if b.Kind = 2 then Swarm else Blaster) |> damage b.Damage
-                events.Add(Hit b.Pos)
+                events.Add(Hit(b.Pos, (if b.Kind = 2 then "Swarm" else "Blaster"), b.Damage))
                 false
             | None -> true)
     s, remaining, List.ofSeq events

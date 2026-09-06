@@ -685,26 +685,37 @@
 
         // Capture new events and log them
         const events = toArray(nextState.Events);
+        const hitsGrouped = {};
+        
         events.forEach(evt => {
           // Event mapping tags
-          if (evt.tag === 0) { // Hit V2
-            addLog(`Bullet Hit registered at [${evt.fields[0].X.toFixed(0)}, ${evt.fields[0].Y.toFixed(0)}]`, "hit");
-            damageNumbers.push({ text: `-${Cfg.bulletDamage.toFixed(0)}`, Pos: evt.fields[0], life: 1.0 });
-          } else if (evt.tag === 3) { // Shot nose
-            addLog(`P1 fired Weapon!`, "shoot");
-          } else if (evt.tag === 13) { // Wave(Pos, Angle, Id)
-            addLog(`Pulse shockwave emitted!`, "shoot");
-          } else if (evt.tag === 15) { // Zap(Pos, Angle, Id)
-            addLog(`Scatter Zap shockwave emitted!`, "shoot");
-          } else if (evt.tag === 16) { // Latch(Pos, Id)
-            addLog(`Tractor Latch beam locked!`, "shoot");
-          } else if (evt.tag === 11) { // Beam(nose, far, Id)
-            addLog(`Rail beam fired!`, "shoot");
-          } else if (evt.tag === 12) { // Charging
-            addLog(`Rail/Tractor Charging up...`, "info");
+          if (evt.tag === 0) { // Hit V2 * string * float
+            const pos = evt.fields[0];
+            const name = evt.fields[1];
+            const dmg = evt.fields[2];
+            if (!hitsGrouped[name]) {
+              hitsGrouped[name] = { pos: pos, dmgUnit: dmg, count: 0, dmgTotal: 0 };
+            }
+            hitsGrouped[name].count += 1;
+            hitsGrouped[name].dmgTotal += dmg;
+            hitsGrouped[name].pos = pos;
           } else if (evt.tag === 5) { // Cooked (overheat)
             addLog(`Blaster OVERHEATED! Locked out.`, "hit");
           }
+        });
+
+        // Add log entry and floating damage number for each grouped weapon hit
+        Object.keys(hitsGrouped).forEach(name => {
+          const group = hitsGrouped[name];
+          const label = group.count > 1 
+            ? `${name} Hit: -${group.dmgTotal.toFixed(0)} HP (${group.count}x -${group.dmgUnit.toFixed(0)})`
+            : `${name} Hit: -${group.dmgTotal.toFixed(0)} HP`;
+          addLog(label, "hit");
+
+          const text = group.count > 1
+            ? `-${group.dmgTotal.toFixed(0)} (${group.count}x -${group.dmgUnit.toFixed(0)})`
+            : `-${group.dmgTotal.toFixed(0)}`;
+          damageNumbers.push({ text: text, Pos: group.pos, life: 1.0 });
         });
 
         // Sync customRocks positions back from simulation
