@@ -92,6 +92,12 @@ let private keys = HashSet<string>()
 let mutable private keyboardSeen = false
 let private captured = set [ "Space"; "ArrowUp"; "ArrowDown"; "ArrowLeft"; "ArrowRight"; "Escape"; "Enter"; "Tab" ]
 
+/// Set by the rebinding UI in `Settings.fs`. While `capturing ()` holds, every
+/// keydown is swallowed whole — the code never reaches `keys`, so the key being
+/// bound cannot also fire the action it is bound to.
+let mutable capturing : unit -> bool = fun () -> false
+let mutable capture : string -> unit = fun _ -> ()
+
 let private detectLayout () =
     let kb: obj = window?navigator?keyboard
     if isNullOrUndefined kb then ()
@@ -107,10 +113,21 @@ let init () =
         "keydown",
         fun e ->
             let ke = e :?> KeyboardEvent
-            keys.Add ke.code |> ignore
-            keyboardSeen <- true
-            if captured.Contains ke.code then e.preventDefault ()
-            if ke.ctrlKey && ke.code = "KeyW" then e.preventDefault ()
+            if capturing () then
+                e.preventDefault ()
+                // this listener is registered first, so nothing else on the window
+                // (the M mute toggle, the tutorial dismiss) sees the key either
+                e.stopImmediatePropagation ()
+                // auto-repeat of the key that opened the capture must not bind it
+                if ((box ke)?repeat: bool) <> true then capture ke.code
+            else
+                keys.Add ke.code |> ignore
+                keyboardSeen <- true
+                // a rebound key scrolls the page unless it is swallowed too, but
+                // leave browser shortcuts (Ctrl/Alt/Cmd + key) alone
+                let plain = not ke.ctrlKey && not ke.altKey && not ke.metaKey
+                if captured.Contains ke.code || (plain && Binds.isBound ke.code) then e.preventDefault ()
+                if ke.ctrlKey && ke.code = "KeyW" then e.preventDefault ()
     )
     window.addEventListener ("keyup", fun e -> keys.Remove (e :?> KeyboardEvent).code |> ignore)
     window.addEventListener ("blur", fun _ -> keys.Clear())
@@ -139,21 +156,24 @@ let release () =
         taps.Clear ())
     |> ignore
 
+/// True while any code bound to `a` is held.
+let private on (a: Binds.Act) = Binds.get a |> Array.exists key
+
 let private keyboard () =
     { Aim = None
       Absolute = false
       Steer = false
-      Turn =
-        (if key "ArrowRight" || key "KeyD" then 1. else 0.)
-        - (if key "ArrowLeft" || key "KeyA" then 1. else 0.)
-      Strafe = (if key "KeyE" then 1. else 0.) - (if key "KeyQ" then 1. else 0.)
-      Thrust = key "ArrowUp" || key "KeyW"
-      Reverse = key "ArrowDown" || key "KeyS"
-      Boost = key "ShiftLeft" || key "ShiftRight"
-      Fire = key "Space"
-      Special = key "KeyF"
-      Start = key "Enter"
-      Back = key "Escape"
+      Turn = (if on Binds.TurnRight then 1. else 0.) - (if on Binds.TurnLeft then 1. else 0.)
+      Strafe = (if on Binds.StrafeRight then 1. else 0.) - (if on Binds.StrafeLeft then 1. else 0.)
+      Thrust = on Binds.Thrust
+      Reverse = on Binds.Reverse
+      Boost = on Binds.Boost
+      Fire = on Binds.Fire
+      Special = on Binds.Special
+      // Enter and Escape always reach the menus whatever the map says, so a
+      // rebind can never leave the player without a way back.
+      Start = on Binds.Start || key "Enter"
+      Back = on Binds.Back || key "Escape"
       Present = keyboardSeen }
 
 let private deadzone x = if abs x < 0.18 then 0. else x

@@ -41,18 +41,12 @@ let mutable tutShown = false
 
 let showTutorial () =
     if window.localStorage.getItem tutKey = null then
-        let keys move turn fire boost spec pause =
-            sprintf "<div class=\"row\"><div class=\"keys\"><i>%s</i><i>%s</i></div><div class=\"lbl\">%s</div></div>" move turn Strings.t.TutTurn
-            + sprintf "<div class=\"row\"><div class=\"keys\"><i>%s</i></div><div class=\"lbl\">%s</div></div>" fire Strings.t.TutFire
-            + sprintf "<div class=\"row\"><div class=\"keys\"><i>%s</i></div><div class=\"lbl\">%s</div></div>" boost Strings.t.TutBoost
-            + sprintf "<div class=\"row\"><div class=\"keys\"><i>%s</i></div><div class=\"lbl\">%s</div></div>" spec Strings.t.TutSpecial
-            + sprintf "<div class=\"row\"><div class=\"keys\"><i>%s</i></div><div class=\"lbl\">%s</div></div>" pause Strings.t.TutPause
-        let movement =
-            if Domain.layout = Azerty then "Z", "S"
-            else "W", "S"
         let rows =
-            sprintf "<div class=\"row\"><div class=\"keys\"><i>%s</i><i>%s</i></div><div class=\"lbl\">%s</div></div>" (fst movement) (snd movement) Strings.t.TutThrust
-            + keys (if Domain.layout = Azerty then "Q" else "A") "D" "SPACE" "SHIFT" "F" "ENTER"
+            Strings.tutRows ()
+            |> List.map (fun (caps, label) ->
+                let keys = caps |> List.map (sprintf "<i>%s</i>") |> String.concat ""
+                sprintf "<div class=\"row\"><div class=\"keys\">%s</div><div class=\"lbl\">%s</div></div>" keys label)
+            |> String.concat ""
         tutEl.innerHTML <- sprintf "<h2>%s</h2><div class=\"rows\">%s</div><div class=\"skip\">%s</div>" Strings.t.TutTitle rows Strings.t.TutSkip
         tutEl.className <- ""
         tutShown <- true

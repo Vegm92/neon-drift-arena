@@ -11,7 +11,6 @@ type Locale =
       ModeTeams: string list
       ModeRace: int -> string list
       ModePractice: string list
-      KbLegend: (string list * string) list
       PadLegend: (string list * string) list
       Gamepad: string
       Phone: string
@@ -33,9 +32,6 @@ type Locale =
       PhoneLegend: (string list * string) list
       Join: string
       Leave: string
-      KeysJoin: string
-      KeysLeave: string
-      KeysLaunch: string
       RowLabel: string
       RenameLabel: string
       RenamePrompt: string
@@ -62,7 +58,6 @@ type Locale =
       Paused: string
       Resume: string
       Quit: string
-      NavKeys: (string * string) list
       Restart: string
       Blue: string
       Red: string
@@ -135,7 +130,33 @@ type Locale =
       Off: string
       MoreUp: string
       More: string
-      OptHint: string
+      Stick: string
+      HintMove: string
+      HintAdjust: string
+      HintToggle: string
+      HintSelect: string
+      HintBack: string
+      Mute: string
+      MuteKey: string
+      Bindings: string
+      BindPress: string
+      ResetKeys: string
+      BindSet: string
+      BindAdd: string
+      BindDrop: string
+      BindCancel: string
+      BindTaken: string
+      BindTurnL: string
+      BindTurnR: string
+      BindStrafeL: string
+      BindStrafeR: string
+      BindThrust: string
+      BindReverse: string
+      BindBoost: string
+      BindFire: string
+      BindSpecial: string
+      BindStart: string
+      BindBack: string
       TutTitle: string
       TutThrust: string
       TutTurn: string
@@ -156,15 +177,6 @@ let en =
       ModeTeams = [ "TEAM BATTLE"; "3 LIVES"; "LAST TEAM FLYING WINS" ]
       ModeRace = fun laps -> [ "CIRCUIT RACE"; sprintf "%d LAPS" laps; "FIRST ACROSS THE LINE WINS" ]
       ModePractice = [ "TARGET RANGE"; "NO STOCKS"; "EVERY WEAPON IN ORDER" ]
-      KbLegend =
-        [ [ "W"; "S" ], "THRUST / REVERSE"
-          [ "A"; "D" ], "TURN"
-          [ "Q"; "E" ], "STRAFE"
-          [ "SHIFT" ], "BOOST"
-          [ "SPACE" ], "FIRE"
-          [ "F" ], "SPECIAL"
-          [ "ENTER" ], "PAUSE"
-          [ "M" ], "MUTE" ]
       PadLegend =
         [ [ "L" ], "THRUST / STRAFE"
           [ "R" ], "TURN"
@@ -199,9 +211,6 @@ let en =
           [ "☰" ], "PAUSE" ]
       Join = "JOIN"
       Leave = "LEAVE"
-      KeysJoin = "SPACE / A"
-      KeysLeave = "ESC / B"
-      KeysLaunch = "ENTER / START"
       RowLabel = "MENU"
       RenameLabel = "RENAME"
       RenamePrompt = "ENTER NAME"
@@ -232,7 +241,6 @@ let en =
       Blue = "BLUE"
       Red = "RED"
       Team = sprintf "%s TEAM"
-      NavKeys = [ "W / S / STICK", "MOVE"; "SPACE / A", "SELECT"; "ESC / B", "BACK" ]
       Tweaks = "TWEAKS"
       Reset = "RESET"
       Save = "SAVE TO CODE"
@@ -301,7 +309,33 @@ let en =
       Off = "OFF"
       MoreUp = "▲ MORE ABOVE"
       More = "▼ MORE BELOW"
-      OptHint = "W S / STICK  ·  MOVE        A D / STICK  ·  ADJUST        SPACE / A  ·  TOGGLE        ESC / B  ·  BACK"
+      Stick = "STICK"
+      HintMove = "MOVE"
+      HintAdjust = "ADJUST"
+      HintToggle = "TOGGLE"
+      HintSelect = "SELECT"
+      HintBack = "BACK"
+      Mute = "MUTE"
+      MuteKey = "M"
+      Bindings = "KEY BINDINGS"
+      BindPress = "PRESS A KEY"
+      ResetKeys = "RESET KEYS"
+      BindSet = "FIRE REBINDS"
+      BindAdd = "ADD KEY"
+      BindDrop = "DROP KEY"
+      BindCancel = "CANCELS"
+      BindTaken = "A KEY THAT IS ANOTHER ACTION'S ONLY BINDING IS REFUSED"
+      BindTurnL = "TURN LEFT"
+      BindTurnR = "TURN RIGHT"
+      BindStrafeL = "STRAFE LEFT"
+      BindStrafeR = "STRAFE RIGHT"
+      BindThrust = "THRUST"
+      BindReverse = "REVERSE"
+      BindBoost = "BOOST"
+      BindFire = "FIRE"
+      BindSpecial = "SPECIAL"
+      BindStart = "PAUSE / START"
+      BindBack = "BACK / CANCEL"
       TutTitle = "HOW TO PLAY"
       TutThrust = "THRUST / REVERSE"
       TutTurn = "TURN"
@@ -311,36 +345,123 @@ let en =
       TutPause = "PAUSE"
       TutSkip = "PRESS ANY KEY OR CLICK TO START" }
 
+let t = en
+
+module Bind = Domain.Binds
+
+/// Physical `KeyboardEvent.code` -> the cap printed on the player's keyboard.
+/// The AZERTY branch lives here and nowhere else, so no legend needs a second
+/// hand-written variant.
+let keyName (code: string) =
+    let letter (c: string) =
+        if Domain.layout = Domain.Azerty then
+            match c with
+            | "A" -> "Q"
+            | "Q" -> "A"
+            | "W" -> "Z"
+            | "Z" -> "W"
+            | x -> x
+        else c
+    match code with
+    | "" -> "-"
+    | "Space" -> "SPACE"
+    | "Enter"
+    | "NumpadEnter" -> "ENTER"
+    | "Escape" -> "ESC"
+    | "Tab" -> "TAB"
+    | "Backspace" -> "BKSP"
+    | "CapsLock" -> "CAPS"
+    | "ShiftLeft"
+    | "ShiftRight" -> "SHIFT"
+    | "ControlLeft"
+    | "ControlRight" -> "CTRL"
+    | "AltLeft"
+    | "AltRight" -> "ALT"
+    | "ArrowUp" -> "\u2191"
+    | "ArrowDown" -> "\u2193"
+    | "ArrowLeft" -> "\u2190"
+    | "ArrowRight" -> "\u2192"
+    | "Minus" -> "-"
+    | "Equal" -> "="
+    | "Comma" -> ","
+    | "Period" -> "."
+    | "Slash" -> "/"
+    | "Backslash" -> "\\"
+    | "Semicolon" -> ";"
+    | "Quote" -> "'"
+    | "BracketLeft" -> "["
+    | "BracketRight" -> "]"
+    | "Backquote" -> "`"
+    | c when c.StartsWith "Key" -> letter (c.Substring 3)
+    | c when c.StartsWith "Digit" -> c.Substring 5
+    | c when c.StartsWith "Numpad" -> "NUM " + c.Substring 6
+    | c -> c.ToUpper()
+
+/// Every cap currently bound to an action, deduped (LSHIFT and RSHIFT both read SHIFT).
+let bindCaps (a: Bind.Act) =
+    Bind.get a |> Array.map keyName |> Array.distinct |> List.ofArray
+
+/// The same caps as one " / " separated string.
+let bindKeys (a: Bind.Act) = bindCaps a |> String.concat " / "
+
+/// The primary cap only — what the compact legends and hints show.
+let private first (a: Bind.Act) =
+    let cs = Bind.get a
+    if cs.Length = 0 then "" else keyName cs.[0]
+
+let private pair a b = sprintf "%s %s" (first a) (first b)
+
+let actionName (a: Bind.Act) =
+    match a with
+    | Bind.TurnLeft -> t.BindTurnL
+    | Bind.TurnRight -> t.BindTurnR
+    | Bind.StrafeLeft -> t.BindStrafeL
+    | Bind.StrafeRight -> t.BindStrafeR
+    | Bind.Thrust -> t.BindThrust
+    | Bind.Reverse -> t.BindReverse
+    | Bind.Boost -> t.BindBoost
+    | Bind.Fire -> t.BindFire
+    | Bind.Special -> t.BindSpecial
+    | Bind.Start -> t.BindStart
+    | Bind.Back -> t.BindBack
+
+let bindHint () =
+    sprintf "%s  ·  \u25b6 %s  ·  \u25c0 %s  ·  %s %s"
+        t.BindSet t.BindAdd t.BindDrop (keyName "Escape") t.BindCancel
+
 let optHint () =
-    if Domain.layout = Domain.Azerty then
-        "Z S / STICK  ·  MOVE        Q D / STICK  ·  ADJUST        SPACE / A  ·  TOGGLE        ESC / B  ·  BACK"
-    else
-        "W S / STICK  ·  MOVE        A D / STICK  ·  ADJUST        SPACE / A  ·  TOGGLE        ESC / B  ·  BACK"
+    sprintf "%s / %s  ·  %s        %s / %s  ·  %s        %s / A  ·  %s        %s / B  ·  %s"
+        (pair Bind.Thrust Bind.Reverse) t.Stick t.HintMove
+        (pair Bind.TurnLeft Bind.TurnRight) t.Stick t.HintAdjust
+        (bindKeys Bind.Fire) t.HintToggle
+        (bindKeys Bind.Back) t.HintBack
+
+let navKeys () =
+    [ sprintf "%s / %s / %s" (first Bind.Thrust) (first Bind.Reverse) t.Stick, t.HintMove
+      sprintf "%s / A" (bindKeys Bind.Fire), t.HintSelect
+      sprintf "%s / B" (bindKeys Bind.Back), t.HintBack ]
+
+let keysJoin () = sprintf "%s / A" (bindKeys Bind.Fire)
+let keysLeave () = sprintf "%s / B" (bindKeys Bind.Back)
+let keysLaunch () = sprintf "%s / %s" (bindKeys Bind.Start) t.Start
 
 let kbLegend () =
-    if Domain.layout = Domain.Azerty then
-        [ [ "Z"; "S" ], "THRUST / REVERSE"
-          [ "Q"; "D" ], "TURN"
-          [ "W"; "E" ], "STRAFE"
-          [ "SHIFT" ], "BOOST"
-          [ "SPACE" ], "FIRE"
-          [ "F" ], "SPECIAL"
-          [ "ENTER" ], "PAUSE"
-          [ "M" ], "MUTE" ]
-    else
-        [ [ "W"; "S" ], "THRUST / REVERSE"
-          [ "A"; "D" ], "TURN"
-          [ "Q"; "E" ], "STRAFE"
-          [ "SHIFT" ], "BOOST"
-          [ "SPACE" ], "FIRE"
-          [ "F" ], "SPECIAL"
-          [ "ENTER" ], "PAUSE"
-          [ "M" ], "MUTE" ]
+    [ [ first Bind.Thrust; first Bind.Reverse ], t.TutThrust
+      [ first Bind.TurnLeft; first Bind.TurnRight ], t.TutTurn
+      [ first Bind.StrafeLeft; first Bind.StrafeRight ], t.PadStrafe
+      bindCaps Bind.Boost, t.TutBoost
+      bindCaps Bind.Fire, t.TutFire
+      bindCaps Bind.Special, t.TutSpecial
+      bindCaps Bind.Start, t.TutPause
+      [ t.MuteKey ], t.Mute ]
 
-let kbHint () =
-    if Domain.layout = Domain.Azerty then
-        "Z S / STICK", "MOVE"
-    else
-        "W S / STICK", "MOVE"
+/// The tutorial card: the same rows as the keyboard legend without STRAFE and MUTE.
+let tutRows () =
+    [ [ first Bind.Thrust; first Bind.Reverse ], t.TutThrust
+      [ first Bind.TurnLeft; first Bind.TurnRight ], t.TutTurn
+      bindCaps Bind.Fire, t.TutFire
+      bindCaps Bind.Boost, t.TutBoost
+      bindCaps Bind.Special, t.TutSpecial
+      bindCaps Bind.Start, t.TutPause ]
 
-let t = en
+let kbHint () = sprintf "%s / %s" (pair Bind.Thrust Bind.Reverse) t.Stick, t.HintMove

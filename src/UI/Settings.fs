@@ -7,6 +7,7 @@ open Domain
 
 let private tweaksKey = "nda-tweaks"
 let private padsKey = "nda-pads"
+let private bindsKey = "nda-binds"
 let private arenaKey = "nda-arena"
 let private catchKey = "nda-catchup"
 
@@ -46,6 +47,7 @@ type Row =
     | Action of string * (unit -> unit)
     | Arena
     | Note of string
+    | Bind of Binds.Act
 
 let private saveTweaks () =
     let o = obj ()
@@ -84,6 +86,76 @@ let private padPref i f =
     Input.prefs.[i] <- f (Input.pref i)
     savePads ()
 
+let private saveBinds () =
+    let o = obj ()
+    for a in Binds.all do
+        o?(Binds.name a) <- Binds.get a
+    window.localStorage.setItem (bindsKey, JS.JSON.stringify o)
+
+/// A stored map written by an older build can be missing actions, or carry junk
+/// for one: anything that does not read back as a non-empty array of codes leaves
+/// that action on its default.
+let private loadBinds () =
+    match window.localStorage.getItem bindsKey with
+    | null -> ()
+    | json ->
+        let o = JS.JSON.parse json
+        if not (isNullOrUndefined o) then
+            for a in Binds.all do
+                let v = o?(Binds.name a)
+                if not (isNullOrUndefined v) && JS.Constructors.Array.isArray v then
+                    let codes =
+                        unbox<string[]> v
+                        |> Array.filter (fun c -> not (isNullOrUndefined c) && c <> "")
+                        |> Array.distinct
+                    if codes.Length > 0 then Binds.set a codes
+
+/// The action waiting for a keypress, and whether the captured code is added to
+/// its list (true) or replaces it (false).
+let mutable private grabbing : (Binds.Act * bool) option = None
+
+let capturing () = grabbing.IsSome
+
+let cancelCapture () = grabbing <- None
+
+let bindingOf (a: Binds.Act) =
+    match grabbing with
+    | Some(b, _) when Binds.ord b = Binds.ord a -> Strings.t.BindPress
+    | _ -> Strings.bindKeys a
+
+/// Takes the captured code. Escape always cancels, which is what keeps Escape
+/// itself bindable-proof and the menus reachable. A code that is another action's
+/// last remaining binding is refused outright rather than leaving that action
+/// unusable; anything else is stolen from the actions that also hold it.
+let private takeBind (code: string) =
+    match grabbing with
+    | None -> ()
+    | Some(a, add) ->
+        grabbing <- None
+        if code <> "Escape" && not (Binds.isSoleBindingOf code a) then
+            let cur = Binds.get a
+            let next =
+                if add then (if Array.contains code cur then cur else Array.append cur [| code |])
+                else [| code |]
+            Binds.set a next
+            for b in Binds.all do
+                if Binds.ord b <> Binds.ord a then
+                    let cs = Binds.get b
+                    let kept = cs |> Array.filter (fun c -> c <> code)
+                    if kept.Length > 0 && kept.Length <> cs.Length then Binds.set b kept
+            saveBinds ()
+
+let private dropBind (a: Binds.Act) =
+    let cs = Binds.get a
+    if cs.Length > 1 then
+        Binds.set a (Array.sub cs 0 (cs.Length - 1))
+        saveBinds ()
+
+let private resetBinds () =
+    grabbing <- None
+    Binds.reset ()
+    window.localStorage.removeItem bindsKey
+
 let rows () =
     let pads = Input.connected ()
     [ yield Header Strings.t.Controllers
@@ -95,6 +167,12 @@ let rows () =
           let name = sprintf "%d · %s" i ((p?id: string).Split('(').[0].Trim())
           yield Slot(name, (fun () -> (Input.pref i).Slot), (fun s -> padPref i (fun pr -> { pr with Slot = s })))
           yield Swap(Strings.t.SwapSticks, (fun () -> (Input.pref i).Swap), (fun b -> padPref i (fun pr -> { pr with Swap = b })))
+      yield Header Strings.t.Bindings
+      yield Note (Strings.bindHint ())
+      yield Note Strings.t.BindTaken
+      for a in Binds.all do
+          yield Bind a
+      yield Action(Strings.t.ResetKeys, resetBinds)
       yield Header Strings.t.Arena
       yield Arena
       yield Swap(Strings.t.CatchUp, (fun () -> Sim.catchUp), (fun b -> Sim.catchUp <- b; window.localStorage.setItem (catchKey, string b)))
@@ -146,6 +224,7 @@ let label r =
     | Swap(t, _, _)
     | Level(t, _) -> t
     | Arena -> Strings.t.Arena
+    | Bind a -> Strings.actionName a
     | Tune k ->
         let name, _, _ = Cfg.tunables.[k]
         name
@@ -156,6 +235,7 @@ let value r =
     | Swap(_, get, _) -> if get () then Strings.t.On else Strings.t.Off
     | Level(_, k) -> if Sfx.level k = 0. then Strings.t.Off else sprintf "%.0f%%" (Sfx.level k * 100.)
     | Arena -> arenaName ()
+    | Bind a -> bindingOf a
     | Tune k ->
         let _, get, _ = Cfg.tunables.[k]
         sprintf "%.3g" (get ())
@@ -172,6 +252,7 @@ let adjust r dir =
         arenaPick <- ring.[(i + dir + ring.Length) % ring.Length]
         if arenaPick < Sim.layouts.Length then Sim.setLayout arenaPick
         window.localStorage.setItem (arenaKey, string arenaPick)
+    | Bind a -> if dir > 0 then grabbing <- Some(a, true) else dropBind a
     | Tune k ->
         let _, get, set = Cfg.tunables.[k]
         let step = defaults.[k] / 20.
@@ -182,6 +263,7 @@ let adjust r dir =
 let activate r =
     match r with
     | Action(_, run) -> run ()
+    | Bind a -> grabbing <- Some(a, false)
     | Swap _
     | Arena -> adjust r 1
     | Level(_, k) -> Sfx.setLevel k (if Sfx.level k = 0. then 1. else 0.)
@@ -190,6 +272,9 @@ let activate r =
 let init () =
     loadTweaks ()
     loadPads ()
+    loadBinds ()
+    Input.capturing <- capturing
+    Input.capture <- takeBind
     match window.localStorage.getItem arenaKey with
     | null -> ()
     | v ->
