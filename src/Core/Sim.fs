@@ -1,4 +1,4 @@
-﻿module Sim
+module Sim
 
 open System
 open Vec
@@ -51,6 +51,7 @@ let private build i =
       PortalIn = portalEvery
       Hole = l.Hole |> Option.map (fun (p, _, _) -> { Pos = p; Life = infinity })
       HoleIn = holeEvery
+      Deploys = []
       RaceEnd = 0.
       Pads = l.Pads |> List.map (fun (p, a, k) -> { Pos = p; Amount = a; RespawnIn = 0.; Kind = k }) |> List.toArray
       Crates = [| 0; 2; 4; 6 |] |> Array.map (fun i -> { Pos = cratePositions.[i % cratePositions.Length]; RespawnIn = 0. })
@@ -99,9 +100,12 @@ let step dt (inputs: Input[]) (w: World) =
     | _ ->
         let k = bounds w.Time
         let live = (match w.Phase with Playing -> true | Over _ -> false)
+        let shipDt (s: Ship) = slowAt w.Ships w.Deploys (side s) s.Pos dt
         let fired =
             w.Ships
-            |> Array.map (fun s -> join inputs.[s.Id] s |> stepShip k dt inputs.[s.Id] |> fire live dt inputs.[s.Id])
+            |> Array.map (fun s ->
+                let d = shipDt s
+                join inputs.[s.Id] s |> stepShip k d inputs.[s.Id] |> fire live d inputs.[s.Id])
         let ships = fired |> Array.map (fun (s, _, _, _, _) -> s)
         let newBullets = fired |> Array.toList |> List.collect (fun (_, b, _, _, _) -> b)
         let newMines = fired |> Array.toList |> List.collect (fun (_, _, m, _, _) -> m)
@@ -111,23 +115,27 @@ let step dt (inputs: Input[]) (w: World) =
         let waves = shotEvents |> List.choose (function Wave(p, a, o) -> Some(p, a, o) | _ -> None)
         let zaps = shotEvents |> List.choose (function Zap(p, a, o) -> Some(p, a, o) | _ -> None)
         let latches = shotEvents |> List.choose (function Latch(_, o) -> Some o | _ -> None)
+        let dropped = shotEvents |> List.choose (function Deployed d -> Some d | _ -> None)
         let ships = resolveWaves ships waves
         let ships, zapHits = resolveZaps ships zaps
         let ships = resolveTows dt ships latches
         let ships, beamHits = resolveBeams ships beams
+        let deploys, turretShots, deployEvents = stepDeploys dt ships (dropped @ w.Deploys)
+        let entDt (owner: int) (p: V2) = slowAt ships deploys (sideOf ships owner) p dt
         let bullets =
-            newBullets @ w.Bullets
+            newBullets @ turretShots @ w.Bullets
             |> List.map (steer dt ships)
             |> List.map (fun b -> { b with Vel = pull w.Hole dt b.Pos b.Vel })
-            |> List.choose (stepBullet k w.Rocks dt)
+            |> List.choose (fun b -> stepBullet k w.Rocks (entDt b.Owner b.Pos) b)
             |> List.map (fun b -> match warpAt w.Portals b.Pos b.Vel with Some p -> { b with Pos = p } | None -> b)
+        let ships, deploys, bullets, deployHits = resolveDeploys ships deploys bullets
         let ships, bullets, hits = resolveBullets ships bullets
-        let mines, blasts, mineEvents = stepMines k dt ships (newMines @ w.Mines)
+        let mines, blasts, mineEvents = stepMines k (fun m -> entDt m.Owner m.Pos) ships (newMines @ w.Mines)
         let mines = mines |> List.map (fun m -> match warpAt w.Portals m.Pos m.Vel with Some p -> { m with Pos = p } | None -> { m with Vel = pull w.Hole dt m.Pos m.Vel })
         let ships, mineBlasts = resolveBlasts ships blasts
         let ships, rams = resolveRams ships
         let ships, bumps = resolveAsteroids ships
-        let rocks, rockEvents = stepRocks k dt (newRocks @ w.Rocks)
+        let rocks, rockEvents = stepRocks k (fun r -> entDt r.Owner r.Pos) (newRocks @ w.Rocks)
         let rocks = rocks |> List.map (fun r -> match warpAt w.Portals r.Pos r.Vel with Some p -> { r with Pos = p } | None -> { r with Vel = pull w.Hole dt r.Pos r.Vel })
         let ships, rockHits = resolveRocks ships rocks
         let ships, warps = resolveWarps dt w.Portals ships
@@ -192,6 +200,7 @@ let step dt (inputs: Input[]) (w: World) =
           PortalIn = portalIn
           Hole = hole
           HoleIn = holeIn
+          Deploys = deploys
           RaceEnd = raceEnd
           Pads = pads
           Crates = crates
@@ -213,6 +222,8 @@ let step dt (inputs: Input[]) (w: World) =
             @ warps
             @ portalEvents
             @ holeEvents
+            @ deployEvents
+            @ deployHits
             @ gateEvents
             @ picks
             @ grabs
