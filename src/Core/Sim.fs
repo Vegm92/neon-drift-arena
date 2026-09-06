@@ -124,7 +124,7 @@ let step dt (inputs: Input[]) (w: World) =
         let ships, bullets, hits = resolveBullets ships bullets
         let mines, blasts, mineEvents = stepMines k dt ships (newMines @ w.Mines)
         let mines = mines |> List.map (fun m -> match warpAt w.Portals m.Pos m.Vel with Some p -> { m with Pos = p } | None -> { m with Vel = pull w.Hole dt m.Pos m.Vel })
-        let ships = resolveBlasts ships blasts
+        let ships, mineBlasts = resolveBlasts ships blasts
         let ships, rams = resolveRams ships
         let ships, bumps = resolveAsteroids ships
         let rocks, rockEvents = stepRocks k dt (newRocks @ w.Rocks)
@@ -164,6 +164,7 @@ let step dt (inputs: Input[]) (w: World) =
             @ zapHits
             @ hits
             @ mineEvents
+            @ mineBlasts
             @ rams
             @ bumps
             @ rockEvents
