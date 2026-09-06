@@ -42,13 +42,14 @@ let private build i =
     gateEvery <- l.Track |> Option.map (fun (_, _, k) -> k * 4) |> Option.defaultValue 1
     gates <- [| for i in 0 .. gateEvery .. road.Length - 1 -> road.[i] |]
     trackWidth <- l.Track |> Option.map (fun (_, w, _) -> w) |> Option.defaultValue 0.
+    mapHole <- l.Hole
     { Ships = Array.init 4 (fun i -> { freshShip i with Active = false; Alive = false; Stocks = 0 })
       Bullets = []
       Mines = []
       Rocks = []
       Portals = []
       PortalIn = portalEvery
-      Hole = None
+      Hole = l.Hole |> Option.map (fun (p, _, _) -> { Pos = p; Life = infinity })
       HoleIn = holeEvery
       RaceEnd = 0.
       Pads = l.Pads |> List.map (fun (p, a, k) -> { Pos = p; Amount = a; RespawnIn = 0.; Kind = k }) |> List.toArray

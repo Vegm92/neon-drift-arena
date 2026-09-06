@@ -10,6 +10,7 @@ type Layout =
       Pads: (V2 * float * int) list
       Crates: V2 list
       Track: (V2 list * float * int) option
+      Hole: (V2 * float * float) option
       Size: float }
 
 let private polar r deg =
@@ -70,6 +71,7 @@ let private arenas =
                [ v (sx * arenaHalf * 0.35) (sy * arenaHalf * 0.35)
                  v (sx * arenaHalf * 0.75) (sy * arenaHalf * 0.75) ])
          Track = None
+         Hole = None
          Size = arenaDefault }
 
        { Rocks =
@@ -91,6 +93,7 @@ let private arenas =
            @ heals (arenaHalf * 0.86)
          Crates = spin (fun a -> [ turn (v (arenaHalf * 0.32) 0.) a; turn (v (arenaHalf * 0.85) 0.) a ])
          Track = None
+         Hole = None
          Size = arenaDefault }
 
        { Rocks =
@@ -103,6 +106,7 @@ let private arenas =
            @ spin (fun a -> [ turn (polar (arenaHalf * 0.86) -8.) a, healAmount, 1 ])
          Crates = spin (fun a -> [ turn (polar 700. 68.) a; turn (polar 1080. 50.) a ])
          Track = None
+         Hole = None
          Size = arenaDefault }
 
        { Rocks =
@@ -130,6 +134,7 @@ let private arenas =
              v 0. (-(arenaHalf * 0.88)), healAmount, 1 ]
          Crates = quad (fun sx sy -> [ v (sx * 640.) (sy * 640.); v (sx * 1060.) (sy * 260.) ])
          Track = None
+         Hole = None
          Size = arenaDefault }
 
        { Rocks =
@@ -142,6 +147,7 @@ let private arenas =
            @ heals (arenaHalf * 0.9)
          Crates = spin (fun a -> [ turn (v 1080. 0.) a; turn (v 560. 0.) a ])
          Track = None
+         Hole = None
          Size = arenaDefault } |]
 
 let private grandPrix =
@@ -177,6 +183,7 @@ let tracks =
              v -1150. 550., healAmount, 1 ]
          Crates = [ v 600. -1000.; v 750. 400.; v -550. 650.; v -550. -350. ]
          Track = Some(grandPrix, 280., 3)
+         Hole = None
          Size = arenaDefault }
 
        { Rocks = [ v 400. -50., 50.; v 400. 500., 46.; v -700. -50., 44. ]
@@ -191,6 +198,7 @@ let tracks =
              v 650. -350., healAmount, 1 ]
          Crates = [ v -200. -850.; v 1200. -600.; v -300. 0.; v 1200. 500. ]
          Track = Some(hairpin, 260., 3)
+         Hole = None
          Size = arenaDefault }
 
        { Rocks = [ v 0. 450., 46.; v 0. -450., 46. ]
@@ -205,6 +213,7 @@ let tracks =
              v -750. -480., healAmount, 1 ]
          Crates = [ v 750. -480.; v -750. 480.; v 1050. 300.; v -1050. -300. ]
          Track = Some(figureEight, 300., 2)
+         Hole = None
          Size = arenaDefault } |]
 
 let private grow k (l: Layout) =
@@ -212,6 +221,7 @@ let private grow k (l: Layout) =
       Pads = l.Pads |> List.map (fun (p, a, kind) -> p * k, a, kind)
       Crates = l.Crates |> List.map (fun p -> p * k)
       Track = l.Track |> Option.map (fun (r, w, e) -> List.map (fun (p: V2) -> p * k) r, w * 1.15, e)
+      Hole = l.Hole |> Option.map (fun (p, c, g) -> p * k, c, g)
       Size = raceHalf }
 
 let private custom: Layout array = [||]

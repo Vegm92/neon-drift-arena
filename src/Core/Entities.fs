@@ -54,15 +54,15 @@ let pull (hole: Hole option) dt (p: V2) (vel: V2) =
     match hole with
     | Some h ->
         let d = h.Pos - p
-        let r = max holeCore (len d)
-        vel + norm d * (holeG / (r * r) * dt)
+        let r = max (holeCoreNow ()) (len d)
+        vel + norm d * (holeGNow () / (r * r) * dt)
     | None -> vel
 
 let resolveHole (hole: Hole option) dt (ships: Ship[]) =
     ships
     |> Array.map (fun s ->
         match hole with
-        | Some h when s.Alive && len (h.Pos - s.Pos) < holeCore -> { s with Hp = 0.; LastWeapon = Singularity }
+        | Some h when s.Alive && len (h.Pos - s.Pos) < holeCoreNow () -> { s with Hp = 0.; LastWeapon = Singularity }
         | Some _ when s.Alive -> { s with Vel = pull hole dt s.Pos s.Vel }
         | _ -> s)
 

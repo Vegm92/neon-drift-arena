@@ -52,6 +52,7 @@
       <button data-tool="heal">pad (heal)</button>
       <button data-tool="shield">pad (shield)</button>
       <button data-tool="crate">crate</button>
+      <button data-tool="hole">black hole</button>
       <button data-tool="node" class="race">track node</button>
       <div class="race">
         <h3>track</h3>
@@ -72,6 +73,9 @@
       <div class="row"><button id="jit">jitter</button><input id="jitn" type="number" value="40" /></div>
       <h3>selected</h3>
       <div id="sel"><small>none</small></div>
+      <div id="holeBox" hidden>
+        <div class="row"><input id="hCore" type="number" placeholder="core" /><input id="hG" type="number" step="500000" placeholder="gravity" /></div>
+      </div>
       <h3>rules</h3>
       <div id="rules"></div>
       <h3>save</h3>
@@ -89,6 +93,7 @@
         <li><i style="background:#f83"></i>crate</li>
         <li><i style="background:#0ff"></i>track node</li>
         <li><i class="ring"></i>start node</li>
+        <li><i style="background:#b6f"></i>black hole</li>
         <li><i class="cross"></i>spawn</li>
       </ul>
       <ul id="tips">
@@ -111,12 +116,12 @@
 
     <script type="module">
       import { layouts } from "./build/Core/Maps.js";
-      import { Cfg_maxSpeed, Cfg_arenaDefault, Cfg_raceHalf } from "./build/Core/Domain.js";
+      import { Cfg_maxSpeed, Cfg_arenaDefault, Cfg_raceHalf, Cfg_holeCore, Cfg_holeG } from "./build/Core/Domain.js";
       import { t } from "./build/Core/Strings.js";
 
       const arr = (l) => Array.from(l);
       const P = { 0: "pad", 1: "heal", 2: "shield" };
-      const COL = { rock: "#7a8798", pad: "#39f", heal: "#3f8", shield: "#fd4", crate: "#f83", node: "#0ff" };
+      const COL = { rock: "#7a8798", pad: "#39f", heal: "#3f8", shield: "#fd4", crate: "#f83", node: "#0ff", hole: "#b6f" };
 
       const load = () =>
         Array.from(layouts).map((L, i) => ({
@@ -129,6 +134,7 @@
           track: L.Track
             ? { pts: arr(L.Track[0]).map((p) => ({ t: "node", x: p.X, y: p.Y })), w: L.Track[1], laps: L.Track[2] }
             : { pts: [], w: 280, laps: 3 },
+          hole: L.Hole ? { t: "hole", x: L.Hole[0].X, y: L.Hole[0].Y, core: L.Hole[1], g: L.Hole[2] } : null,
         }));
 
       let maps = load();
@@ -146,8 +152,8 @@
       const M = () => maps[mi];
       const scale = () => c.width / (M().size * 2.1);
       const toScreen = (p) => [c.width / 2 + p.x * scale(), c.height / 2 - p.y * scale()];
-      const items = () => [...(M().race ? M().track.pts : []), ...M().rocks, ...M().pads, ...M().crates];
-      const hitR = (o) => (o.t === "rock" ? o.r : o.t === "crate" ? 26 : o.t === "node" ? 22 : 34);
+      const items = () => [...(M().race ? M().track.pts : []), ...M().rocks, ...M().pads, ...M().crates, ...(M().hole ? [M().hole] : [])];
+      const hitR = (o) => (o.t === "rock" ? o.r : o.t === "hole" ? o.core : o.t === "crate" ? 26 : o.t === "node" ? 22 : 34);
 
       function relabel() {
         pick.textContent = "";
@@ -195,6 +201,20 @@
           g.lineWidth = picked ? 2.5 : 1;
           g.stroke();
         }
+        if (m.hole) {
+          const [hx, hy] = toScreen(m.hole);
+          const reach = Math.sqrt(m.hole.g / 40);
+          g.strokeStyle = "#b6f4";
+          g.setLineDash([4, 6]);
+          g.beginPath();
+          g.arc(hx, hy, reach * s, 0, 7);
+          g.stroke();
+          g.setLineDash([]);
+          g.fillStyle = "#000";
+          g.beginPath();
+          g.arc(hx, hy, Math.max(3, m.hole.core * s), 0, 7);
+          g.fill();
+        }
         if (m.race && m.track.pts.length) {
           const [x, y] = toScreen(m.track.pts[0]);
           g.strokeStyle = "#fff";
@@ -222,6 +242,12 @@
             ? `<b>${sel.length} selected</b>`
             : "<small>none</small>";
         document.getElementById("setStart").hidden = !(m.race && one && one.t === "node");
+        const hb = document.getElementById("holeBox");
+        hb.hidden = !(one && one.t === "hole");
+        if (!hb.hidden) {
+          document.getElementById("hCore").value = one.core.toFixed(0);
+          document.getElementById("hG").value = one.g.toFixed(0);
+        }
         g.strokeStyle = "#fff6";
         for (const sp of spawns()) {
           const [x, y] = toScreen(sp);
@@ -370,6 +396,16 @@
           const cross = (m.size * 2) / Cfg_maxSpeed();
           if (cross < 8 || cross > 10) warn.push(`crossing takes ${cross.toFixed(1)} s at max speed — the target is 8–10 s`);
         }
+        if (m.hole) {
+          const h = m.hole;
+          if (h.core < 4) bad.push("black hole core must be at least 4");
+          if (!inArena(h, h.core)) bad.push("the black hole sits outside the arena");
+          const eaten = spawns(m).filter((p) => Math.hypot(p.x - h.x, p.y - h.y) < h.core * 3);
+          if (eaten.length) bad.push(`${eaten.length} of 4 spawn points sit inside the black hole`);
+          const swallowed = [...m.pads, ...m.crates].filter((o) => Math.hypot(o.x - h.x, o.y - h.y) < h.core * 1.5);
+          if (swallowed.length) warn.push(`${swallowed.length} pad/crate sits inside the black hole`);
+          warn.push("fixed black hole here, so no wandering one will spawn");
+        }
         if (!m.crates.length) bad.push("no crates — the sim indexes crate 0/2/4/6 and will divide by zero");
 
         const tag = (a, cls) => a.map((x) => `<div style="color:${cls}">${x}</div>`).join("");
@@ -384,7 +420,7 @@
       const rot90 = (o) => ({ ...o, x: -o.y, y: o.x });
       const rotN = (o, q) => { let p = o; for (let k = 0; k < q; k++) p = rot90(p); return p; };
 
-      const parts = (m) => [m.rocks, m.pads, m.crates, m.race ? m.track.pts : []];
+      const parts = (m) => [m.rocks, m.pads, m.crates, m.race ? m.track.pts : [], m.hole ? [m.hole] : []];
       const each = (f) => (m) => parts(m).map((a) => a.map(f));
       const fold = (ax) => (m) =>
         parts(m).map((a) => {
@@ -421,11 +457,12 @@
           const jitter = +document.getElementById("jitn").value || 0;
           const r = () => (Math.random() * 2 - 1) * jitter;
           const fn = tf.fn ?? each((o) => ({ ...o, x: o.x + r(), y: o.y + r() }));
-          const [rocks, pads, crates, nodes] = fn(m);
+          const [rocks, pads, crates, nodes, holes] = fn(m);
           m.rocks = rocks;
           m.pads = pads;
           m.crates = crates;
           if (m.race) m.track.pts = nodes;
+          m.hole = holes[0] ?? null;
           sel = [];
           draw();
         };
@@ -487,7 +524,7 @@
       };
 
       const partners = (o) => {
-        if (sym === "off") return [];
+        if (sym === "off" || o.t === "hole") return [];
         const pool = bucket(o).filter((q) => q !== o && q.t === o.t);
         const taken = [];
         return SYM[sym].T.slice(1)
@@ -507,7 +544,7 @@
       };
 
       const spawnMirrors = (o) => {
-        if (sym === "off") return;
+        if (sym === "off" || o.t === "hole") return;
         const a = bucket(o);
         for (const T of SYM[sym].T.slice(1)) {
           const w = T(o);
@@ -543,6 +580,11 @@
         else if (tool === "node") {
           if (!m.race) return null;
           insertNode((made = { t: "node", x: p.x, y: p.y }));
+        } else if (tool === "hole") {
+          made = m.hole ?? { t: "hole", core: Cfg_holeCore(), g: Cfg_holeG() };
+          made.x = p.x;
+          made.y = p.y;
+          m.hole = made;
         } else {
           const k = tool === "pad" ? 0 : tool === "heal" ? 1 : 2;
           m.pads.push((made = { t: tool, x: p.x, y: p.y, k }));
@@ -627,6 +669,14 @@
         draw();
       };
       document.getElementById("setStart").onclick = setStart;
+      document.getElementById("hCore").oninput = (e) => {
+        if (M().hole) M().hole.core = Math.max(4, +e.target.value || 0);
+        draw();
+      };
+      document.getElementById("hG").oninput = (e) => {
+        if (M().hole) M().hole.g = Math.max(0, +e.target.value || 0);
+        draw();
+      };
 
       addEventListener("keydown", (e) => {
         if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
@@ -648,6 +698,7 @@
             const m = M();
             for (const a of [m.rocks, m.pads, m.crates, m.track.pts])
               for (let i = a.length - 1; i >= 0; i--) if (cut.has(a[i])) a.splice(i, 1);
+            if (m.hole && cut.has(m.hole)) m.hole = null;
             sel = [];
           }
           msg.textContent = `${clip.length} copied`;
@@ -667,7 +718,8 @@
           for (const o of clip) {
             if (o.t === "node" && !m.race) continue;
             const n = { ...o, x: o.x - cx + tx, y: o.y - cy + ty };
-            if (n.t === "node") insertNode(n);
+            if (n.t === "hole") m.hole = n;
+            else if (n.t === "node") insertNode(n);
             else bucket(n).push(n);
             made.push(n);
             spawnMirrors(n);
@@ -688,6 +740,7 @@
           const m = M();
           for (const a of [m.rocks, m.pads, m.crates, m.track.pts])
             for (let i = a.length - 1; i >= 0; i--) if (doomed.has(a[i])) a.splice(i, 1);
+          if (m.hole && doomed.has(m.hole)) m.hole = null;
           sel = [];
         } else return;
         document.querySelectorAll("[data-tool]").forEach((b) => b.classList.remove("on"));
@@ -792,6 +845,7 @@
         pads: [],
         crates: [],
         track: { pts: [], w: 280, laps: 3 },
+        hole: null,
       });
       document.getElementById("newMap").onclick = () => {
         snap();
@@ -827,6 +881,7 @@
               `         Pads = [ ${m.pads.map((o) => `${pt(o)}, ${AMT[o.k]}, ${o.k}`).join("; ")} ]\n` +
               `         Crates = [ ${m.crates.map(pt).join("; ")} ]\n` +
               `         Track = ${m.race ? `Some([ ${m.track.pts.map(pt).join("; ")} ], ${m.track.w.toFixed(1)}, ${m.track.laps})` : "None"}\n` +
+              `         Hole = ${m.hole ? `Some(${pt(m.hole)}, ${m.hole.core.toFixed(1)}, ${m.hole.g.toFixed(1)})` : "None"}\n` +
               `         Size = ${m.size.toFixed(1)} }`,
           )
           .join("\n\n       ") +

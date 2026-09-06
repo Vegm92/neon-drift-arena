@@ -341,6 +341,18 @@ let main _ =
     check "bullets bend around a black hole" (bent.Bullets |> List.exists (fun b -> b.Vel.Y > 5.))
     let collapsed = run (int (holeEvery / dt) + 2) (all present) w0
     check "a black hole opens on schedule inside the arena" (match collapsed.Hole with Some h -> abs h.Pos.X < arenaHalf && abs h.Pos.Y < arenaHalf | None -> false)
+    let fixedHole = { w0 with Hole = Some { Pos = v 300. 0.; Life = infinity }; HoleIn = 0. }
+    let held = run (int (holeEvery / dt) + 60) (all present) fixedHole
+    check "a map's black hole never expires" (match held.Hole with Some h -> System.Double.IsInfinity h.Life && h.Pos = v 300. 0. | None -> false)
+    check "a map's black hole blocks the wandering one" (held.Events |> List.forall (function HoleOpen _ -> false | _ -> true))
+    mapHole <- Some(v 300. 0., 90., 2e7)
+    check "a map's black hole uses its own core and gravity" (holeCoreNow () = 90. && holeGNow () = 2e7)
+    let heavier = fixedHole |> place 0 (v 700. 0.) 0. |> run 30 (all present)
+    mapHole <- None
+    let lighter = fixedHole |> place 0 (v 700. 0.) 0. |> run 30 (all present)
+    check "a heavier map hole pulls harder" (heavier.Ships.[0].Vel.X < lighter.Ships.[0].Vel.X)
+    check "layouts without a hole leave the wandering one alone" (layouts |> Array.forall (fun l -> l.Hole.IsNone))
+
     check "launchers never win" ((step dt (all present) { out with Ships = out.Ships |> Array.mapi (fun i s -> if i = 1 then s else { s with Alive = false; Stocks = 0 }) }).Phase = Over(Some 1))
 
     practice <- true
