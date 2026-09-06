@@ -640,7 +640,11 @@ let private stepPortals k dt sudden (ships: Ship[]) rng (w: World) =
     else
         let a, r1 = freeSpot k ships [] rng
         let b, r2 = freeSpot k ships [ a ] r1
-        { A = a; B = b; Life = portalLife } :: live, portalEvery, r2, [ PortalOpen(a, b) ]
+        let hue =
+            [ 0 .. portalHueCount - 1 ]
+            |> List.tryFind (fun h -> live |> List.forall (fun g -> g.Hue <> h))
+            |> Option.defaultValue 0
+        { A = a; B = b; Life = portalLife; Hue = hue } :: live, portalEvery, r2, [ PortalOpen(a, b) ]
 
 let private stepHole k dt sudden (ships: Ship[]) rng (w: World) =
     let live = w.Hole |> Option.filter (fun h -> h.Life > dt) |> Option.map (fun h -> { h with Life = h.Life - dt })

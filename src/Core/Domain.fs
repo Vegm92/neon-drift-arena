@@ -110,6 +110,7 @@ module Cfg =
     let mutable portalEvery = 20.
     let mutable portalLife = 12.
     let mutable portalRadius = 45.
+    let portalHueCount = 3
 
     let mutable holeEvery = 35.
     let mutable holeLife = 15.
@@ -303,7 +304,7 @@ type Mine = { Owner: int; Pos: V2; Vel: V2; Fuse: float }
 
 type Rock = { Owner: int; Pos: V2; Vel: V2; Radius: float; Life: float }
 
-type Portal = { A: V2; B: V2; Life: float }
+type Portal = { A: V2; B: V2; Life: float; Hue: int }
 
 type Hole = { Pos: V2; Life: float }
 

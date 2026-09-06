@@ -309,7 +309,7 @@ let main _ =
     let walled = hurled |> place 1 (v (arenaHalf - 400.) 0.) 0. |> step dt (Array.init 4 (fun i -> if i = 1 then { present with Fire = true } else present))
     let shielded = run 60 (all present) walled
     check "rocks stop bullets" (walled.Bullets.Length = 1 && shielded.Bullets.IsEmpty && shielded.Rocks.Length = 1)
-    let gate = { A = v -500. 0.; B = v 500. 0.; Life = 5. }
+    let gate = { A = v -500. 0.; B = v 500. 0.; Life = 5.; Hue = 0 }
     let gated = { w0 with Portals = [ gate ] } |> place 0 (v -500. 0.) 0. |> edit 0 (fun s -> { s with Vel = v 200. 0. })
     let warped = step dt (all present) gated
     check "a wormhole moves a ship to the other end with its velocity" (warped.Ships.[0].Pos.X > 500. && warped.Ships.[0].Pos.X < 600. && warped.Ships.[0].Vel.X > 150.)
@@ -318,6 +318,8 @@ let main _ =
     check "bullets ride wormholes" (shotThrough.Bullets |> List.exists (fun b -> b.Pos.X > 500.))
     let opened = run (int (portalEvery / dt) + 2) (all present) w0
     check "wormholes open on schedule, apart and inside the arena" (opened.Portals.Length = 1 && len (opened.Portals.Head.A - opened.Portals.Head.B) > 500. && abs opened.Portals.Head.A.X < arenaHalf && abs opened.Portals.Head.B.Y < arenaHalf)
+    let twinned = { opened with PortalIn = 0. } |> step dt (all present)
+    check "an overlapping wormhole pair takes a different hue" (match twinned.Portals with [ x; y ] -> x.Hue <> y.Hue | _ -> false)
     let well = { w0 with Hole = Some { Pos = v 300. 0.; Life = 5. } }
     let drawn = well |> place 0 zero 0. |> run 120 (all present)
     check "a black hole pulls a resting ship toward it" (drawn.Ships.[0].Vel.X > 20. && drawn.Ships.[0].Pos.X > 0.)
