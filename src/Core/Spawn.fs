@@ -31,6 +31,7 @@ let freshShip i =
     let p = spawnPos i
     { Id = i
       Team = 0
+      Archetype = Standard
       Pos = p
       Vel = zero
       Angle = spawnAngle p
