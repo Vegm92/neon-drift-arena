@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>NDA Combat Sandbox</title>
+    <style>
+      :root { color-scheme: dark; }
+      body { margin: 0; background: #03030a; color: #cfe; font: 12px/1.5 ui-monospace, monospace; display: flex; height: 100vh; overflow: hidden; position: relative; }
+      .side-panel {
+        width: 320px;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow-y: auto;
+        height: 100%;
+        box-sizing: border-box;
+        position: relative;
+        z-index: 10;
+        background: rgba(6, 8, 15, 0.85);
+        backdrop-filter: blur(8px);
+      }
+      #side-left { border-right: 1px solid rgba(28, 42, 58, 0.4); }
+      #side-right { border-left: 1px solid rgba(28, 42, 58, 0.4); }
+      #wrap { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; height: 100%; background: transparent; pointer-events: none; }
+      
+      /* Target Three.js WebGL canvas */
+      canvas {
+        position: fixed;
+        inset: 0;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 1;
+        display: block;
+      }
+      
+      /* Target transparent 2D overlay canvas */
+      #overlay {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 2;
+        pointer-events: none;
+        display: block;
+      }
+      
+      button, select, input { background: #111a28; color: #cfe; border: 1px solid #2a3b52; padding: 5px 8px; font: inherit; width: 100%; border-radius: 4px; }
+      button:hover { background: #1b2a3e; cursor: pointer; }
+      button.on { background: #0ff2; border-color: #0ff; color: #0ff; }
+      h3 { margin: 8px 0 2px; font-size: 11px; letter-spacing: .1em; color: #6a8; text-transform: uppercase; border-bottom: 1px solid #1c2a3a; padding-bottom: 2px; }
+      .row { display: flex; gap: 6px; }
+      .slider-row { display: flex; flex-direction: column; gap: 2px; margin-bottom: 4px; }
+      .slider-row label { display: flex; justify-content: space-between; color: #8fa; }
+      .slider-row input[type="range"] { padding: 0; }
+      #stats { background: #0d1524; padding: 10px; border-radius: 4px; font-size: 11px; border: 1px solid #1c2a3a; }
+      .stat-line { display: flex; justify-content: space-between; margin-bottom: 3px; }
+      .stat-line span { color: #8fa; }
+      small { color: #567; display: block; margin-top: 5px; }
+      #log { flex: 1; min-height: 150px; overflow-y: auto; background: #04060b; border: 1px solid #1c2a3a; padding: 10px; font-size: 11px; border-radius: 4px; color: #cfe; }
+      .log-entry { margin-bottom: 3px; border-bottom: 1px dashed #14202e; padding-bottom: 3px; }
+      .log-entry.hit { color: #ff5252; font-weight: bold; }
+      .log-entry.shoot { color: #00ffff; }
+      .log-entry.event { color: #ffd54f; }
+
+      /* In-game HUD/Feed/Vignette styling for F# renderer */
+      #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+      #feed { position: absolute; left: 50%; top: 44px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+      #feed div { display: flex; align-items: center; gap: 12px; padding: 3px 26px; font-size: 15px; font-weight: 700; letter-spacing: .25em;
+        background: linear-gradient(90deg,transparent,rgba(0,0,0,.65) 20%,rgba(0,0,0,.65) 80%,transparent); transform: skewX(-10deg);
+        animation: slam .22s cubic-bezier(.2,1.8,.4,1),feed 5s linear forwards; }
+      #feed div:first-child { font-size: 19px; }
+      #feed b { text-shadow: 0 0 10px currentColor; }
+      #feed b.dead { text-decoration: line-through; opacity: .6; }
+      #feed svg { width: 30px; height: 30px; filter: drop-shadow(0 0 6px currentColor); }
+      @keyframes slam { 0% { transform: skewX(-10deg) scale(2.2); filter: brightness(3) } 100% { transform: skewX(-10deg) scale(1) } }
+      @keyframes feed { 0%, 70% { opacity: 1 } 100% { opacity: 0 } }
+      #vignette { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .06s linear; z-index: 6; }
+      #banner { position: fixed; left: 0; right: 0; top: 40%; text-align: center; font-size: 22px; letter-spacing: .35em; text-shadow: 0 0 18px #fff; white-space: pre-line; line-height: 2; z-index: 7; }
+      #banner.hidden { display: none; }
+    </style>
+  </head>
+  <body>
+    <div id="side-left" class="side-panel">
+      <h3>Controls</h3>
+      <div class="row">
+        <button id="btnPlay" class="on">Pause</button>
+        <button id="btnStep">Step Frame</button>
+      </div>
+      <button id="btnReset">Reset Sandbox</button>
+      
+      <h3>Spawn Actions</h3>
+      <div class="row">
+        <button id="btnSpawnP2" title="Spawn Target Dummy Ship at center">Spawn Target P2</button>
+        <button id="btnSpawnRock" title="Spawn physical asteroid rock">Spawn Asteroid</button>
+      </div>
+
+      <h3>Equipped Weapon (P1)</h3>
+      <select id="selWeapon"></select>
+
+      <h3>Real-time Config Tuning</h3>
+      <div id="sliders"></div>
+      <div class="row" style="margin-top: 5px; gap: 6px;">
+        <button id="btnSaveTuning" style="font-size: 11px; background: #12241a; border-color: #1a4228;" title="Save current tuning as default for browser reloads and output F# code to console">Save as Default</button>
+        <button id="btnResetTuning" style="font-size: 11px; background: #221212; border-color: #522;" title="Clear saved defaults and restore original F# code defaults">Reset Tuning</button>
+      </div>
+
+      <small style="margin-top: 15px;">
+        <b>Controls (P1):</b><br/>
+        • <b>WASD</b> or <b>Arrow Keys</b> to Fly<br/>
+        • <b>SPACE</b> to Fire Primary Blaster<br/>
+        • <b>SHIFT</b> to Fire Special Weapon<br/>
+        • <b>Click & Drag</b> any Ship or Asteroid<br/>
+        • <b>Double-Click</b> to delete spawned item
+      </small>
+    </div>
+
+    <div id="wrap"></div>
+
+    <canvas id="overlay"></canvas>
+
+    <!-- Game HUD/Effects Elements required by the F# 3D renderer (kept hidden for a clean sandbox experience) -->
+    <div id="vignette" style="display: none;"></div>
+    <div id="hud" style="display: none;">
+      <div id="clock" style="display: none;"></div>
+      <div id="feed" style="display: none;"></div>
+    </div>
+    <div id="banner" class="hidden" style="display: none;"></div>
+
+    <div id="side-right" class="side-panel">
+      <h3>Sandbox Diagnostics</h3>
+      <div id="stats">
+        <div class="stat-line">P1 Ship HP: <span id="lblHp">100 / 100</span></div>
+        <div class="stat-line">P1 Ship Shield: <span id="lblShield">0</span></div>
+        <div class="stat-line">P1 Ship Heat: <span id="lblHeat">0</span></div>
+        <div class="stat-line">P1 Ship Speed: <span id="lblSpeed">0 px/s</span></div>
+        <div class="stat-line">P1 Ship Charge: <span id="lblCharge">0.0</span></div>
+        <div class="stat-line">P1 Active Tow: <span id="lblTow">None</span></div>
+        
+        <h3 style="margin-top: 12px; font-size: 10px; border-bottom: 1px dashed rgba(28, 42, 58, 0.4); padding-bottom: 2px;">Target P2 Diagnostics</h3>
+        <div class="stat-line">P2 Ship HP: <span id="lblHp2">100 / 100</span></div>
+        <div class="stat-line">P2 Ship Shield: <span id="lblShield2">0</span></div>
+        <div class="stat-line">P2 Ship Heat: <span id="lblHeat2">0</span></div>
+        <div class="stat-line">P2 Ship Speed: <span id="lblSpeed2">0 px/s</span></div>
+        <div class="stat-line">P2 Ship Charge: <span id="lblCharge2">0.0</span></div>
+        <div class="stat-line">P2 Active Tow: <span id="lblTow2">None</span></div>
+      </div>
+
+      <h3>Combat Log</h3>
+      <div id="log"></div>
+    </div>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { freshShip } from "./build/Core/Spawn.js";
+      import { step, initial } from "./build/Core/Sim.js";
+      import { v } from "./build/Core/Vec.js";
+      import { Cfg_tunables, weaponAmmo, Weapon, Input, noInput } from "./build/Core/Domain.js";
+      import { empty, toArray } from "./build/fable_modules/fable-library-js.5.15.0/List.js";
+      import { create, draw } from "./build/UI/Render/Render.js";
+      import { init as sfxInit, play as sfxPlay, thrust as sfxThrust, track as sfxTrack, silence as sfxSilence } from "./build/Platform/Sfx.js";
+
+      // Reconstruct Cfg using the exported Cfg_tunables getters and setters
+      const Cfg = {};
+      Cfg_tunables.forEach(([name, get, set]) => {
+        Object.defineProperty(Cfg, name, {
+          get: () => get(),
+          set: (val) => set(val),
+          configurable: true,
+          enumerable: true
+        });
+      });
+
+      const dist = (a, b) => {
+        const dx = a.X - b.X;
+        const dy = a.Y - b.Y;
+        return Math.sqrt(dx * dx + dy * dy);
+      };
+
+      const dt = 1 / 120;
+      let isPlaying = true;
+      let worldState = null;
+      let logs = [];
+      let damageNumbers = []; // { text, Pos, life }
+      
+      // Explicitly instantiate using Fable's Input record constructor to ensure 100% compliance
+      let inputP1 = new Input(0, undefined, false, false, 0, false, false, false, false, false, false, false, true);
+
+      const STORAGE_KEY = "nda_sandbox_tuning";
+
+      // Load saved tuning from localStorage
+      const loadSavedTuning = () => {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            const data = JSON.parse(saved);
+            Object.keys(data).forEach(key => {
+              if (Cfg[key] !== undefined) {
+                Cfg[key] = data[key];
+              }
+            });
+            return true;
+          }
+        } catch (e) {
+          console.error("Failed to load saved tuning", e);
+        }
+        return false;
+      };
+      
+      const logContainer = document.getElementById("log");
+
+      // Custom items spawned by user in sandbox
+      let customRocks = []; // { Pos: V2, Vel: V2, Radius: 25, Life: 100 }
+
+      // Boot up SFX & Three.js 3D View!
+      sfxInit();
+      sfxTrack(false); // Play battle music track!
+      const view = create();
+      const rendererCanvas = view.Renderer.domElement;
+
+      // Enable a completely blank canvas: hide background octagon frames, grids, spawn rings, stars, and black holes
+      view.Frame.visible = false;
+      view.Border.visible = false;
+      view.Spawns.forEach(s => s.visible = false);
+      if (view.Hole) view.Hole.visible = false;
+      if (view.Horizon) view.Horizon.visible = false;
+      if (view.Halo) view.Halo.visible = false;
+      
+      view.Scene.children.forEach(child => {
+        if (child.type === "Points") {
+          child.visible = false;
+        }
+      });
+
+      // 3D coordinate Raycaster to map screen clicks (X, Y) to ground plane (Y=0, maps to simulation X, Z)
+      const getSimulationPos = (clientX, clientY) => {
+        const rect = rendererCanvas.getBoundingClientRect();
+        const mouse = new THREE.Vector2();
+        mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, view.Camera);
+
+        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        const target = new THREE.Vector3();
+        raycaster.ray.intersectPlane(plane, target);
+
+        return v(target.x, target.z);
+      };
+
+      // Initializing state
+      const initSandbox = () => {
+        // Since we are running the REAL 3D renderer and real assets,
+        // we use the real game's default arena half-size of 1350 for boundary calculations!
+        Cfg.arenaHalf = 1350;
+
+        // Retrieve a fully populated real game initial state
+        const baseState = initial();
+
+        const ship1 = freshShip(0);
+        ship1.Pos = v(-150, 0);
+        ship1.Angle = 0;
+        ship1.Invuln = 0;
+
+        // Equip P1 with the first special weapon (Railgun) initially
+        const firstOpt = weaponOptions[0];
+        ship1.Weapon = firstOpt.key;
+        ship1.Ammo = weaponAmmo(firstOpt.key);
+        ship1.Charge = 0;
+
+        const ship2 = freshShip(1);
+        ship2.Pos = v(150, 0);
+        ship2.Angle = Math.PI;
+        ship2.Invuln = 0;
+
+        // Use the baseState instance and override fields to match the sandbox requirements
+        worldState = baseState;
+        worldState.Ships = [ship1, ship2, freshShip(2), freshShip(3)];
+        worldState.Ships[2].Active = false;
+        worldState.Ships[2].Alive = false;
+        worldState.Ships[3].Active = false;
+        worldState.Ships[3].Alive = false;
+
+        worldState.Bullets = empty();
+        worldState.Mines = empty();
+        worldState.Rocks = empty();
+        worldState.Portals = empty();
+        worldState.Events = empty();
+        worldState.Time = 0;
+        worldState.Phase = { tag: 0 }; // Playing
+
+        customRocks = [
+          { Pos: v(0, 100), Vel: v(0, 0), Radius: 25, Life: 100 }
+        ];
+
+        // Load saved tuning if any before building sliders
+        const loadedSaved = loadSavedTuning();
+
+        if (selWeapon) selWeapon.value = "0";
+        createSliders();
+
+        if (loadedSaved) {
+          addLog("Loaded saved custom tuning defaults from browser storage!", "event");
+        } else {
+          addLog("Sandbox initialized with 3D graphics & spatial sound! Drag elements to reposition them.", "event");
+        }
+      };
+
+      // Logging helper
+      const addLog = (text, type = "info") => {
+        logs.unshift({ text, type, id: Date.now() + Math.random() });
+        if (logs.length > 50) logs.pop();
+        logContainer.innerHTML = logs.map(l => `<div class="log-entry ${l.type}">${l.text}</div>`).join("");
+      };
+
+      // Static Weapon Options matching Weapon tags (Special weapons only)
+      const weaponOptions = [
+        { key: Weapon.Rail, name: "Railgun" },
+        { key: Weapon.Mines, name: "Mines" },
+        { key: Weapon.Swarm, name: "Seeker Swarm" },
+        { key: Weapon.Pulse, name: "Repulsor Pulse" },
+        { key: Weapon.Scatter, name: "Scatter Gun" },
+        { key: Weapon.Tractor, name: "Tractor Beam" }
+      ];
+
+      // Populate weapon dropdown
+      const selWeapon = document.getElementById("selWeapon");
+      weaponOptions.forEach((optData, idx) => {
+        const opt = document.createElement("option");
+        opt.value = idx;
+        opt.textContent = optData.name;
+        selWeapon.appendChild(opt);
+      });
+
+      // Sync selector UI with ship's weapon
+      selWeapon.onchange = () => {
+        const item = weaponOptions[parseInt(selWeapon.value)];
+        if (item && worldState) {
+          const s = worldState.Ships[0];
+          s.Weapon = item.key;
+          s.Ammo = weaponAmmo(item.key);
+          s.Charge = 0;
+          addLog(`Equipped P1 with weapon: ${item.name}`, "event");
+          createSliders(); // Dynamically rebuild config tuning sliders
+        }
+      };
+
+      // Custom Sliders for Cfg
+      const tuningContainer = document.getElementById("sliders");
+      const activeSliders = [
+        { name: "bulletSpeed", label: "Bullet Speed", min: 100, max: 1200, step: 10, default: 560 },
+        { name: "bulletDamage", label: "Bullet Damage", min: 1, max: 100, step: 1, default: 20 },
+        { name: "recoil", label: "Recoil Impulse", min: 0, max: 20, step: 0.1, default: 4.08 },
+        { name: "heatPerShot", label: "Heat Per Shot", min: 1, max: 50, step: 0.5, default: 9.6 },
+        { name: "overheatLock", label: "Overheat Lock Time", min: 0.1, max: 5.0, step: 0.1, default: 1.5 },
+        { name: "railCharge", label: "Rail/Tractor Charge Time", min: 0.1, max: 3.0, step: 0.1, default: 1.5 },
+        { name: "railRecoil", label: "Rail Recoil", min: 0, max: 100, step: 1, default: 46 },
+        { name: "seekerSpeed", label: "Swarm Missile Speed", min: 50, max: 800, step: 10, default: 290 },
+        { name: "seekerDamage", label: "Swarm Missile Damage", min: 1, max: 100, step: 1, default: 34 },
+        { name: "pulseForce", label: "Pulse Wave Force", min: 100, max: 3000, step: 50, default: 1400 },
+        { name: "mineFuse", label: "Mine Detonation Delay", min: 0.1, max: 5.0, step: 0.1, default: 1.5 },
+        { name: "tractorRange", label: "Tractor Max Range", min: 50, max: 500, step: 10, default: 280 }
+      ];
+
+      const createSliders = () => {
+        tuningContainer.innerHTML = "";
+        
+        const selIdx = parseInt(selWeapon.value);
+        const selectedWpn = weaponOptions[selIdx];
+        if (!selectedWpn) return;
+        
+        const showMapping = {
+          "Railgun": ["railCharge", "railRecoil"],
+          "Mines": ["mineFuse"],
+          "Seeker Swarm": ["seekerSpeed", "seekerDamage"],
+          "Repulsor Pulse": ["pulseForce"],
+          "Scatter Gun": [], // Uses standard blaster bullet settings directly
+          "Tractor Beam": ["railCharge", "tractorRange"]
+        };
+        
+        const allowedSpecial = showMapping[selectedWpn.name] || [];
+        
+        // Helper to append a single slider row
+        const appendSlider = (s) => {
+          const val = Cfg[s.name] !== undefined ? Cfg[s.name] : s.default;
+          const row = document.createElement("div");
+          row.className = "slider-row";
+          row.innerHTML = `
+            <label>
+              <span>${s.label}</span>
+              <span id="lbl_${s.name}">${val.toFixed(val % 1 === 0 ? 0 : 2)}</span>
+            </label>
+            <input type="range" id="slide_${s.name}" min="${s.min}" max="${s.max}" step="${s.step}" value="${val}" />
+          `;
+          tuningContainer.appendChild(row);
+
+          const slider = document.getElementById(`slide_${s.name}`);
+          const label = document.getElementById(`lbl_${s.name}`);
+          slider.oninput = (e) => {
+            const v = parseFloat(e.target.value);
+            Cfg[s.name] = v;
+            label.textContent = v.toFixed(v % 1 === 0 ? 0 : 2);
+            addLog(`Tuned ${s.name} to ${v}`, "info");
+          };
+        };
+
+        // 1. Render Special Weapon Sliders (first)
+        if (allowedSpecial.length > 0) {
+          activeSliders.forEach(s => {
+            if (allowedSpecial.includes(s.name)) {
+              appendSlider(s);
+            }
+          });
+        } else if (selectedWpn.name === "Scatter Gun") {
+          const info = document.createElement("div");
+          info.style.color = "#888";
+          info.style.marginBottom = "8px";
+          info.style.fontStyle = "italic";
+          info.textContent = "(Scatter Gun spray uses Standard Blaster bullet settings below)";
+          tuningContainer.appendChild(info);
+        }
+
+        // 2. Add visual divider heading for Standard Blaster
+        const divider = document.createElement("h3");
+        divider.style.marginTop = "14px";
+        divider.style.marginBottom = "6px";
+        divider.style.fontSize = "10px";
+        divider.style.color = "#6a8";
+        divider.style.textTransform = "uppercase";
+        divider.style.borderBottom = "1px dashed rgba(28, 42, 58, 0.4)";
+        divider.style.paddingBottom = "2px";
+        divider.textContent = "Standard Blaster Tuning";
+        tuningContainer.appendChild(divider);
+
+        // 3. Render Standard Blaster Sliders (always visible, below special)
+        const standardSliders = ["bulletSpeed", "bulletDamage", "recoil", "heatPerShot", "overheatLock"];
+        activeSliders.forEach(s => {
+          if (standardSliders.includes(s.name)) {
+            appendSlider(s);
+          }
+        });
+      };
+
+      createSliders();
+
+      document.getElementById("btnSaveTuning").onclick = () => {
+        const data = {};
+        activeSliders.forEach(s => {
+          if (Cfg[s.name] !== undefined) {
+            data[s.name] = Cfg[s.name];
+          }
+        });
+        
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        addLog("Saved current tuning parameters as sandbox defaults!", "event");
+        
+        // Push updates back to the actual game source code on disk using built-in /__tweaks Vite middleware!
+        fetch("/__tweaks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        })
+        .then(res => {
+          if (res.ok) {
+            addLog("Successfully saved to disk! src/Core/Domain.fs updated in real-time.", "event");
+          } else {
+            addLog("Failed to write to game source file.", "hit");
+          }
+        })
+        .catch(err => {
+          console.error("Error saving tweaks to disk:", err);
+          addLog("Vite local server connection error.", "hit");
+        });
+
+        // Output formatted F# code block to console for easy copy-pasting
+        const fsCode = activeSliders.map(s => `    let mutable ${s.name} = ${data[s.name].toFixed(data[s.name] % 1 === 0 ? 0 : 2)}`).join("\n");
+        console.log("%c--- F# Defaults for src/Core/Domain.fs ---", "color: #2cb37a; font-weight: bold; font-size: 13px;");
+        console.log(fsCode);
+        console.log("%c----------------------------------------", "color: #2cb37a;");
+      };
+
+      document.getElementById("btnResetTuning").onclick = () => {
+        localStorage.removeItem(STORAGE_KEY);
+        activeSliders.forEach(s => {
+          Cfg[s.name] = s.default;
+        });
+        createSliders();
+        addLog("Cleared saved defaults and reset tuning parameters to code defaults.", "event");
+      };
+
+      // Spawning target P2 and rocks
+      document.getElementById("btnSpawnP2").onclick = () => {
+        if (!worldState) return;
+        const s2 = worldState.Ships[1];
+        s2.Active = true;
+        s2.Alive = true;
+        s2.Hp = 100;
+        s2.Shield = 0;
+        s2.Pos = v(0, 0);
+        s2.Vel = v(0, 0);
+        s2.Cooldown = 0;
+        s2.Stun = 0;
+        s2.Heat = 0;
+        s2.Locked = 0;
+        addLog("Target P2 spawned at center.", "event");
+      };
+
+      document.getElementById("btnSpawnRock").onclick = () => {
+        customRocks.push({ Pos: v(Math.random() * 200 - 100, Math.random() * 200 - 100), Vel: v(0,0), Radius: 20 + Math.random() * 15, Life: 100 });
+        addLog("New Asteroid spawned.", "event");
+      };
+
+      // Play/Pause / Step Controls
+      const btnPlay = document.getElementById("btnPlay");
+      btnPlay.onclick = () => {
+        isPlaying = !isPlaying;
+        btnPlay.textContent = isPlaying ? "Pause" : "Play Sandbox";
+        btnPlay.className = isPlaying ? "on" : "";
+      };
+
+      document.getElementById("btnStep").onclick = () => {
+        if (!isPlaying) simulateStep();
+      };
+
+      document.getElementById("btnReset").onclick = () => {
+        initSandbox();
+      };
+
+      // Handle Key Inputs for Player 1
+      const keysPressed = {};
+      window.onkeydown = (e) => {
+        keysPressed[e.code] = true;
+        // prevent default scrolling/accel for game keys
+        if (e.code === "Space" || e.code === "KeyF" || e.code === "ShiftLeft" || e.code === "ShiftRight" || e.code.startsWith("Arrow")) {
+          e.preventDefault();
+        }
+      };
+      window.onkeyup = (e) => {
+        keysPressed[e.code] = false;
+      };
+
+      const updateP1Inputs = () => {
+        // Thrust & Reverse
+        inputP1.Thrust = keysPressed["KeyW"] || keysPressed["ArrowUp"] || false;
+        inputP1.Reverse = keysPressed["KeyS"] || keysPressed["ArrowDown"] || false;
+        
+        // Strafe
+        inputP1.Strafe = 0;
+        if (keysPressed["KeyQ"]) inputP1.Strafe = -1;
+        if (keysPressed["KeyE"]) inputP1.Strafe = 1;
+
+        // Turn
+        inputP1.Turn = 0;
+        if (keysPressed["KeyA"] || keysPressed["ArrowLeft"]) inputP1.Turn = -1;
+        if (keysPressed["KeyD"] || keysPressed["ArrowRight"]) inputP1.Turn = 1;
+
+        // Boost
+        inputP1.Boost = keysPressed["ShiftLeft"] || keysPressed["ShiftRight"] || false;
+
+        // Fire
+        inputP1.Fire = keysPressed["Space"] || false;
+
+        // Special (Default key is KeyF in Binds.Act.Special)
+        inputP1.Special = keysPressed["KeyF"] || false;
+      };
+
+      // Drag and Drop interaction on the 3D WebGL Canvas
+      let draggedItem = null; // { type: 'ship'|'rock', index: number, offset: V2 }
+      rendererCanvas.onpointerdown = (e) => {
+        const clickPos = getSimulationPos(e.clientX, e.clientY);
+
+        // Check if clicked a ship
+        for (let i = 0; i < worldState.Ships.length; i++) {
+          const s = worldState.Ships[i];
+          if (s.Active && s.Alive) {
+            const d = dist(s.Pos, clickPos);
+            if (d < 25) {
+              draggedItem = { type: 'ship', index: i, offset: v(s.Pos.X - clickPos.X, s.Pos.Y - clickPos.Y) };
+              rendererCanvas.setPointerCapture(e.pointerId);
+              return;
+            }
+          }
+        }
+
+        // Check if clicked an Asteroid
+        for (let i = 0; i < customRocks.length; i++) {
+          const r = customRocks[i];
+          const d = dist(r.Pos, clickPos);
+          if (d < r.Radius) {
+            draggedItem = { type: 'rock', index: i, offset: v(r.Pos.X - clickPos.X, r.Pos.Y - clickPos.Y) };
+            rendererCanvas.setPointerCapture(e.pointerId);
+            return;
+          }
+        }
+      };
+
+      rendererCanvas.onpointermove = (e) => {
+        if (!draggedItem) return;
+        const clickPos = getSimulationPos(e.clientX, e.clientY);
+
+        if (draggedItem.type === 'ship') {
+          const s = worldState.Ships[draggedItem.index];
+          s.Pos = v(clickPos.X + draggedItem.offset.X, clickPos.Y + draggedItem.offset.Y);
+          s.Vel = v(0,0);
+        } else if (draggedItem.type === 'rock') {
+          const r = customRocks[draggedItem.index];
+          r.Pos = v(clickPos.X + draggedItem.offset.X, clickPos.Y + draggedItem.offset.Y);
+          r.Vel = v(0,0);
+        }
+      };
+
+      rendererCanvas.onpointerup = (e) => {
+        if (draggedItem) {
+          rendererCanvas.releasePointerCapture(e.pointerId);
+          draggedItem = null;
+        }
+      };
+
+      // Double click to delete spawned elements
+      rendererCanvas.ondblclick = (e) => {
+        const clickPos = getSimulationPos(e.clientX, e.clientY);
+
+        for (let i = 0; i < customRocks.length; i++) {
+          const r = customRocks[i];
+          if (dist(r.Pos, clickPos) < r.Radius) {
+            customRocks.splice(i, 1);
+            addLog("Asteroid deleted.", "event");
+            return;
+          }
+        }
+        for (let i = 1; i < worldState.Ships.length; i++) {
+          const s = worldState.Ships[i];
+          if (s.Active && s.Alive && dist(s.Pos, clickPos) < 25) {
+            s.Active = false;
+            s.Alive = false;
+            addLog(`Target P${i+1} removed.`, "event");
+            return;
+          }
+        }
+      };
+
+      // Core simulation step
+      const simulateStep = () => {
+        updateP1Inputs();
+
+        // Build input array for 4 ships
+        const inputs = [inputP1, noInput, noInput, noInput];
+
+        // Inject custom rocks dynamically into worldState.Rocks list
+        let fableRocks = empty(); // empty list
+        for (let i = customRocks.length - 1; i >= 0; i--) {
+          fableRocks = { head: customRocks[i], tail: fableRocks };
+        }
+        worldState.Rocks = fableRocks;
+
+        // Step physics sim (runs inside Sim.fs)
+        const nextState = step(dt, inputs, worldState);
+
+        // Force infinite special weapon ammo
+        nextState.Ships[0].Ammo = 999;
+
+        // Auto-respawn P2 ship in original spot instantly without cooldowns, stuns, heat, or stun locks
+        const s2 = nextState.Ships[1];
+        if (s2.Active && !s2.Alive) {
+          s2.Alive = true;
+          s2.Hp = 100;
+          s2.Shield = 0;
+          s2.Pos = v(150, 0); // Original spot
+          s2.Vel = v(0, 0);
+          s2.Stun = 0;
+          s2.Heat = 0;
+          s2.Locked = 0;
+          s2.RespawnIn = 0;
+          s2.Invuln = 0;
+          s2.Cooldown = 0;
+          addLog("Target P2 respawned at original spot.", "event");
+        }
+
+        // Disable map events completely (no black holes, no wormholes)
+        nextState.Portals = empty();
+        nextState.PortalIn = 99999;
+        nextState.Hole = null;
+        nextState.HoleIn = 99999;
+
+        // Capture new events and log them
+        const events = toArray(nextState.Events);
+        events.forEach(evt => {
+          // Event mapping tags
+          if (evt.tag === 0) { // Hit V2
+            addLog(`Bullet Hit registered at [${evt.fields[0].X.toFixed(0)}, ${evt.fields[0].Y.toFixed(0)}]`, "hit");
+            damageNumbers.push({ text: `-${Cfg.bulletDamage.toFixed(0)}`, Pos: evt.fields[0], life: 1.0 });
+          } else if (evt.tag === 3) { // Shot nose
+            addLog(`P1 fired Weapon!`, "shoot");
+          } else if (evt.tag === 13) { // Wave(Pos, Angle, Id)
+            addLog(`Pulse shockwave emitted!`, "shoot");
+          } else if (evt.tag === 15) { // Zap(Pos, Angle, Id)
+            addLog(`Scatter Zap shockwave emitted!`, "shoot");
+          } else if (evt.tag === 16) { // Latch(Pos, Id)
+            addLog(`Tractor Latch beam locked!`, "shoot");
+          } else if (evt.tag === 11) { // Beam(nose, far, Id)
+            addLog(`Rail beam fired!`, "shoot");
+          } else if (evt.tag === 12) { // Charging
+            addLog(`Rail/Tractor Charging up...`, "info");
+          } else if (evt.tag === 5) { // Cooked (overheat)
+            addLog(`Blaster OVERHEATED! Locked out.`, "hit");
+          }
+        });
+
+        // Sync customRocks positions back from simulation
+        const simRocks = toArray(nextState.Rocks);
+        for (let i = 0; i < customRocks.length && i < simRocks.length; i++) {
+          customRocks[i].Pos = simRocks[i].Pos;
+          customRocks[i].Vel = simRocks[i].Vel;
+        }
+
+        // Reset stocks and force Phase to Playing to prevent any win conditions or "Over" transitions
+        nextState.Phase = { tag: 0 }; // Always Playing!
+        nextState.Ships.forEach(s => {
+          if (s.Active) {
+            s.Stocks = 99; // Infinite stocks!
+          }
+        });
+
+        // Apply worldState update
+        worldState = nextState;
+      };
+
+      // Update HUD diagnostic panels and parameters (P1 and P2)
+      const updateStatsUI = () => {
+        if (!worldState) return;
+        const p1 = worldState.Ships[0];
+        document.getElementById("lblHp").textContent = `${p1.Hp.toFixed(0)} / 100`;
+        document.getElementById("lblHp").style.color = p1.Hp < 30 ? "#f44" : "#8fa";
+        document.getElementById("lblShield").textContent = p1.Shield.toFixed(0);
+        document.getElementById("lblShield").style.color = p1.Shield > 0 ? "#39f" : "#cfe";
+        document.getElementById("lblHeat").textContent = p1.Heat.toFixed(1);
+        document.getElementById("lblHeat").style.color = p1.Locked > 0 ? "#f44" : (p1.Heat > 60 ? "#fa0" : "#cfe");
+        
+        const speed = Math.sqrt(p1.Vel.X * p1.Vel.X + p1.Vel.Y * p1.Vel.Y);
+        document.getElementById("lblSpeed").textContent = `${speed.toFixed(0)} px/s`;
+        document.getElementById("lblCharge").textContent = p1.Charge.toFixed(2);
+        
+        let towStr = "None";
+        if (p1.Tow && p1.Tow.tag === 1) { // TowShip
+          towStr = `Tethered to P${p1.Tow.fields[0] + 1}`;
+        } else if (p1.Tow && p1.Tow.tag === 2) { // TowRock
+          towStr = `Tethered to Rock ${p1.Tow.fields[0]}`;
+        }
+        document.getElementById("lblTow").textContent = towStr;
+
+        // Render target P2 ship diagnostics if active
+        const p2 = worldState.Ships[1];
+        if (p2 && p2.Active && p2.Alive) {
+          document.getElementById("lblHp2").textContent = `${p2.Hp.toFixed(0)} / 100`;
+          document.getElementById("lblHp2").style.color = p2.Hp < 30 ? "#f44" : "#8fa";
+          document.getElementById("lblShield2").textContent = p2.Shield.toFixed(0);
+          document.getElementById("lblShield2").style.color = p2.Shield > 0 ? "#39f" : "#cfe";
+          document.getElementById("lblHeat2").textContent = p2.Heat.toFixed(1);
+          document.getElementById("lblHeat2").style.color = p2.Locked > 0 ? "#f44" : (p2.Heat > 60 ? "#fa0" : "#cfe");
+          
+          const speed2 = Math.sqrt(p2.Vel.X * p2.Vel.X + p2.Vel.Y * p2.Vel.Y);
+          document.getElementById("lblSpeed2").textContent = `${speed2.toFixed(0)} px/s`;
+          document.getElementById("lblCharge2").textContent = p2.Charge.toFixed(2);
+          
+          let towStr2 = "None";
+          if (p2.Tow && p2.Tow.tag === 1) { // TowShip
+            towStr2 = `Tethered to P${p2.Tow.fields[0] + 1}`;
+          } else if (p2.Tow && p2.Tow.tag === 2) { // TowRock
+            towStr2 = `Tethered to Rock ${p2.Tow.fields[0]}`;
+          }
+          document.getElementById("lblTow2").textContent = towStr2;
+        } else {
+          document.getElementById("lblHp2").textContent = "Inactive / Dead";
+          document.getElementById("lblHp2").style.color = "#555";
+          document.getElementById("lblShield2").textContent = "—";
+          document.getElementById("lblShield2").style.color = "#555";
+          document.getElementById("lblHeat2").textContent = "—";
+          document.getElementById("lblHeat2").style.color = "#555";
+          document.getElementById("lblSpeed2").textContent = "—";
+          document.getElementById("lblSpeed2").style.color = "#555";
+          document.getElementById("lblCharge2").textContent = "—";
+          document.getElementById("lblCharge2").style.color = "#555";
+          document.getElementById("lblTow2").textContent = "—";
+          document.getElementById("lblTow2").style.color = "#555";
+        }
+      };
+
+      // Loop execution
+      let lastTime = performance.now();
+      let accumulator = 0;
+
+      const loop = (time) => {
+        const delta = (time - lastTime) / 1000;
+        lastTime = time;
+
+        if (isPlaying) {
+          // Accumulator design for deterministic 120Hz physics sub-stepping
+          accumulator += Math.min(delta, 0.25); // cap frame spikes
+          while (accumulator >= dt) {
+            simulateStep();
+            accumulator -= dt;
+          }
+          // Play spatial SFX and update engine sounds
+          sfxPlay(worldState.Events);
+          sfxThrust(worldState);
+        } else {
+          sfxSilence();
+        }
+
+        // Draw 3D scene using high-fidelity F# Three.js renderer
+        draw(view, worldState, worldState ? worldState.Events : empty(), delta);
+
+        // Draw 2D custom floating text overlays (damage numbers) projected from 3D space
+        const overlay = document.getElementById("overlay");
+        const oCtx = overlay.getContext("2d");
+        oCtx.clearRect(0, 0, overlay.width, overlay.height);
+
+        // Adjust resolution if size changes
+        if (overlay.width !== window.innerWidth || overlay.height !== window.innerHeight) {
+          overlay.width = window.innerWidth;
+          overlay.height = window.innerHeight;
+        }
+
+        damageNumbers.forEach((d, idx) => {
+          const proj = new THREE.Vector3(d.Pos.X, 0, d.Pos.Y);
+          proj.project(view.Camera);
+
+          const sx = (proj.x + 1) * overlay.width / 2;
+          const sy = (-proj.y + 1) * overlay.height / 2;
+
+          if (proj.z <= 1 && sx >= 0 && sx <= overlay.width && sy >= 0 && sy <= overlay.height) {
+            oCtx.fillStyle = "#ff4d4d";
+            oCtx.font = "bold 16px ui-monospace, monospace";
+            oCtx.shadowColor = "black";
+            oCtx.shadowBlur = 4;
+            oCtx.fillText(d.text, sx, sy - (1.0 - d.life) * 40 - 15);
+            oCtx.shadowBlur = 0;
+          }
+          d.life -= 0.015;
+          if (d.life <= 0) damageNumbers.splice(idx, 1);
+        });
+
+        updateStatsUI();
+        requestAnimationFrame(loop);
+      };
+
+      // Kickoff
+      initSandbox();
+      requestAnimationFrame(loop);
+    </script>
+  </body>
+</html>

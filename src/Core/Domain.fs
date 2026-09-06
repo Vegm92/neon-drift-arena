@@ -126,7 +126,7 @@ module Cfg =
     let mutable asteroidSpin = 6.3
 
     let heatMax = 100.
-    let mutable heatPerShot = 9.6
+    let mutable heatPerShot = 15.
     let mutable heatCool = 33.
     let mutable overheatLock = 1.5
 
@@ -314,6 +314,13 @@ type Weapon =
     | Rock
     | Singularity
 
+type ShipArchetype =
+    | Standard
+    | Interceptor
+    | Juggernaut
+    | Engineer
+    | Scout
+
 let crateTiers = [| Rail, 1; Pulse, 2; Scatter, 2; Tractor, 2; Mines, 3; Swarm, 3 |]
 let crateWeapons = crateTiers |> Array.collect (fun (w, n) -> Array.create n w)
 
@@ -340,6 +347,7 @@ let playerColor = [| 0; 1; 2; 3 |]
 type Ship =
     { Id: int
       Team: int
+      Archetype: ShipArchetype
       Pos: V2
       Vel: V2
       Angle: float
