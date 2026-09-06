@@ -9,7 +9,10 @@ let private tweaksKey = "nda-tweaks"
 let private padsKey = "nda-pads"
 let private arenaKey = "nda-arena"
 let private catchKey = "nda-catchup"
-let private fxKey = "nda-screenfx"
+/// The old FLASH & SHAKE key, now the shake half of that row. A player who
+/// turned it off carries over as shake off and flashing reduced.
+let private shakeKey = "nda-screenfx"
+let private flashKey = "nda-reduceflash"
 
 let private defaults = Cfg.tunables |> Array.map (fun (_, get, _) -> get ())
 
@@ -101,11 +104,19 @@ let rows () =
       yield Swap(Strings.t.CatchUp, (fun () -> Sim.catchUp), (fun b -> Sim.catchUp <- b; window.localStorage.setItem (catchKey, string b)))
       yield
           Swap(
-              Strings.t.ScreenFx,
-              (fun () -> RenderTypes.screenFx),
+              Strings.t.ReduceFlash,
+              (fun () -> RenderTypes.reduceFlash),
               fun b ->
-                  RenderTypes.screenFx <- b
-                  window.localStorage.setItem (fxKey, string b)
+                  RenderTypes.reduceFlash <- b
+                  window.localStorage.setItem (flashKey, string b)
+          )
+      yield
+          Swap(
+              Strings.t.ScreenShake,
+              (fun () -> RenderTypes.screenShake),
+              fun b ->
+                  RenderTypes.screenShake <- b
+                  window.localStorage.setItem (shakeKey, string b)
           )
       yield Header Strings.t.Audio
       yield Level(Strings.t.Music, 1)
@@ -210,5 +221,10 @@ let init () =
         | _ -> ()
     fixArena ()
     Sim.catchUp <- window.localStorage.getItem catchKey <> "false"
-    RenderTypes.screenFx <- window.localStorage.getItem fxKey <> "false"
+    let shakeOff = window.localStorage.getItem shakeKey = "false"
+    RenderTypes.screenShake <- not shakeOff
+    RenderTypes.reduceFlash <-
+        match window.localStorage.getItem flashKey with
+        | null -> shakeOff
+        | v -> v = "true"
     Input.changed <- savePads

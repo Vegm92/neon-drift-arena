@@ -65,7 +65,7 @@ let frameCamera (vw: View) (w: World) dt =
         vw.Intro <- max 0. (vw.Intro - dt)
         vw.Cam <- vw.Cam + (center - vw.Cam) * kc
         vw.CamH <- vw.CamH + (h - vw.CamH) * kh
-    vw.Jolt <- if screenFx then max 0. (vw.Jolt - dt * 3.) else 0.
+    vw.Jolt <- if screenShake then max 0. (vw.Jolt - dt * 3.) else 0.
     let j = vw.Jolt * vw.Jolt * vw.CamH * 0.02
     let jx, jy = (rnd.NextDouble() - 0.5) * j, (rnd.NextDouble() - 0.5) * j
     vw.Camera.position.set (vw.Cam.X + jx, vw.CamH, vw.Cam.Y + vw.CamH * 0.3 + jy)
