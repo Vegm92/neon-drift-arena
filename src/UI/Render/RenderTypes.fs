@@ -60,6 +60,7 @@ let lineMat hex opacity =
 
 type ShipView =
     { Shield: Mesh
+      Vent: Mesh
       Root: Object3D
       Body: Mesh
       Flame: Mesh
@@ -72,6 +73,8 @@ type ShipView =
       Mark: Mesh
       Trail: Mesh
       History: ResizeArray<V2> }
+
+let ventSegments = 48
 
 type Burst =
     { Points: Mesh

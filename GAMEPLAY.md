@@ -49,7 +49,7 @@ Playing on CrazyGames adds a few things the standalone site does not have:
 - Out of stocks? You become a launcher: a chevron in your colour on the arena rim, moved around the edge with the stick (or A/D). Fire hurls a rolling rock from there straight at the centre every 6 s. Rocks bounce, stun and hurt every ship they touch, block bullets, shatter on asteroids and any takedown credits you in the feed. Launchers never win and are not in the camera frame.
 - The kill feed under the clock reads killer, weapon icon, victim; a ring-out shows the exit arrow. A red arc around your ship points at the nearest incoming bullet, rolling rock, seeker, live mine or a railgun/tractor charging at you, brighter the closer it is.
 - Bots chase the nearest enemy, fire when lined up, use whatever crate they grab, and steer clear of rocks and the closing border.
-- The blaster runs on heat, not a magazine: every shot adds heat, sustained fire hits 100 and locks the gun for 1.5 s while it vents.
+- The blaster runs on heat, not a magazine: every shot adds heat, sustained fire hits 100 and locks the gun until the heat is fully vented. A ring around the ship reads the heat, white-hot down to red, and the ship vents to space until it clears.
 - Below 25 HP a ship smokes and runs 25% slower in every axis - turn, thrust, boost, strafe and top speed.
 - Four heal pads sit at the far ends of the two lanes: +40 HP, 30 s respawn, ignored by a ship at full health.
 - Boost drains at 21/s and only refills from pads: eight ring pads give 26, the centre pad refills fully. Pads respawn 7 s after pickup. All pads sit inside two narrow lanes (a cross through the centre) walled by asteroids.

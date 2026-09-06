@@ -111,8 +111,8 @@ let draw (vw: View) (w: World) (events: Event list) dt =
             spawnCone vw p (shipColor w.Ships.[i]) 34 pulseRange a pulseCone 7.
             spawnRing vw p 0xbfe6ff 120. 2.2 0.4
         | Cooked p ->
-            spawnBurst vw p 0xff7b2b 18 120.
-            spawnRing vw p 0xff7b2b 26. 2.2 0.5
+            spawnSmoke vw p 6 34. 16.
+            spawnRing vw p 0xffffff (shipRadius + 6.) 1.5 0.35
         | Zap(p, a, _) ->
             spawnBolts vw p 0x9df3ff a (scatterCone * 1.3) (scatterRange * 1.3)
             spawnCone vw p 0xbff6ff 48 (scatterRange * 2.6) a (scatterCone * 1.2) 11.
