@@ -8,6 +8,19 @@
     <!-- Core: pure .NET, no browser deps (shared with test project) -->
     <Compile Include="Core\Vec.fs" />
     <Compile Include="Core\Domain.fs" />
+    <Compile Include="Core\Maps.fs" />
+    <Compile Include="Core\State.fs" />
+    <Compile Include="Core\Track.fs" />
+    <Compile Include="Core\Spawn.fs" />
+    <Compile Include="Core\Arena.fs" />
+    <Compile Include="Core\Combat.fs" />
+    <Compile Include="Core\Kinematics.fs" />
+    <Compile Include="Core\Weapons.fs" />
+    <Compile Include="Core\Entities.fs" />
+    <Compile Include="Core\Collisions.fs" />
+    <Compile Include="Core\Rebirth.fs" />
+    <Compile Include="Core\Race.fs" />
+    <Compile Include="Core\Bot.fs" />
     <Compile Include="Core\Strings.fs" />
     <Compile Include="Core\Sim.fs" />
     <!-- Platform: thin browser bindings -->

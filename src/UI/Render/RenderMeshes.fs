@@ -259,9 +259,9 @@ let mkArena (scene: Object3D) =
     border, spawns, frame
 
 let private mkRoad (scene: Object3D) =
-    let g = Sim.road
+    let g = State.road
     let n = g.Length
-    let half = Sim.trackWidth / 2.
+    let half = State.trackWidth / 2.
     let edge (side: float) =
         [| for i in 0 .. n - 1 do
                let d = norm (g.[(i + 1) % n] - g.[(i + n - 1) % n])
@@ -293,8 +293,8 @@ let private mkMark (scene: Object3D) i (p: V2) =
     m
 
 let syncArena (vw: View) =
-    if vw.Layout <> Sim.layout then
-        vw.Layout <- Sim.layout
+    if vw.Layout <> State.layout then
+        vw.Layout <- State.layout
         if vw.Size <> arenaHalf then
             vw.Size <- arenaHalf
             vw.Scene.remove vw.Frame
@@ -303,15 +303,15 @@ let syncArena (vw: View) =
             vw.Spawns <- spawns
             vw.Frame <- frame
         vw.Road |> Option.iter vw.Scene.remove
-        vw.Road <- if Sim.road.Length > 1 then Some(mkRoad vw.Scene) else None
+        vw.Road <- if State.road.Length > 1 then Some(mkRoad vw.Scene) else None
         for m in vw.Marks do
             vw.Scene.remove m
-        vw.Marks <- Sim.gates |> Array.mapi (mkMark vw.Scene)
+        vw.Marks <- State.gates |> Array.mapi (mkMark vw.Scene)
         for o in vw.Rocks do
             vw.Scene.remove o
         for m in vw.Pads do
             vw.Scene.remove m
-        vw.Rocks <- Sim.asteroids |> Array.map (mkAsteroid vw.Scene 0x05060f 0x6a7cff)
+        vw.Rocks <- State.asteroids |> Array.map (mkAsteroid vw.Scene 0x05060f 0x6a7cff)
         vw.Pads <- Sim.initial.Pads |> Array.map (mkPad vw.Scene)
 
 let mkPanel (hud: HTMLElement) i =

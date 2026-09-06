@@ -3,7 +3,10 @@ module Check
 open Vec
 open Domain
 open Domain.Cfg
+open Maps
 open Sim
+open State
+open Spawn
 
 let dt = physicsDt
 let present = { noInput with Present = true }

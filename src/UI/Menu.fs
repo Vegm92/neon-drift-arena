@@ -163,7 +163,7 @@ let private botKey = "bot"
 let isBot slot = joined.Contains slot && owner.[slot] = botKey
 
 let private applyMode () =
-    Sim.race <- raceMode
+    State.race <- raceMode
     Settings.fixArena ()
     for s in 0 .. 3 do if not (isBot s) then ready.[s] <- false
     Array.fill wins 0 4 0
@@ -216,7 +216,7 @@ let dropIn () =
         let wants = rising d.Key "start" d.Input.Start || rising d.Key "fire" d.Input.Fire
         if not mine && wants && arrived.IsNone then
             let free = [ 0..3 ] |> List.tryFind (fun i -> not (joined.Contains i))
-            let seat = free |> Option.orElse ([ 0..3 ] |> List.tryFind (fun i -> isBot i && i <> Sim.target))
+            let seat = free |> Option.orElse ([ 0..3 ] |> List.tryFind (fun i -> isBot i && i <> State.target))
             match seat with
             | Some slot ->
                 let fromBot = isBot slot
@@ -350,7 +350,7 @@ let private renderLobby (devices: Input.Device[]) =
     let picks =
         [ Strings.t.ModeLabel, modeName (), true
           Strings.t.Arena, Settings.arenaName (), true
-          Strings.t.Mutator, Strings.t.Mutators.[Sim.mutator], true
+          Strings.t.Mutator, Strings.t.Mutators.[State.mutator], true
           "", (if joined.Count < 4 then Strings.t.AddBot else Strings.t.ClearBots), true
           "", Strings.t.Settings, true
           Strings.keysLaunch (), Strings.t.Start, go ]
@@ -499,7 +499,7 @@ let private updateLobby () =
                         else teamMode <- true
                         applyMode ()
                     | 1 -> Settings.adjust Settings.Arena 1
-                    | 2 -> Sim.mutator <- (Sim.mutator + 1) % Sim.mutators
+                    | 2 -> State.mutator <- (State.mutator + 1) % State.mutators
                     | 3 -> toggleBots ()
                     | 4 -> options <- true
                     | _ -> if canStart () then launch <- true

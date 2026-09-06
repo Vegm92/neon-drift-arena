@@ -47,7 +47,7 @@ let feedLine (vw: View) (w: World) victim by wpn ring =
 let private weaponHtml (s: Ship) =
     if Sim.launcher s then
         sprintf "<span class=\"%s\">%s</span>" (if s.LaunchCd <= 0. then "ready" else "wait") (icon Rock false)
-    elif Sim.race && s.Weapon = Blaster then ""
+    elif State.race && s.Weapon = Blaster then ""
     else
         let n = if weaponAmmo s.Weapon > 0 then s.Ammo else 0
         icon s.Weapon false + sprintf "<span class=\"ammo\">%s</span>" (String.replicate n "●")
@@ -84,7 +84,7 @@ let drawHud (vw: View) (w: World) dt =
         el.querySelector(".heat i")?style?width <- sprintf "%.0f%%" (s.Heat / heatMax * 100.)
         let stocks = el.querySelector ".stocks" :?> HTMLElement
         stocks.textContent <-
-            if Sim.race then Strings.t.Lap Strings.t.Places.[Sim.place w.Ships i - 1] (min (int laps) (s.Laps + 1)) (int laps)
+            if State.race then Strings.t.Lap Strings.t.Places.[Sim.place w.Ships i - 1] (min (int laps) (s.Laps + 1)) (int laps)
             else String.replicate (max 0 s.Stocks) "◆"
         stocks?style?color <- sprintf "#%06x" (shipColor s)
         let wep = el.querySelector ".wep" :?> HTMLElement
@@ -130,7 +130,7 @@ let drawMarks (vw: View) (w: World) =
 let drawSpawns (vw: View) (w: World) =
     Array.iter2
         (fun (m: Mesh) (s: Ship) ->
-            m.visible <- s.Active && not Sim.race
+            m.visible <- s.Active && not State.race
             m.material.color.setHex (shipColor s))
         vw.Spawns
         w.Ships

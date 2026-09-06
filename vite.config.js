@@ -37,6 +37,30 @@ const bakeTweaks = {
   },
 };
 
+const maps = new URL("src/Core/Maps.fs", import.meta.url);
+const locale = new URL("src/Core/Strings.fs", import.meta.url);
+
+const mapEdit = {
+  name: "map-edit",
+  configureServer(server) {
+    server.middlewares.use("/__maps", (req, res) => {
+      let body = "";
+      req.on("data", (c) => (body += c));
+      req.on("end", () => {
+        const { custom, names } = JSON.parse(body);
+        const src = readFileSync(maps, "utf8");
+        const a = src.indexOf("let private custom: Layout array =");
+        const b = src.indexOf("\nlet layouts", a);
+        writeFileSync(maps, src.slice(0, a) + "let private custom: Layout array =\n" + custom + "\n" + src.slice(b + 1));
+        const loc = readFileSync(locale, "utf8");
+        const list = names.map((n) => `"${n.replace(/"/g, "")}"`).join("; ");
+        writeFileSync(locale, loc.replace(/(Arenas = \[\| ).*?( \|\])/, `$1${list}$2`));
+        res.end("ok");
+      });
+    });
+  },
+};
+
 const phonePad = {
   name: "phone-pad",
   configureServer(server) {
@@ -64,7 +88,7 @@ const phonePad = {
 
 export default {
   base: "./",
-  plugins: [siteStrings, bakeTweaks, phonePad],
+  plugins: [siteStrings, bakeTweaks, phonePad, mapEdit],
   build: { rollupOptions: { input: { main: "index.html", play: "play/index.html", pad: "pad.html" } } },
   server: { port: process.env.PORT ? +process.env.PORT : undefined },
 };
