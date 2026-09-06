@@ -76,6 +76,7 @@ let private owner = Array.create 4 ""
 let mutable private teamMode = false
 let mutable private practiceMode = false
 let mutable private raceMode = false
+let mutable private renaming = -1
 let practice () = practiceMode
 let race () = raceMode
 let mutable private optRows: Settings.Row list = []
@@ -267,9 +268,7 @@ let private cardColor i = if teams.[i] > 0 then teamColors.[teams.[i]] else colo
 
 let private displayName i = if isBot i then Strings.t.Bot elif names.[i] = "" then Strings.t.Player i else names.[i]
 
-let private rename slot =
-    let s: string = window?prompt (Strings.t.RenamePrompt, displayName slot)
-    if not (isNull s) then names.[slot] <- s.Trim()
+let private rename slot = renaming <- slot
 
 let phase () =
     if not shown then "play"
@@ -323,9 +322,14 @@ let private renderLobby (devices: Input.Device[]) =
                   elif ready.[i] then sprintf "<div class=\"foot\">%s %s</div>" Strings.t.Ready (String.replicate wins.[i] "★")
                   else sprintf "<div class=\"foot pick\"><span data-dir=\"-1\">&#9664;</span> %s <span data-dir=\"1\">&#9654;</span></div>" (pickName i)
               let cls = (if inGame then " in" else "") + (if inGame && onRow.[i] then " away" else "")
+              let nameHtml =
+                  if i = renaming then
+                      sprintf "<input class=\"rename\" data-slot=\"%d\" maxlength=\"16\" placeholder=\"%s\" value=\"%s\">" i Strings.t.RenamePrompt (displayName i)
+                  else
+                      sprintf "<b>%s</b>" (if inGame then displayName i else Strings.t.Player i)
               sprintf
-                  "<div class=\"slot%s\" data-slot=\"%d\" style=\"color:%s\"><b>%s</b><div class=\"art\">%s</div><div class=\"dev\">%s</div>%s</div>"
-                  cls i color (if inGame then displayName i else Strings.t.Player i) (if inGame then ship i else plus) name foot ]
+                  "<div class=\"slot%s\" data-slot=\"%d\" style=\"color:%s\">%s<div class=\"art\">%s</div><div class=\"dev\">%s</div>%s</div>"
+                  cls i color nameHtml (if inGame then ship i else plus) name foot ]
         |> String.concat ""
     let mode = Strings.t.Mode |> List.map (sprintf "<span>%s</span>") |> String.concat ""
     let go = canStart ()
@@ -372,6 +376,13 @@ let private renderLobby (devices: Input.Device[]) =
             (legend Strings.t.Gamepad Strings.t.PadLegend)
             (legend Strings.t.Phone Strings.t.PhoneLegend)
             (qr ())
+    if renaming >= 0 then
+        match el.querySelector "input.rename" with
+        | null -> ()
+        | inp ->
+            let i = inp :?> Browser.Types.HTMLInputElement
+            i.focus ()
+            i.select ()
 
 let recordWin (winner: int) (team: int) =
     for s in joined do
@@ -439,64 +450,67 @@ let private dropMissing (devices: Input.Device[]) =
         if not (isBot s) && not (devices |> Array.exists (fun d -> d.Key = owner.[s] && d.Slot = s)) then leave s
 
 let private updateLobby () =
-    let devices = Input.devices ()
-    dropMissing devices
-    for d in devices do
-        if d.Slot >= 0 && joined.Contains d.Slot && owner.[d.Slot] = d.Key then
-            if d.Name <> "" && not (isBot d.Slot) then
-                names.[d.Slot] <- d.Name
-    let mutable launch = false
-    let mutable options = false
-    for d in devices do
-        let mine = d.Slot >= 0 && joined.Contains d.Slot && owner.[d.Slot] = d.Key
-        let fire = rising d.Key "fire" (d.Input.Fire || d.Input.Boost)
-        let start = rising d.Key "start" d.Input.Start
-        let back = rising d.Key "back" d.Input.Back
-        let up = rising d.Key "up" d.Input.Thrust
-        let down = rising d.Key "down" d.Input.Reverse
-        let h = d.Input.Turn + d.Input.Strafe
-        let right = rising d.Key "right" (h > 0.5)
-        let left = rising d.Key "left" (h < -0.5)
-        if not mine then
-            if fire || start then
-                let slot =
-                    if d.Slot >= 0 && not (joined.Contains d.Slot) then Some d.Slot
-                    else [ 0..3 ] |> List.tryFind (fun i -> not (joined.Contains i))
-                slot |> Option.iter (claim d.Key)
-        elif onRow.[d.Slot] then
-            if left then lobbyPick <- (lobbyPick + 5) % 6
-            if right then lobbyPick <- (lobbyPick + 1) % 6
-            if up || back then onRow.[d.Slot] <- false
-            elif start && canStart () then launch <- true
-            elif fire || start then
-                match lobbyPick with
-                | 0 ->
-                    if raceMode then raceMode <- false
-                    elif practiceMode then (practiceMode <- false; raceMode <- true)
-                    elif teamMode then (teamMode <- false; practiceMode <- true)
-                    else teamMode <- true
-                    applyMode ()
-                | 1 -> Settings.adjust Settings.Arena 1
-                | 2 -> Sim.mutator <- (Sim.mutator + 1) % Sim.mutators
-                | 3 -> toggleBots ()
-                | 4 -> options <- true
-                | _ -> if canStart () then launch <- true
-        else
-            if (left || right) && not ready.[d.Slot] then
-                if teamMode then teams.[d.Slot] <- 3 - teams.[d.Slot]
-                else cycleColor d.Slot (if right then 1 else -1)
-            if down then onRow.[d.Slot] <- true
-            elif up then rename d.Slot
-            elif back then (if ready.[d.Slot] then ready.[d.Slot] <- false else leave d.Slot)
-            elif start && canStart () then launch <- true
-            elif fire || start then ready.[d.Slot] <- true
-    if options then
-        openOptions ()
+    if renaming >= 0 then
         false
     else
-        renderLobby (Input.devices ())
-        if launch then hide ()
-        launch
+        let devices = Input.devices ()
+        dropMissing devices
+        for d in devices do
+            if d.Slot >= 0 && joined.Contains d.Slot && owner.[d.Slot] = d.Key then
+                if d.Name <> "" && not (isBot d.Slot) then
+                    names.[d.Slot] <- d.Name
+        let mutable launch = false
+        let mutable options = false
+        for d in devices do
+            let mine = d.Slot >= 0 && joined.Contains d.Slot && owner.[d.Slot] = d.Key
+            let fire = rising d.Key "fire" (d.Input.Fire || d.Input.Boost)
+            let start = rising d.Key "start" d.Input.Start
+            let back = rising d.Key "back" d.Input.Back
+            let up = rising d.Key "up" d.Input.Thrust
+            let down = rising d.Key "down" d.Input.Reverse
+            let h = d.Input.Turn + d.Input.Strafe
+            let right = rising d.Key "right" (h > 0.5)
+            let left = rising d.Key "left" (h < -0.5)
+            if not mine then
+                if fire || start then
+                    let slot =
+                        if d.Slot >= 0 && not (joined.Contains d.Slot) then Some d.Slot
+                        else [ 0..3 ] |> List.tryFind (fun i -> not (joined.Contains i))
+                    slot |> Option.iter (claim d.Key)
+            elif onRow.[d.Slot] then
+                if left then lobbyPick <- (lobbyPick + 5) % 6
+                if right then lobbyPick <- (lobbyPick + 1) % 6
+                if up || back then onRow.[d.Slot] <- false
+                elif start && canStart () then launch <- true
+                elif fire || start then
+                    match lobbyPick with
+                    | 0 ->
+                        if raceMode then raceMode <- false
+                        elif practiceMode then (practiceMode <- false; raceMode <- true)
+                        elif teamMode then (teamMode <- false; practiceMode <- true)
+                        else teamMode <- true
+                        applyMode ()
+                    | 1 -> Settings.adjust Settings.Arena 1
+                    | 2 -> Sim.mutator <- (Sim.mutator + 1) % Sim.mutators
+                    | 3 -> toggleBots ()
+                    | 4 -> options <- true
+                    | _ -> if canStart () then launch <- true
+            else
+                if (left || right) && not ready.[d.Slot] then
+                    if teamMode then teams.[d.Slot] <- 3 - teams.[d.Slot]
+                    else cycleColor d.Slot (if right then 1 else -1)
+                if down then onRow.[d.Slot] <- true
+                elif up then rename d.Slot
+                elif back then (if ready.[d.Slot] then ready.[d.Slot] <- false else leave d.Slot)
+                elif start && canStart () then launch <- true
+                elif fire || start then ready.[d.Slot] <- true
+        if options then
+            openOptions ()
+            false
+        else
+            renderLobby (Input.devices ())
+            if launch then hide ()
+            launch
 
 let private updateOptions () =
     let n = optRows.Length
@@ -582,6 +596,30 @@ let private pick i =
 
 el.addEventListener ("contextmenu", fun e -> e.preventDefault ())
 el.addEventListener ("pointerup", fun _ -> Input.release ())
+
+let private commitRename (e: Browser.Types.Event) =
+    if renaming >= 0 then
+        let v: string = (e.target :?> Browser.Types.HTMLInputElement).value
+        names.[renaming] <- v.Trim()
+        renaming <- -1
+        renderLobby (Input.devices ())
+
+el.addEventListener (
+    "keydown",
+    fun e ->
+        if renaming >= 0 then
+            e.stopPropagation ()
+            match (e :?> Browser.Types.KeyboardEvent).key with
+            | "Enter" ->
+                e.preventDefault ()
+                commitRename e
+            | "Escape" ->
+                e.preventDefault ()
+                renaming <- -1
+                renderLobby (Input.devices ())
+            | _ -> ()
+)
+el.addEventListener ("focusout", commitRename)
 
 el.addEventListener (
     "wheel",
