@@ -159,10 +159,13 @@ let private cycleColor slot dir =
     let i = List.findIndex ((=) playerColor.[slot]) free
     playerColor.[slot] <- free.[(i + dir + free.Length) % free.Length]
 
+let private botKey = "bot"
+let isBot slot = joined.Contains slot && owner.[slot] = botKey
+
 let private applyMode () =
     Sim.race <- raceMode
     Settings.fixArena ()
-    Array.fill ready 0 4 false
+    for s in 0 .. 3 do if not (isBot s) then ready.[s] <- false
     Array.fill wins 0 4 0
     let order = joined |> Seq.sort |> Seq.toList
     if teamMode then
@@ -170,9 +173,6 @@ let private applyMode () =
     else
         Array.fill teams 0 4 0
         order |> List.iteri (fun i s -> playerColor.[s] <- i)
-
-let private botKey = "bot"
-let isBot slot = joined.Contains slot && owner.[slot] = botKey
 
 let private claim key slot =
     if key <> botKey then Input.assign key slot
