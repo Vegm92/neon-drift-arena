@@ -36,9 +36,8 @@ Playing on CrazyGames adds a few things the standalone site does not have:
 
 - **Sign in** from SETTINGS > CRAZYGAMES. Your CrazyGames username becomes your player tag, and it updates the moment you sign in — no restart, no blocking prompt. Play as a guest and nothing is lost.
 - **Your progress follows you.** Best kill count and matches played are saved to your CrazyGames profile, so they are the same on any machine you sign in on.
-- **Leaderboard.** Beat your best kill count in a match and the new score goes up automatically.
 - **Invite a friend** through CrazyGames and their link drops them straight into your room.
-- **Ads.** A short ad plays between the end of a match and the result screen; the game pauses and goes silent for it. Banners only ever appear on menu screens and are cleared before play starts.
+- **Ads.** A short ad plays between the end of a match and the result screen; the game pauses and goes silent for it. There are no banner ads.
 - CrazyGames' own mute control silences the game, and the in-game `M` cannot override it.
 
 ## Rules
@@ -59,7 +58,7 @@ Playing on CrazyGames adds a few things the standalone site does not have:
 - Every 35 s a black hole opens on a free spot for 15 s: a black disc with a bright violet horizon and a swirl of light falling in. It never moves. It drags ships, bullets, seekers, mines and rocks toward it with a pull that grows sharply near the horizon; touching the core destroys the ship, credited to whoever hit it last. The danger arc points at it when you are inside the pull. None open in sudden death.
 - Leaving the arena border by more than 60 units destroys the ship.
 - Firing recoils the shooter, so the blaster doubles as a reverse thruster.
-- Every sim event drives a synthesised voice — no audio files. Browsers keep audio suspended until a key or click, so a gamepad-only session stays silent until someone touches the keyboard or the window; the lobby's note line says so until sound is unlocked.
+- Every sim event drives a synthesised voice — the effects use no sample files; only the music is streamed (SETTINGS > AUDIO has separate MUSIC and SOUNDS levels). Browsers keep audio suspended until a key or click, so a gamepad-only session stays silent until someone touches the keyboard or the window; the lobby's note line says so until sound is unlocked.
 
 ## Weapons
 
