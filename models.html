@@ -11,16 +11,18 @@ body{margin:0;background:#05060d;color:#cfe;font:12px monospace;overflow:hidden}
 button{background:#0a1226;color:#8ff;border:1px solid #2a4;padding:6px 10px;font:inherit;cursor:pointer}
 button.on{background:#0f3;color:#000}
 #info{position:fixed;top:10px;right:10px;text-align:right;opacity:.75;z-index:2}
-#tune{position:fixed;top:70px;right:10px;width:210px;background:#0a1226cc;border:1px solid #2a4;padding:8px;z-index:2}
+#tune{position:fixed;top:70px;max-height:calc(100vh - 140px);overflow:auto;right:10px;width:210px;background:#0a1226cc;border:1px solid #2a4;padding:8px;z-index:2}
 #tune label{display:flex;align-items:center;gap:6px;margin:3px 0}
 #tune span{width:74px}#tune b{width:44px;text-align:right;color:#0f3;font-weight:normal}
 #tune input{flex:1;width:0;accent-color:#0f3}
+#save{position:fixed;top:36px;right:10px;z-index:3}
 #tune hr{border:0;border-top:1px solid #234;margin:6px 0}
 </style>
 <div id="ui"></div>
 <div id="acts"></div>
 <div id="cols"></div>
 <div id="tune"></div>
+<button id="save">SAVE TWEAKS</button>
 <div id="info"><button id="top">TOP VIEW</button> <button id="spin" class="on">SPIN</button><br>drag = orbit · wheel = zoom</div>
 <script type="module">
 import * as THREE from "three";
@@ -34,8 +36,13 @@ const MODELS = [
   ["star-b", "/models/star-b.glb", -Math.PI / 2],
 ];
 const ACTS = ["idle", "thrust", "bank", "shoot", "damaged", "explode"];
+const O = { yaw: 0, pitch: 0, roll: 0 };
+const ORI = {};
+let shipName = "";
 const P = {
   jetLen: 0.9, jetRad: 0.14, jetX: 0.3, jetZ: 1.22, jetFlicker: 0.25,
+  stretch: 1, width: 1, height: 1,
+  metalness: 0.6, roughness: 0.4, emissive: 0, wireframe: 0,
   fireRate: 0.12, bulletSpeed: 25, bulletSize: 0.06, muzzleX: 0.6, muzzleZ: 1,
 };
 const TEAM = [0x00f6ff, 0xff2bd6, 0x7cff3a, 0xffb300, 0xff6a00];
@@ -75,37 +82,42 @@ const sparks = new THREE.Points(sparkGeo, new THREE.PointsMaterial({ color: 0xff
 sparks.visible = false; rig.add(sparks);
 
 const loader = new GLTFLoader();
-let act = "idle", t = 0, boom = 0, shotAt = 0, plain = true;
+let act = "idle", t = 0, boom = 0, shotAt = 0;
 
-function tint() {
+function applyMat() {
   ship.traverse(o => {
     if (!o.isMesh) return;
-    if (plain) {
-      o.material.color.setHex(team);
-      o.material.metalness = 0.6; o.material.roughness = 0.3;
-      o.material.emissive?.setHex(team); o.material.emissiveIntensity = 0.25;
-    }
-    o.material.userData.base = plain ? team : 0x000000;
+    o.material.metalness = P.metalness;
+    o.material.roughness = P.roughness;
+    o.material.emissive?.setHex(team);
+    o.material.emissiveIntensity = P.emissive;
+    o.material.wireframe = !!P.wireframe;
   });
 }
 
-function load(url, yaw) {
+let current = null;
+
+function fit() {
+  if (!current) return;
   ship.clear();
-  plain = false;
-  loader.load(url, g => {
-    g.scene.rotation.y = yaw;
-    const box = new THREE.Box3().setFromObject(g.scene);
-    const size = box.getSize(new THREE.Vector3());
-    const s = 2 / size.z;
-    const holder = new THREE.Group();
-    holder.scale.setScalar(s);
-    holder.position.copy(box.getCenter(new THREE.Vector3()).multiplyScalar(-s));
-    holder.add(g.scene);
-    ship.add(holder);
-    radius = size.x * s * 0.5;
-    placeJets();
-    tint();
-  }, undefined, e => console.error(e));
+  current.rotation.set(O.pitch, O.yaw, O.roll);
+  const box = new THREE.Box3().setFromObject(current);
+  const size = box.getSize(new THREE.Vector3());
+  const s = 2 / size.z;
+  const holder = new THREE.Group();
+  holder.scale.set(s * P.width, s * P.height, s * P.stretch);
+  holder.position.copy(box.getCenter(new THREE.Vector3()).multiplyScalar(-s));
+  holder.add(current);
+  ship.add(holder);
+  radius = size.x * s * P.width * 0.5;
+  placeJets();
+  applyMat();
+}
+
+function load(url, yaw, name) {
+  ship.clear(); current = null; shipName = name;
+  Object.assign(O, { yaw, pitch: 0, roll: 0 }, ORI[name]); syncOri();
+  loader.load(url, g => { current = g.scene; fit(); }, undefined, e => console.error(e));
 }
 
 function burst() {
@@ -121,7 +133,7 @@ const ui = document.getElementById("ui"), acts = document.getElementById("acts")
 MODELS.forEach(([name, url, yaw], i) => {
   const b = document.createElement("button");
   b.textContent = name; b.onclick = () => {
-    [...ui.children].forEach(x => x.classList.remove("on")); b.classList.add("on"); load(url, yaw);
+    [...ui.children].forEach(x => x.classList.remove("on")); b.classList.add("on"); load(url, yaw, name);
   };
   if (i === 0) b.classList.add("on");
   ui.append(b);
@@ -142,40 +154,85 @@ TEAM.forEach((c, i) => {
   b.style.background = "#" + c.toString(16).padStart(6, "0");
   b.onclick = () => {
     [...cols.children].forEach(x => x.classList.remove("on")); b.classList.add("on");
-    team = c; jets.forEach(j => j.material.color.setHex(c)); tint();
+    team = c; jets.forEach(j => j.material.color.setHex(c)); applyMat();
   };
   if (i === 0) b.classList.add("on");
   cols.append(b);
 });
-load(MODELS[0][1], MODELS[0][2]);
 let spin = true;
 const spinBtn = document.getElementById("spin");
 spinBtn.onclick = () => { spin = !spin; spinBtn.classList.toggle("on", spin); };
 document.getElementById("top").onclick = () => {
   cam.position.set(0, 5, 0.001); ctl.target.set(0, 0, 0); ctl.update();
 };
+const oriBox = document.createElement("div");
+const oriUi = ["yaw", "pitch", "roll"].map(k => {
+  const l = document.createElement("label");
+  l.innerHTML = `<span>${k}°</span><input type=range min=-180 max=180 step=5 value=0><b>0</b>`;
+  const [inp, out] = [l.querySelector("input"), l.querySelector("b")];
+  inp.oninput = () => {
+    O[k] = +inp.value * Math.PI / 180; out.textContent = inp.value;
+    (ORI[shipName] ??= {})[k] = O[k]; fit();
+  };
+  oriBox.append(l);
+  return [k, inp, out];
+});
+function syncOri() {
+  for (const [k, inp, out] of oriUi) {
+    const deg = Math.round(O[k] * 180 / Math.PI);
+    inp.value = deg; out.textContent = deg;
+  }
+}
+
 const RANGES = {
   jetLen: [0.2, 3, 0.05], jetRad: [0.03, 0.5, 0.01], jetX: [0, 1, 0.02],
   jetZ: [0.5, 2.5, 0.02], jetFlicker: [0, 1, 0.05],
+  stretch: [0.4, 2.5, 0.05], width: [0.4, 2.5, 0.05], height: [0.2, 3, 0.05],
+  metalness: [0, 1, 0.05], roughness: [0, 1, 0.05], emissive: [0, 1, 0.05], wireframe: [0, 1, 1],
   fireRate: [0.03, 0.6, 0.01], bulletSpeed: [5, 80, 1],
   bulletSize: [0.02, 0.3, 0.01], muzzleX: [0, 1.2, 0.02], muzzleZ: [0, 2, 0.02],
 };
 const tune = document.getElementById("tune");
+tune.append(oriBox, document.createElement("hr"));
+const paramUi = [];
 Object.entries(RANGES).forEach(([k, [min, max, step]], i) => {
-  if (k === "fireRate") tune.append(document.createElement("hr"));
+  if (k === "stretch" || k === "fireRate") tune.append(document.createElement("hr"));
   const l = document.createElement("label");
   l.innerHTML = `<span>${k}</span><input type=range min=${min} max=${max} step=${step} value=${P[k]}><b>${P[k]}</b>`;
   const [inp, out] = [l.querySelector("input"), l.querySelector("b")];
-  inp.oninput = () => { P[k] = +inp.value; out.textContent = inp.value; placeJets(); };
+  inp.oninput = () => {
+    P[k] = +inp.value; out.textContent = inp.value;
+    placeJets(); applyMat(); if (k === "stretch" || k === "width" || k === "height") fit();
+  };
+  paramUi.push([k, inp, out]);
   tune.append(l);
 });
-window.V = { THREE, P, cam, ctl, rig, ship, load, MODELS };
+function syncParams() {
+  for (const [k, inp, out] of paramUi) { inp.value = P[k]; out.textContent = P[k]; }
+  placeJets();
+}
+load(MODELS[0][1], MODELS[0][2], MODELS[0][0]);
+
+document.getElementById("save").onclick = async (e) => {
+  await fetch("/__model-tune", { method: "POST", body: JSON.stringify({ params: P, orientation: ORI }, null, 2) });
+  e.target.textContent = "SAVED"; setTimeout(() => (e.target.textContent = "SAVE TWEAKS"), 1200);
+};
+
+fetch("/models/tune.json").then(r => r.ok && r.json()).then(saved => {
+  if (!saved) return;
+  Object.assign(P, saved.params); Object.assign(ORI, saved.orientation);
+  syncParams(); applyMat();
+  const m = MODELS.find(([n]) => n === shipName);
+  load(m[1], m[2], m[0]);
+}).catch(() => {});
+
+window.V = { THREE, P, O, ORI, cam, ctl, rig, ship, load, MODELS };
 
 const clock = new THREE.Clock();
 function frame() {
   const dt = Math.min(clock.getDelta(), 0.05); t += dt;
   rig.rotation.set(0, 0, 0); rig.position.set(0, 0, 0);
-  jets.forEach(j => j.visible = false); ship.traverse(o => { if (o.material) o.material.opacity ??= 1; });
+  jets.forEach(j => j.visible = false);
 
   if (act === "idle") rig.rotation.y = t * 0.5;
   if (act === "thrust") {
@@ -209,11 +266,11 @@ function frame() {
     rig.rotation.y = t * 0.5; rig.rotation.z = Math.sin(t * 9) * 0.15;
     rig.position.y = Math.sin(t * 17) * 0.05;
     const hit = Math.sin(t * 25) > 0.4;
-    ship.traverse(o => { if (o.isMesh) o.material.emissive?.setHex(hit ? 0xff2200 : o.material.userData.base ?? 0x000000); });
+    ship.traverse(o => { if (o.isMesh) { o.material.emissive?.setHex(hit ? 0xff2200 : team); o.material.emissiveIntensity = hit ? 0.8 : P.emissive; } });
     if (!sparks.visible) { burst(); sparks.visible = true; }
     if (boom > 0.8) burst();
   } else {
-    ship.traverse(o => { if (o.isMesh) o.material.emissive?.setHex(o.material.userData.base ?? 0x000000); });
+    ship.traverse(o => { if (o.isMesh) o.material.emissiveIntensity = P.emissive; });
   }
   if (act === "explode") {
     boom += dt;

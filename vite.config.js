@@ -37,6 +37,20 @@ const bakeTweaks = {
   },
 };
 
+const modelTune = {
+  name: "model-tune",
+  configureServer(server) {
+    server.middlewares.use("/__model-tune", (req, res) => {
+      let body = "";
+      req.on("data", (c) => (body += c));
+      req.on("end", () => {
+        writeFileSync(new URL("public/models/tune.json", import.meta.url), body);
+        res.end("ok");
+      });
+    });
+  },
+};
+
 const maps = new URL("src/Core/Maps.fs", import.meta.url);
 const locale = new URL("src/Core/Strings.fs", import.meta.url);
 
@@ -88,7 +102,7 @@ const phonePad = {
 
 export default {
   base: "./",
-  plugins: [siteStrings, bakeTweaks, phonePad, mapEdit],
+  plugins: [siteStrings, bakeTweaks, phonePad, mapEdit, modelTune],
   build: { rollupOptions: { input: { main: "index.html", play: "play/index.html", pad: "pad.html", combat: "combat.html" } } },
   server: { port: process.env.PORT ? +process.env.PORT : undefined },
 };

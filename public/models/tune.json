@@ -1,0 +1,22 @@
+{
+  "params": {
+    "jetLen": 0.9,
+    "jetRad": 0.14,
+    "jetX": 0.3,
+    "jetZ": 1.22,
+    "jetFlicker": 0.25,
+    "stretch": 1,
+    "width": 1,
+    "height": 1,
+    "metalness": 0.6,
+    "roughness": 0.4,
+    "emissive": 0,
+    "wireframe": 0,
+    "fireRate": 0.12,
+    "bulletSpeed": 25,
+    "bulletSize": 0.06,
+    "muzzleX": 0.6,
+    "muzzleZ": 1
+  },
+  "orientation": {}
+}
