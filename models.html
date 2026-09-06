@@ -11,10 +11,16 @@ body{margin:0;background:#05060d;color:#cfe;font:12px monospace;overflow:hidden}
 button{background:#0a1226;color:#8ff;border:1px solid #2a4;padding:6px 10px;font:inherit;cursor:pointer}
 button.on{background:#0f3;color:#000}
 #info{position:fixed;top:10px;right:10px;text-align:right;opacity:.75;z-index:2}
+#tune{position:fixed;top:70px;right:10px;width:210px;background:#0a1226cc;border:1px solid #2a4;padding:8px;z-index:2}
+#tune label{display:flex;align-items:center;gap:6px;margin:3px 0}
+#tune span{width:74px}#tune b{width:44px;text-align:right;color:#0f3;font-weight:normal}
+#tune input{flex:1;width:0;accent-color:#0f3}
+#tune hr{border:0;border-top:1px solid #234;margin:6px 0}
 </style>
 <div id="ui"></div>
 <div id="acts"></div>
 <div id="cols"></div>
+<div id="tune"></div>
 <div id="info"><button id="top">TOP VIEW</button><br>drag = orbit · wheel = zoom</div>
 <script type="module">
 import * as THREE from "three";
@@ -28,6 +34,10 @@ const MODELS = [
   ["star-b", "/models/star-b.glb", -Math.PI / 2],
 ];
 const ACTS = ["idle", "thrust", "bank", "shoot", "damaged", "explode"];
+const P = {
+  jetLen: 0.9, jetRad: 0.14, jetX: 0.3, jetZ: 1.22, jetFlicker: 0.25,
+  fireRate: 0.12, bulletSpeed: 25, bulletSize: 0.06, muzzleX: 0.6, muzzleZ: 1,
+};
 const TEAM = [0x00f6ff, 0xff2bd6, 0x7cff3a, 0xffb300, 0xff6a00];
 let team = TEAM[0];
 
@@ -50,9 +60,10 @@ let radius = 1;
 
 const glow = (c, o) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, blending: THREE.AdditiveBlending, depthWrite: false });
 const jets = [0, 1].map(() => {
-  const m = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.9, 12), glow(0x00f6ff, 0.9));
+  const m = new THREE.Mesh(new THREE.ConeGeometry(1, 1, 12), glow(0x00f6ff, 0.9));
   m.rotation.x = -Math.PI / 2; rig.add(m); return m;
 });
+const placeJets = () => jets.forEach((j, i) => j.position.set((i ? 1 : -1) * radius * P.jetX, 0, P.jetZ));
 const bullets = [];
 const bulletGeo = new THREE.SphereGeometry(0.06, 8, 8);
 const bulletMat = glow(0xffe066, 1);
@@ -92,7 +103,7 @@ function load(url, yaw) {
     holder.add(g.scene);
     ship.add(holder);
     radius = size.x * s * 0.5;
-    jets.forEach((j, i) => j.position.set((i ? 1 : -1) * radius * 0.3, 0, 1.22));
+    placeJets();
     tint();
   }, undefined, e => console.error(e));
 }
@@ -140,7 +151,22 @@ load(MODELS[0][1], MODELS[0][2]);
 document.getElementById("top").onclick = () => {
   cam.position.set(0, 5, 0.001); ctl.target.set(0, 0, 0); ctl.update();
 };
-window.V = { THREE, cam, ctl, rig, ship, load, MODELS };
+const RANGES = {
+  jetLen: [0.2, 3, 0.05], jetRad: [0.03, 0.5, 0.01], jetX: [0, 1, 0.02],
+  jetZ: [0.5, 2.5, 0.02], jetFlicker: [0, 1, 0.05],
+  fireRate: [0.03, 0.6, 0.01], bulletSpeed: [5, 80, 1],
+  bulletSize: [0.02, 0.3, 0.01], muzzleX: [0, 1.2, 0.02], muzzleZ: [0, 2, 0.02],
+};
+const tune = document.getElementById("tune");
+Object.entries(RANGES).forEach(([k, [min, max, step]], i) => {
+  if (k === "fireRate") tune.append(document.createElement("hr"));
+  const l = document.createElement("label");
+  l.innerHTML = `<span>${k}</span><input type=range min=${min} max=${max} step=${step} value=${P[k]}><b>${P[k]}</b>`;
+  const [inp, out] = [l.querySelector("input"), l.querySelector("b")];
+  inp.oninput = () => { P[k] = +inp.value; out.textContent = inp.value; placeJets(); };
+  tune.append(l);
+});
+window.V = { THREE, P, cam, ctl, rig, ship, load, MODELS };
 
 const clock = new THREE.Clock();
 function frame() {
@@ -153,18 +179,20 @@ function frame() {
     rig.rotation.y = t * 0.5;
     jets.forEach(j => {
       j.visible = true;
-      j.scale.set(1, 1 + Math.sin(t * 30) * 0.25, 1);
+      const f = 1 + Math.sin(t * 30) * P.jetFlicker;
+      j.scale.set(P.jetRad, P.jetLen * f, P.jetRad);
       j.material.opacity = 0.7 + Math.random() * 0.3;
     });
   }
   if (act === "bank") { rig.rotation.y = t * 0.8; rig.rotation.z = Math.sin(t * 1.2) * 0.9; }
   if (act === "shoot") {
     rig.rotation.y = Math.sin(t * 0.4) * 0.6;
-    if (t - shotAt > 0.12) {
+    if (t - shotAt > P.fireRate) {
       shotAt = t;
-      for (const s of [-radius * 0.6, radius * 0.6]) {
+      for (const s of [-radius * P.muzzleX, radius * P.muzzleX]) {
         const b = new THREE.Mesh(bulletGeo, bulletMat);
-        b.position.set(s, 0, -radius);
+        b.scale.setScalar(P.bulletSize / 0.06);
+        b.position.set(s, 0, -P.muzzleZ);
         b.userData.dir = new THREE.Vector3(0, 0, -1).applyEuler(rig.rotation);
         b.position.applyEuler(rig.rotation);
         scene.add(b); bullets.push(b);
@@ -198,7 +226,7 @@ function frame() {
   }
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
-    b.position.addScaledVector(b.userData.dir, 25 * dt);
+    b.position.addScaledVector(b.userData.dir, P.bulletSpeed * dt);
     if (b.position.length() > 30) { scene.remove(b); bullets.splice(i, 1); }
   }
   if (act !== "shoot") { bullets.forEach(b => scene.remove(b)); bullets.length = 0; }
