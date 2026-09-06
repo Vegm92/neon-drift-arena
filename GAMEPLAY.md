@@ -79,7 +79,7 @@ Four weapon crates sit in the arena at all times, one per quadrant. Grabbing one
 
 ### Every special, up close
 
-Each shot is the weapon firing in the sandbox (`combat.html`), cyan ship on the left, magenta target on the right.
+Each shot is the weapon firing in the sandbox (`combat.html`), stripped to the two ships and the effect itself.
 
 | | | |
 |---|---|---|
