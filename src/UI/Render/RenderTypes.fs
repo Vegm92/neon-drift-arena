@@ -20,10 +20,17 @@ let rockPool = 8
 let portalPool = 2
 let portalHex = 0xb36bff
 let holeHex = 0xd48cff
-// Kill flash: kept low and short, and confined to the screen edges, for photosensitivity.
+// Takedown flash: low, brief and confined to the screen edges, and damped again on a
+// second kill inside `killGap`, so back-to-back takedowns stay clear of the
+// photosensitivity guideline (>3 flashes/s over >25% of the screen).
+// The edge falloff is a share of the viewport, not a pixel count, so a small window
+// gets the same fraction of screen as a large one: 5vmin covers ~15% of any frame.
 let killTint = 0.3
+let killSpike = 0.45
+let killGap = 0.7
+let killRepeat = 0.45
 let tintFade = 2.2
-let tintEdgePx = 90
+let tintEdgeVmin = 5.
 /// Off kills every full-screen effect: the kill tint, the bloom surge,
 /// the camera jolt and the HUD panel shake. Localised particle flashes stay.
 let mutable screenFx = true
@@ -128,5 +135,6 @@ type View =
       mutable Jolt: float
       mutable Tint: float
       mutable TintHex: string
+      mutable KillCd: float
       mutable Cam: V2
       mutable CamH: float }
