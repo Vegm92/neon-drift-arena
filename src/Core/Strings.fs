@@ -84,6 +84,9 @@ type Locale =
       WSwarm: string
       WPulse: string
       WScatter: string
+      WBarrier: string
+      WSentry: string
+      WBubble: string
       WTractor: string
       WCollision: string
       WRock: string
@@ -178,6 +181,8 @@ type Locale =
       BindSpecial: string
       BindStart: string
       BindBack: string
+      BindSwap: string
+      SwapMode: string -> string
       TutTitle: string
       TutThrust: string
       TutTurn: string
@@ -284,6 +289,9 @@ let en =
       WSwarm = "SEEKERS"
       WPulse = "REPULSOR"
       WScatter = "ZAPPER"
+      WBarrier = "BARRIER"
+      WSentry = "SENTRY"
+      WBubble = "TIME BUBBLE"
       WTractor = "TRACTOR"
       WCollision = "RAMMER"
       WRock = "BOULDER"
@@ -323,7 +331,7 @@ let en =
       ColKills = "KILLS"
       ColAccuracy = "ACCURACY"
       ColCrates = "CRATES"
-      ColRings = "RINGS"
+      ColRings = "VOIDED"
       ColStocks = "STOCKS"
       AwardKills = "MOST KILLS"
       AwardAim = "BEST AIM"
@@ -378,6 +386,8 @@ let en =
       BindSpecial = "SPECIAL"
       BindStart = "PAUSE / START"
       BindBack = "BACK / CANCEL"
+      BindSwap = "GHOST / LAUNCHER"
+      SwapMode = sprintf "%s SWAP"
       TutTitle = "HOW TO PLAY"
       TutThrust = "THRUST / REVERSE"
       TutTurn = "TURN"
@@ -403,6 +413,9 @@ let weaponName (w: Domain.Weapon) =
     | Domain.Collision -> t.WCollision
     | Domain.Rock -> t.WRock
     | Domain.Singularity -> t.WSingularity
+    | Domain.Barrier -> t.WBarrier
+    | Domain.Sentry -> t.WSentry
+    | Domain.Bubble -> t.WBubble
 
 /// Physical `KeyboardEvent.code` -> the cap printed on the player's keyboard.
 /// The AZERTY branch lives here and nowhere else, so no legend needs a second
@@ -479,6 +492,7 @@ let actionName (a: Bind.Act) =
     | Bind.Special -> t.BindSpecial
     | Bind.Start -> t.BindStart
     | Bind.Back -> t.BindBack
+    | Bind.Swap -> t.BindSwap
 
 let bindHint () =
     sprintf "%s  ·  \u25b6 %s  ·  \u25c0 %s  ·  %s %s"

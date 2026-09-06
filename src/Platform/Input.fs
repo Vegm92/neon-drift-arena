@@ -176,6 +176,7 @@ let private keyboard () =
       // rebind can never leave the player without a way back.
       Start = on Binds.Start || key "Enter"
       Back = on Binds.Back || key "Escape"
+      Swap = on Binds.Swap
       Present = keyboardSeen }
 
 let private deadzone x = if abs x < 0.18 then 0. else x
@@ -210,6 +211,7 @@ let private gamepad (gp: obj) =
       Special = pressed 5
       Start = pressed 9
       Back = pressed 1
+      Swap = pressed 2
       Present = true }
 
 let private phoneRaw (m: obj) =
@@ -229,6 +231,7 @@ let private phoneRaw (m: obj) =
       Special = flag "special"
       Start = flag "start"
       Back = flag "back"
+      Swap = flag "swap"
       Present = true }
 
 let private phone (m: obj) =

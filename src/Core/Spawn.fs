@@ -60,6 +60,7 @@ let freshShip i =
       LastWeapon = Blaster
       LaunchCd = 0.
       LaunchAngle = atan2 p.Y p.X
+      Ghosting = false
       WarpCd = 0.
       Next = 1
       Laps = 0

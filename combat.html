@@ -343,7 +343,10 @@
         { key: Weapon.Swarm, name: "Seeker Swarm" },
         { key: Weapon.Pulse, name: "Repulsor Pulse" },
         { key: Weapon.Scatter, name: "Scatter Gun" },
-        { key: Weapon.Tractor, name: "Tractor Beam" }
+        { key: Weapon.Tractor, name: "Tractor Beam" },
+        { key: Weapon.Barrier, name: "Barrier" },
+        { key: Weapon.Sentry, name: "Sentry Turret" },
+        { key: Weapon.Bubble, name: "Time Bubble" }
       ];
 
       // Populate weapon dropdown
@@ -382,7 +385,18 @@
         { name: "seekerDamage", label: "Swarm Missile Damage", min: 1, max: 100, step: 1, default: 34 },
         { name: "pulseForce", label: "Pulse Wave Force", min: 100, max: 3000, step: 50, default: 1400 },
         { name: "mineFuse", label: "Mine Detonation Delay", min: 0.1, max: 5.0, step: 0.1, default: 1.5 },
-        { name: "tractorRange", label: "Tractor Max Range", min: 50, max: 500, step: 10, default: 280 }
+        { name: "tractorRange", label: "Tractor Max Range", min: 50, max: 500, step: 10, default: 280 },
+        { name: "wallLife", label: "Barrier Lifetime", min: 1, max: 20, step: 0.5, default: 6 },
+        { name: "wallLen", label: "Barrier Width", min: 40, max: 400, step: 10, default: 140 },
+        { name: "wallThick", label: "Barrier Thickness", min: 2, max: 40, step: 1, default: 8 },
+        { name: "sentryRange", label: "Sentry Range", min: 100, max: 1200, step: 20, default: 420 },
+        { name: "sentryLife", label: "Sentry Lifetime", min: 2, max: 40, step: 1, default: 15 },
+        { name: "sentryHp", label: "Sentry Hull", min: 10, max: 300, step: 5, default: 60 },
+        { name: "sentryCooldown", label: "Sentry Fire Rate", min: 0.05, max: 2, step: 0.05, default: 0.25 },
+        { name: "sentryDamage", label: "Sentry Damage", min: 1, max: 60, step: 1, default: 12 },
+        { name: "bubbleRadius", label: "Bubble Radius", min: 60, max: 600, step: 10, default: 220 },
+        { name: "bubbleLife", label: "Bubble Lifetime", min: 1, max: 20, step: 0.5, default: 4 },
+        { name: "bubbleFactor", label: "Bubble Time Scale", min: 0.05, max: 1, step: 0.05, default: 0.4 }
       ];
 
       const createSliders = () => {
@@ -398,7 +412,10 @@
           "Seeker Swarm": ["seekerSpeed", "seekerDamage"],
           "Repulsor Pulse": ["pulseForce"],
           "Scatter Gun": [], // Uses standard blaster bullet settings directly
-          "Tractor Beam": ["railCharge", "tractorRange"]
+          "Tractor Beam": ["railCharge", "tractorRange"],
+          "Barrier": ["wallLife", "wallLen", "wallThick"],
+          "Sentry Turret": ["sentryRange", "sentryLife", "sentryHp", "sentryCooldown", "sentryDamage"],
+          "Time Bubble": ["bubbleRadius", "bubbleLife", "bubbleFactor"]
         };
         
         const allowedSpecial = showMapping[selectedWpn.name] || [];

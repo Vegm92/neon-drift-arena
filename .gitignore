@@ -14,3 +14,6 @@ PRD.md
 
 qa/screenshots/
 qa/sweep.json
+
+public/models/*-tex.glb
+public/models/*-plain.glb

@@ -24,6 +24,7 @@ type PayloadType =
     | WavePayload of getForce: (unit -> float)
     | ZapPayload
     | LatchPayload
+    | DeployPayload of kind: int * getOffset: (unit -> float) * getLife: (unit -> float)
 
 type WeaponDef =
     { Name: string
@@ -78,6 +79,24 @@ let weaponRegistry =
                    Recoil = (fun () -> recoil)
                    Cost = ConsumesAmmo 1
                    Cooldown = (fun () -> 0.0) }
+        Barrier, { Name = "Barrier"
+                   Trigger = InstantSpecialPress
+                   Payload = DeployPayload(wallKind, (fun () -> shipRadius + 45.), (fun () -> wallLife))
+                   Recoil = (fun () -> 0.0)
+                   Cost = ConsumesAmmo 1
+                   Cooldown = (fun () -> 0.0) }
+        Sentry, { Name = "Sentry"
+                  Trigger = InstantSpecialPress
+                  Payload = DeployPayload(turretKind, (fun () -> -(shipRadius + 14.)), (fun () -> sentryLife))
+                  Recoil = (fun () -> 0.0)
+                  Cost = ConsumesAmmo 1
+                  Cooldown = (fun () -> 0.0) }
+        Bubble, { Name = "Bubble"
+                  Trigger = InstantSpecialPress
+                  Payload = DeployPayload(bubbleKind, (fun () -> 0.0), (fun () -> bubbleLife))
+                  Recoil = (fun () -> 0.0)
+                  Cost = ConsumesAmmo 1
+                  Cooldown = (fun () -> 0.0) }
         Tractor, { Name = "Tractor"
                    Trigger = ChargeAndFireOnFull(fun () -> railCharge)
                    Payload = LatchPayload
@@ -170,6 +189,16 @@ let executeWeapon live dt (inp: Input) (s0: Ship) (def: WeaponDef) =
                     [], [], [ Zap(s'''.Pos, s'''.Angle, s.Id) ]
                 | LatchPayload ->
                     [], [], []
+                | DeployPayload(kind, getOffset, getLife) ->
+                    let d =
+                        { Owner = s.Id
+                          Kind = kind
+                          Pos = s'''.Pos + dir * getOffset()
+                          Angle = s'''.Angle
+                          Hp = sentryHp
+                          Life = getLife()
+                          Cooldown = 0. }
+                    [], [], [ Deployed d ]
 
             let finalEvents =
                 match def.Cost with
@@ -182,7 +211,10 @@ let executeWeapon live dt (inp: Input) (s0: Ship) (def: WeaponDef) =
 
 let fire live dt (inp: Input) (s: Ship) =
     if launcher s then
-        if inp.Fire && s.LaunchCd <= 0. then
+        if inp.Fire && s.LaunchCd <= 0. && s.Ghosting then
+            let m = { Owner = s.Id; Pos = s.Pos; Vel = zero; Fuse = mineFuse * 1.5 }
+            { s with LaunchCd = ghostCooldown }, [], [ m ], [], [ MineLive s.Pos ]
+        elif inp.Fire && s.LaunchCd <= 0. then
             let r = { Owner = s.Id; Pos = s.Pos; Vel = norm (zero - s.Pos) * rockSpeed; Radius = rockRadius; Life = rockLife }
             { s with LaunchCd = rockCooldown }, [], [], [ r ], [ Launch s.Pos ]
         else

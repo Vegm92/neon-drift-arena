@@ -361,6 +361,7 @@ let play (events: Event list) =
             | PortalOpen(p, _) -> mineLive p
             | Warp p -> pickup p false
             | HoleOpen p -> blast p
+            | Deployed d -> mineSet d.Pos
             | Explode(p, _, _) -> explode p
             | Downed _ -> ()
             | Finished _ -> ()

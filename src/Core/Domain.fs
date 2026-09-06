@@ -22,9 +22,10 @@ module Binds =
         | Special
         | Start
         | Back
+        | Swap
 
     let all =
-        [| TurnLeft; TurnRight; StrafeLeft; StrafeRight; Thrust; Reverse; Boost; Fire; Special; Start; Back |]
+        [| TurnLeft; TurnRight; StrafeLeft; StrafeRight; Thrust; Reverse; Boost; Fire; Special; Start; Back; Swap |]
 
     let ord a =
         match a with
@@ -39,6 +40,7 @@ module Binds =
         | Special -> 8
         | Start -> 9
         | Back -> 10
+        | Swap -> 11
 
     /// Stable storage key, independent of the display label.
     let name a =
@@ -54,6 +56,7 @@ module Binds =
         | Special -> "special"
         | Start -> "start"
         | Back -> "back"
+        | Swap -> "swap"
 
     /// The letter comes first so the legends read W/S/A/D as they always have.
     let defaults a =
@@ -69,6 +72,7 @@ module Binds =
         | Special -> [| "KeyF" |]
         | Start -> [| "Enter" |]
         | Back -> [| "Escape" |]
+        | Swap -> [| "KeyB" |]
 
     let private codes = all |> Array.map defaults
 
@@ -188,6 +192,8 @@ module Cfg =
     // Fraction of the normal minimum camera height used once duelShips remain.
     let duelCamFactor = 0.6
     let seriesTo = 5
+    let mutable ghostSpeed = 240.
+    let mutable ghostCooldown = 8.
     let mutable rockSpeed = 300.
     let mutable rockRadius = 20.
     let mutable rockCooldown = 6.
@@ -202,6 +208,24 @@ module Cfg =
     let mutable holeLife = 15.
     let mutable holeG = 9e6
     let mutable holeCore = 30.
+
+    let mutable wallLife = 6.
+    let mutable wallLen = 140.
+    let mutable wallThick = 8.
+    let barrierAmmo = 2
+
+    let sentryRadius = 16.
+    let mutable sentryRange = 420.
+    let mutable sentryLife = 15.
+    let mutable sentryHp = 60.
+    let mutable sentryCooldown = 0.25
+    let mutable sentryDamage = 12.
+    let sentryAmmo = 1
+
+    let mutable bubbleRadius = 220.
+    let mutable bubbleLife = 4.
+    let mutable bubbleFactor = 0.4
+    let bubbleAmmo = 1
 
     let mutable laps = 3.
     let mutable gateRadius = 150.
@@ -260,6 +284,8 @@ module Cfg =
            "tractorPull", (fun () -> tractorPull), (fun x -> tractorPull <- x)
            "tractorTime", (fun () -> tractorTime), (fun x -> tractorTime <- x)
            "matchTime", (fun () -> matchTime), (fun x -> matchTime <- x)
+           "ghostSpeed", (fun () -> ghostSpeed), (fun x -> ghostSpeed <- x)
+           "ghostCooldown", (fun () -> ghostCooldown), (fun x -> ghostCooldown <- x)
            "rockSpeed", (fun () -> rockSpeed), (fun x -> rockSpeed <- x)
            "rockRadius", (fun () -> rockRadius), (fun x -> rockRadius <- x)
            "rockCooldown", (fun () -> rockCooldown), (fun x -> rockCooldown <- x)
@@ -272,6 +298,17 @@ module Cfg =
            "holeLife", (fun () -> holeLife), (fun x -> holeLife <- x)
            "holeG", (fun () -> holeG), (fun x -> holeG <- x)
            "holeCore", (fun () -> holeCore), (fun x -> holeCore <- x)
+           "wallLife", (fun () -> wallLife), (fun x -> wallLife <- x)
+           "wallLen", (fun () -> wallLen), (fun x -> wallLen <- x)
+           "wallThick", (fun () -> wallThick), (fun x -> wallThick <- x)
+           "sentryRange", (fun () -> sentryRange), (fun x -> sentryRange <- x)
+           "sentryLife", (fun () -> sentryLife), (fun x -> sentryLife <- x)
+           "sentryHp", (fun () -> sentryHp), (fun x -> sentryHp <- x)
+           "sentryCooldown", (fun () -> sentryCooldown), (fun x -> sentryCooldown <- x)
+           "sentryDamage", (fun () -> sentryDamage), (fun x -> sentryDamage <- x)
+           "bubbleRadius", (fun () -> bubbleRadius), (fun x -> bubbleRadius <- x)
+           "bubbleLife", (fun () -> bubbleLife), (fun x -> bubbleLife <- x)
+           "bubbleFactor", (fun () -> bubbleFactor), (fun x -> bubbleFactor <- x)
            "shrinkTime", (fun () -> shrinkTime), (fun x -> shrinkTime <- x)
            "laps", (fun () -> laps), (fun x -> laps <- x)
            "gateRadius", (fun () -> gateRadius), (fun x -> gateRadius <- x)
@@ -295,10 +332,11 @@ type Input =
       Special: bool
       Start: bool
       Back: bool
+      Swap: bool
       Present: bool }
 
 let noInput =
-    { Turn = 0.; Aim = None; Absolute = false; Steer = false; Strafe = 0.; Thrust = false; Reverse = false; Boost = false; Fire = false; Special = false; Start = false; Back = false; Present = false }
+    { Turn = 0.; Aim = None; Absolute = false; Steer = false; Strafe = 0.; Thrust = false; Reverse = false; Boost = false; Fire = false; Special = false; Start = false; Back = false; Swap = false; Present = false }
 
 type Weapon =
     | Blaster
@@ -311,6 +349,9 @@ type Weapon =
     | Collision
     | Rock
     | Singularity
+    | Barrier
+    | Sentry
+    | Bubble
 
 type ShipArchetype =
     | Standard
@@ -319,7 +360,7 @@ type ShipArchetype =
     | Engineer
     | Scout
 
-let crateTiers = [| Rail, 1; Pulse, 2; Scatter, 2; Tractor, 2; Mines, 3; Swarm, 3 |]
+let crateTiers = [| Rail, 1; Bubble, 1; Pulse, 2; Scatter, 2; Tractor, 2; Barrier, 2; Sentry, 2; Mines, 3; Swarm, 3 |]
 let crateWeapons = crateTiers |> Array.collect (fun (w, n) -> Array.create n w)
 
 let weaponAmmo w =
@@ -334,6 +375,9 @@ let weaponAmmo w =
     | Collision -> 0
     | Rock -> 0
     | Singularity -> 0
+    | Barrier -> Cfg.barrierAmmo
+    | Sentry -> Cfg.sentryAmmo
+    | Bubble -> Cfg.bubbleAmmo
 
 type Tether =
     | NoTether
@@ -374,6 +418,7 @@ type Ship =
       LastWeapon: Weapon
       LaunchCd: float
       LaunchAngle: float
+      Ghosting: bool
       WarpCd: float
       Next: int
       Laps: int
@@ -413,6 +458,19 @@ type Portal = { A: V2; B: V2; Life: float }
 
 type Hole = { Pos: V2; Life: float }
 
+type Deployable =
+    { Owner: int
+      Kind: int
+      Pos: V2
+      Angle: float
+      Hp: float
+      Life: float
+      Cooldown: float }
+
+let wallKind = 0
+let turretKind = 1
+let bubbleKind = 2
+
 type Pad = { Pos: V2; Amount: float; RespawnIn: float; Kind: int }
 
 type Crate = { Pos: V2; RespawnIn: float }
@@ -447,6 +505,7 @@ type Event =
     | PortalOpen of V2 * V2
     | Warp of V2
     | HoleOpen of V2
+    | Deployed of Deployable
     | Finished of int * int
 
 type World =
@@ -458,6 +517,7 @@ type World =
       PortalIn: float
       Hole: Hole option
       HoleIn: float
+      Deploys: Deployable list
       RaceEnd: float
       Pads: Pad[]
       Crates: Crate[]
