@@ -17,14 +17,34 @@
       #msg { color: #8fa; min-height: 18px; }
       small { color: #567; }
       body.ffa .race { display: none; }
+      .big { border-color: #3f8; color: #3f8; padding: 7px 6px; }
+      #warn { display: none; position: fixed; inset: 0; background: #000b; align-items: center; justify-content: center; }
+      #warn:not([hidden]) { display: flex; }
+      #warn .box { background: #0d1420; border: 1px solid #fd4; padding: 18px 20px; max-width: 320px; }
+      #warn b { color: #fd4; letter-spacing: .1em; }
+      #warn p { color: #9ab; }
+      #wrap { position: relative; }
+      #legend { position: absolute; top: 8px; right: 8px; margin: 0; padding: 8px 10px; list-style: none;
+        background: #0a0f1acc; border: 1px solid #1c2a3a; color: #9ab; font-size: 11px; line-height: 1.7; }
+      #legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: middle; }
+      #legend i.ring { background: none; border: 2px solid #fff; }
+      #legend i.cross { background: none; border: 1px solid #fff8; border-radius: 0; }
+      #tips { position: absolute; bottom: 8px; right: 8px; margin: 0; padding: 8px 10px; list-style: none;
+        background: #0a0f1acc; border: 1px solid #1c2a3a; color: #789; font-size: 11px; line-height: 1.8; text-align: right; }
+      #tips kbd { background: #16202e; border: 1px solid #2a3b52; border-radius: 3px; padding: 0 4px; color: #cfe; }
+      #tips span { color: #456; }
     </style>
   </head>
   <body>
     <div id="side">
+      <button id="newMap" class="big">new map</button>
       <h3>map</h3>
       <select id="pick"></select>
       <input id="name" placeholder="name" />
-      <div class="row"><button id="newFfa">+ ffa</button><button id="newRace">+ race</button></div>
+      <select id="mode">
+        <option value="ffa">FFA</option>
+        <option value="race">RACE</option>
+      </select>
       <button id="del">delete this map</button>
       <h3>paint</h3>
       <button data-tool="rock">rock</button>
@@ -37,6 +57,7 @@
         <h3>track</h3>
         <div class="row"><input id="tw" type="number" placeholder="width" /><input id="tl" type="number" placeholder="laps" /></div>
       </div>
+      <button id="setStart" class="race" hidden>make this the start line</button>
       <h3>symmetry</h3>
       <div class="row">
         <button data-sym="off" class="on">off</button>
@@ -54,14 +75,39 @@
       <h3>rules</h3>
       <div id="rules"></div>
       <h3>save</h3>
-      <button id="save">write to Maps.fs</button>
-      <button id="reset">reload from build</button>
+      <button id="save">save map</button>
+      <button id="discard">discard changes</button>
       <div id="msg"></div>
-      <small
-        >drag to move · wheel resizes a rock · Del removes · a track node is inserted after the nearest node</small
-      >
     </div>
-    <div id="wrap"><canvas id="c" width="820" height="820"></canvas></div>
+    <div id="wrap">
+      <canvas id="c" width="820" height="820"></canvas>
+      <ul id="legend">
+        <li><i style="background:#7a8798"></i>rock</li>
+        <li><i style="background:#39f"></i>pad refill</li>
+        <li><i style="background:#3f8"></i>pad heal</li>
+        <li><i style="background:#fd4"></i>pad shield</li>
+        <li><i style="background:#f83"></i>crate</li>
+        <li><i style="background:#0ff"></i>track node</li>
+        <li><i class="ring"></i>start node</li>
+        <li><i class="cross"></i>spawn</li>
+      </ul>
+      <ul id="tips">
+        <li><kbd>ctrl</kbd>+<kbd>Z</kbd> undo <span>/</span> <kbd>ctrl</kbd>+<kbd>Y</kbd> redo</li>
+        <li><kbd>ctrl</kbd>+<kbd>C</kbd> copy <span>/</span> <kbd>ctrl</kbd>+<kbd>X</kbd> cut <span>/</span> <kbd>ctrl</kbd>+<kbd>V</kbd> paste</li>
+        <li><kbd>ctrl</kbd>+<kbd>A</kbd> select all <span>/</span> <kbd>Del</kbd> remove</li>
+        <li>drag a box to select <span>/</span> <kbd>ctrl</kbd>-click adds</li>
+        <li>wheel resizes selected rocks</li>
+        <li><kbd>shift</kbd>-drag snaps to 50</li>
+      </ul>
+    </div>
+
+    <div id="warn" hidden>
+      <div class="box">
+        <b>UNSAVED MAP</b>
+        <p id="warnWhat"></p>
+        <div class="row"><button id="warnSave" class="big">save</button><button id="warnDrop">discard</button></div>
+      </div>
+    </div>
 
     <script type="module">
       import { layouts } from "./build/Core/Maps.js";
@@ -88,8 +134,10 @@
       let maps = load();
       let mi = 0;
       let tool = null;
-      let sel = null;
-      let drag = false;
+      let sel = [];
+      let drag = null;
+      let mouse = null;
+      let clip = [];
 
       const c = document.getElementById("c");
       const g = c.getContext("2d");
@@ -106,6 +154,7 @@
         maps.forEach((m, i) => pick.add(new Option(`${i}  ${m.race ? "RACE" : "FFA"} · ${m.name}`, i)));
         pick.value = mi;
         document.getElementById("name").value = M().name;
+        document.getElementById("mode").value = M().race ? "race" : "ffa";
         document.body.classList.toggle("ffa", !M().race);
       }
       relabel();
@@ -141,13 +190,38 @@
           g.arc(x, y, Math.max(4, hitR(o) * s), 0, 7);
           g.fillStyle = COL[o.t] + "8";
           g.fill();
-          g.strokeStyle = o === sel ? "#fff" : COL[o.t];
-          g.lineWidth = o === sel ? 2 : 1;
+          const picked = sel.includes(o);
+          g.strokeStyle = picked ? "#fff" : COL[o.t];
+          g.lineWidth = picked ? 2.5 : 1;
           g.stroke();
         }
-        document.getElementById("sel").innerHTML = sel
-          ? `${sel.t}<br>x ${sel.x.toFixed(0)} y ${sel.y.toFixed(0)}${sel.r ? `<br>r ${sel.r.toFixed(0)}` : ""}`
-          : "<small>none</small>";
+        if (m.race && m.track.pts.length) {
+          const [x, y] = toScreen(m.track.pts[0]);
+          g.strokeStyle = "#fff";
+          g.lineWidth = 2;
+          g.beginPath();
+          g.arc(x, y, Math.max(9, 34 * s), 0, 7);
+          g.stroke();
+          g.fillStyle = "#fff";
+          g.font = "bold 11px ui-monospace, monospace";
+          g.fillText("S", x + Math.max(11, 36 * s), y + 4);
+        }
+        if (drag?.mode === "band") {
+          const [ax, ay] = toScreen(drag.a);
+          const [bx, by] = toScreen(drag.b);
+          g.strokeStyle = "#fff";
+          g.lineWidth = 1;
+          g.setLineDash([5, 4]);
+          g.strokeRect(Math.min(ax, bx), Math.min(ay, by), Math.abs(bx - ax), Math.abs(by - ay));
+          g.setLineDash([]);
+        }
+        const one = sel.length === 1 ? sel[0] : null;
+        document.getElementById("sel").innerHTML = one
+          ? `${one.t}<br>x ${one.x.toFixed(0)} y ${one.y.toFixed(0)}${one.r ? `<br>r ${one.r.toFixed(0)}` : ""}`
+          : sel.length
+            ? `<b>${sel.length} selected</b>`
+            : "<small>none</small>";
+        document.getElementById("setStart").hidden = !(m.race && one && one.t === "node");
         g.strokeStyle = "#fff6";
         for (const sp of spawns()) {
           const [x, y] = toScreen(sp);
@@ -342,6 +416,7 @@
         b.onmouseenter = b.onfocus = () => { hint = id; draw(); };
         b.onmouseleave = b.onblur = () => { hint = null; draw(); };
         b.onclick = () => {
+          snap();
           const m = M();
           const jitter = +document.getElementById("jitn").value || 0;
           const r = () => (Math.random() * 2 - 1) * jitter;
@@ -351,7 +426,7 @@
           m.pads = pads;
           m.crates = crates;
           if (m.race) m.track.pts = nodes;
-          sel = null;
+          sel = [];
           draw();
         };
       }
@@ -449,71 +524,176 @@
         return { x: (e.clientX - b.left - c.width / 2) / s, y: (c.height / 2 - (e.clientY - b.top)) / s };
       };
 
+      const insertNode = (n) => {
+        const pts = M().track.pts;
+        let bi = pts.length;
+        let bd = Infinity;
+        pts.forEach((q, i) => {
+          const d = Math.hypot(q.x - n.x, q.y - n.y);
+          if (d < bd) { bd = d; bi = i + 1; }
+        });
+        pts.splice(bi, 0, n);
+      };
+
+      const place = (p) => {
+        const m = M();
+        let made = null;
+        if (tool === "rock") m.rocks.push((made = { t: "rock", x: p.x, y: p.y, r: 46 }));
+        else if (tool === "crate") m.crates.push((made = { t: "crate", x: p.x, y: p.y }));
+        else if (tool === "node") {
+          if (!m.race) return null;
+          insertNode((made = { t: "node", x: p.x, y: p.y }));
+        } else {
+          const k = tool === "pad" ? 0 : tool === "heal" ? 1 : 2;
+          m.pads.push((made = { t: tool, x: p.x, y: p.y, k }));
+        }
+        if (made) spawnMirrors(made);
+        return made;
+      };
+
       c.onpointerdown = (e) => {
+        snap();
         const p = at(e);
+        const add = e.ctrlKey || e.metaKey || e.shiftKey;
         const hit = items().find((o) => Math.hypot(o.x - p.x, o.y - p.y) < hitR(o));
-        if (hit && !tool) {
-          sel = hit;
-          link = partners(hit);
-          drag = true;
+        if (tool) {
+          const made = place(p);
+          if (made) sel = [made];
+        } else if (hit) {
+          if (add) sel = sel.includes(hit) ? sel.filter((o) => o !== hit) : [...sel, hit];
+          else if (!sel.includes(hit)) sel = [hit];
+          if (sel.includes(hit))
+            drag = { mode: "move", anchor: hit, from: { x: hit.x, y: hit.y }, links: sel.map((o) => ({ o, ps: partners(o) })) };
           c.setPointerCapture(e.pointerId);
-        } else if (tool) {
-          const m = M();
-          if (tool === "rock") m.rocks.push((sel = { t: "rock", x: p.x, y: p.y, r: 46 }));
-          else if (tool === "crate") m.crates.push((sel = { t: "crate", x: p.x, y: p.y }));
-          else if (tool === "node") {
-            if (!m.race) return;
-            const pts = m.track.pts;
-            const n = { t: "node", x: p.x, y: p.y };
-            let bi = pts.length;
-            let bd = Infinity;
-            pts.forEach((q, i) => {
-              const d = Math.hypot(q.x - p.x, q.y - p.y);
-              if (d < bd) { bd = d; bi = i + 1; }
-            });
-            pts.splice(bi, 0, n);
-            sel = n;
-          } else {
-            const k = tool === "pad" ? 0 : tool === "heal" ? 1 : 2;
-            m.pads.push((sel = { t: tool, x: p.x, y: p.y, k }));
-          }
-          spawnMirrors(sel);
-        } else sel = null;
-        draw();
-      };
-      c.onpointermove = (e) => {
-        if (!drag || !sel) return;
-        const p = at(e);
-        sel.x = e.shiftKey ? Math.round(p.x / 50) * 50 : p.x;
-        sel.y = e.shiftKey ? Math.round(p.y / 50) * 50 : p.y;
-        for (const l of link) Object.assign(l.obj, l.T(sel));
-        draw();
-      };
-      c.onpointerup = () => ((drag = false), (link = []));
-      c.onwheel = (e) => {
-        if (sel?.t !== "rock") return;
-        e.preventDefault();
-        sel.r = Math.max(8, sel.r - Math.sign(e.deltaY) * 2);
-        for (const l of partners(sel)) l.obj.r = sel.r;
+        } else {
+          if (!add) sel = [];
+          drag = { mode: "band", a: p, b: p, add };
+          c.setPointerCapture(e.pointerId);
+        }
         draw();
       };
 
+      c.onpointermove = (e) => {
+        mouse = at(e);
+        if (!drag) return;
+        const p = mouse;
+        if (drag.mode === "band") {
+          drag.b = p;
+        } else {
+          const nx = e.shiftKey ? Math.round(p.x / 50) * 50 : p.x;
+          const ny = e.shiftKey ? Math.round(p.y / 50) * 50 : p.y;
+          const dx = nx - drag.anchor.x;
+          const dy = ny - drag.anchor.y;
+          for (const { o, ps } of drag.links) {
+            o.x += dx;
+            o.y += dy;
+            for (const l of ps) Object.assign(l.obj, l.T(o));
+          }
+        }
+        draw();
+      };
+
+      c.onpointerup = () => {
+        dropNoop();
+        if (drag?.mode === "band") {
+          const lo = { x: Math.min(drag.a.x, drag.b.x), y: Math.min(drag.a.y, drag.b.y) };
+          const hi = { x: Math.max(drag.a.x, drag.b.x), y: Math.max(drag.a.y, drag.b.y) };
+          const inside = items().filter((o) => o.x >= lo.x && o.x <= hi.x && o.y >= lo.y && o.y <= hi.y);
+          sel = drag.add ? [...new Set([...sel, ...inside])] : inside;
+        }
+        drag = null;
+        draw();
+      };
+
+      c.onwheel = (e) => {
+        const rocks = sel.filter((o) => o.t === "rock");
+        if (!rocks.length) return;
+        e.preventDefault();
+        snap();
+        const step = -Math.sign(e.deltaY) * 2;
+        for (const o of rocks) {
+          o.r = Math.max(8, o.r + step);
+          for (const l of partners(o)) l.obj.r = o.r;
+        }
+        draw();
+      };
+
+      const setStart = () => {
+        const m = M();
+        if (!m.race || sel.length !== 1 || sel[0].t !== "node") return;
+        snap();
+        const i = m.track.pts.indexOf(sel[0]);
+        if (i > 0) m.track.pts = [...m.track.pts.slice(i), ...m.track.pts.slice(0, i)];
+        draw();
+      };
+      document.getElementById("setStart").onclick = setStart;
+
       addEventListener("keydown", (e) => {
-        if (e.key === "Escape") { tool = null; sel = null; }
-        else if (e.key === "Delete" || e.key === "Backspace") {
-          if (!sel) return;
-          const doomed = [sel, ...partners(sel).map((l) => l.obj)];
+        if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+        const meta = e.ctrlKey || e.metaKey;
+        if (meta && e.key.toLowerCase() === "z" && !e.shiftKey) { e.preventDefault(); restore(undoStack, redoStack); return; }
+        if (meta && (e.key.toLowerCase() === "y" || (e.key.toLowerCase() === "z" && e.shiftKey))) {
+          e.preventDefault();
+          restore(redoStack, undoStack);
+          return;
+        }
+        const key = e.key.toLowerCase();
+        if (meta && (key === "c" || key === "x")) {
+          if (!sel.length) return;
+          e.preventDefault();
+          clip = sel.map((o) => ({ ...o }));
+          if (key === "x") {
+            snap();
+            const cut = new Set(sel.flatMap((o) => [o, ...partners(o).map((l) => l.obj)]));
+            const m = M();
+            for (const a of [m.rocks, m.pads, m.crates, m.track.pts])
+              for (let i = a.length - 1; i >= 0; i--) if (cut.has(a[i])) a.splice(i, 1);
+            sel = [];
+          }
+          msg.textContent = `${clip.length} copied`;
+          draw();
+          return;
+        }
+        if (meta && key === "v") {
+          if (!clip.length) return;
+          e.preventDefault();
+          snap();
+          const m = M();
+          const cx = clip.reduce((t, o) => t + o.x, 0) / clip.length;
+          const cy = clip.reduce((t, o) => t + o.y, 0) / clip.length;
+          const tx = mouse ? mouse.x : cx + 80;
+          const ty = mouse ? mouse.y : cy + 80;
+          const made = [];
+          for (const o of clip) {
+            if (o.t === "node" && !m.race) continue;
+            const n = { ...o, x: o.x - cx + tx, y: o.y - cy + ty };
+            if (n.t === "node") insertNode(n);
+            else bucket(n).push(n);
+            made.push(n);
+            spawnMirrors(n);
+          }
+          sel = made;
+          msg.textContent = made.length ? `${made.length} pasted${sym === "off" ? "" : " + mirrors"}` : "nothing pasted here";
+          draw();
+          return;
+        }
+        if (e.key === "Escape") { tool = null; sel = []; }
+        else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
+          e.preventDefault();
+          sel = items();
+        } else if (e.key === "Delete" || e.key === "Backspace") {
+          if (!sel.length) return;
+          snap();
+          const doomed = new Set(sel.flatMap((o) => [o, ...partners(o).map((l) => l.obj)]));
           const m = M();
           for (const a of [m.rocks, m.pads, m.crates, m.track.pts])
-            for (const d of doomed) {
-              const i = a.indexOf(d);
-              if (i >= 0) a.splice(i, 1);
-            }
-          sel = null;
+            for (let i = a.length - 1; i >= 0; i--) if (doomed.has(a[i])) a.splice(i, 1);
+          sel = [];
         } else return;
         document.querySelectorAll("[data-tool]").forEach((b) => b.classList.remove("on"));
         draw();
       });
+
 
       document.querySelectorAll("[data-sym]").forEach((b) => {
         b.style.color = SYM[b.dataset.sym].col;
@@ -527,55 +707,109 @@
       document.querySelectorAll("[data-tool]").forEach((b) =>
         (b.onclick = () => {
           tool = tool === b.dataset.tool ? null : b.dataset.tool;
-          sel = null;
+          sel = [];
           document.querySelectorAll("[data-tool]").forEach((o) => o.classList.toggle("on", o.dataset.tool === tool));
           draw();
         }),
       );
       const show = () => {
-        sel = null;
+        sel = [];
         tool = null;
         document.querySelectorAll("[data-tool]").forEach((b) => b.classList.remove("on"));
         relabel();
         draw();
       };
-      pick.onchange = () => { mi = +pick.value; show(); };
+      let pending = null;
+      const warn = document.getElementById("warn");
+      pick.onchange = () => {
+        const next = +pick.value;
+        if (next === mi) return;
+        if (!dirty()) { mi = next; show(); return; }
+        pending = next;
+        pick.value = mi;
+        document.getElementById("warnWhat").textContent =
+          `"${M().name}" has changes that are not in Maps.fs yet. Save them, or discard everything unsaved and go to "${maps[next].name}".`;
+        warn.hidden = false;
+      };
+      const goPending = () => {
+        mi = Math.min(pending ?? 0, maps.length - 1);
+        pending = null;
+        warn.hidden = true;
+        show();
+      };
+      document.getElementById("warnSave").onclick = async () => {
+        await saveAll();
+        if (!dirty()) goPending();
+      };
+      document.getElementById("warnDrop").onclick = () => {
+        maps = load();
+        saved = JSON.stringify(maps);
+        msg.textContent = "";
+        goPending();
+      };
+      addEventListener("beforeunload", (e) => { if (dirty()) e.preventDefault(); });
       document.getElementById("tw").oninput = (e) => ((M().track.w = +e.target.value || 1), draw());
       document.getElementById("tl").oninput = (e) => (M().track.laps = +e.target.value || 1);
       document.getElementById("name").oninput = (e) => {
         M().name = e.target.value.toUpperCase();
         pick.options[mi].text = `${mi}  ${M().race ? "RACE" : "FFA"} · ${M().name}`;
       };
-      document.getElementById("reset").onclick = () => { maps = load(); mi = 0; show(); };
+      let saved = JSON.stringify(maps);
+      const undoStack = [];
+      const redoStack = [];
+      const snap = () => {
+        undoStack.push(JSON.stringify(maps));
+        if (undoStack.length > 60) undoStack.shift();
+        redoStack.length = 0;
+      };
+      const dropNoop = () => {
+        if (undoStack.length && undoStack[undoStack.length - 1] === JSON.stringify(maps)) undoStack.pop();
+      };
+      const restore = (from, to) => {
+        if (!from.length) return;
+        to.push(JSON.stringify(maps));
+        maps = JSON.parse(from.pop());
+        mi = Math.min(mi, maps.length - 1);
+        show();
+      };
+      const dirty = () => JSON.stringify(maps) !== saved;
+      document.getElementById("discard").onclick = () => {
+        if (dirty() && !confirm("throw away every unsaved change and reload from the last build?")) return;
+        maps = load();
+        saved = JSON.stringify(maps);
+        undoStack.length = redoStack.length = 0;
+        mi = 0;
+        show();
+        msg.textContent = "";
+      };
 
       const ring = (n, r) => [...Array(n)].map((_, i) => ({ t: "node", x: Math.cos((i / n) * 2 * Math.PI) * r, y: Math.sin((i / n) * 2 * Math.PI) * r }));
-      const blank = (race) => {
-        const size = race ? Cfg_raceHalf : Cfg_arenaDefault;
-        const road = race ? smoothLoop(ring(12, size * 0.72)) : [];
-        const onRoad = (n, off) => [...Array(n)].map((_, i) => road[Math.round((i * road.length) / n + off) % road.length]);
-        return {
-          name: race ? "NEW RACE" : "NEW ARENA",
-          race,
-          size,
-          rocks: [],
-          pads: race
-            ? onRoad(8, 2).map((p, i) => ({ t: i < 6 ? "pad" : "heal", x: p.x, y: p.y, k: i < 6 ? 0 : 1 }))
-            : [
-                { t: "shield", x: 0, y: 0, k: 2 },
-                ...ring(4, size * 0.87).map((o) => ({ t: "heal", x: o.x, y: o.y, k: 1 })),
-                ...ring(4, size * 0.55).map((o) => ({ t: "pad", x: o.x, y: o.y, k: 0 })),
-              ],
-          crates: race
-            ? onRoad(8, 6).map((p) => ({ t: "crate", x: p.x, y: p.y }))
-            : ring(8, size * 0.45).map((o) => ({ t: "crate", x: o.x, y: o.y })),
-          track: { pts: race ? ring(12, size * 0.72) : [], w: 280, laps: 3 },
-        };
+      const blank = () => ({
+        name: "NEW MAP",
+        race: false,
+        size: Cfg_arenaDefault,
+        rocks: [],
+        pads: [],
+        crates: [],
+        track: { pts: [], w: 280, laps: 3 },
+      });
+      document.getElementById("newMap").onclick = () => {
+        snap();
+        maps.push(blank());
+        mi = maps.length - 1;
+        show();
       };
-      const add = (race) => { maps.push(blank(race)); mi = maps.length - 1; show(); };
-      document.getElementById("newFfa").onclick = () => add(false);
-      document.getElementById("newRace").onclick = () => add(true);
+      document.getElementById("mode").onchange = (e) => {
+        snap();
+        const m = M();
+        m.race = e.target.value === "race";
+        m.size = m.race ? Cfg_raceHalf : Cfg_arenaDefault;
+        if (m.race && m.track.pts.length < 3) m.track.pts = ring(12, m.size * 0.72);
+        show();
+      };
       document.getElementById("del").onclick = () => {
         if (maps.length < 2 || !confirm(`delete "${M().name}"? maps after it shift index.`)) return;
+        snap();
         maps.splice(mi, 1);
         mi = Math.min(mi, maps.length - 1);
         show();
@@ -598,7 +832,7 @@
           .join("\n\n       ") +
         " |]";
 
-      document.getElementById("save").onclick = async () => {
+      async function saveAll() {
         const blocking = maps.flatMap((m, i) => rules(m, false).map((b) => `${i} ${m.name}: ${b}`));
         if (blocking.length && !confirm("these break the sim:\n\n" + blocking.join("\n") + "\n\nsave anyway?")) return;
         msg.textContent = "saving...";
@@ -606,8 +840,10 @@
           method: "POST",
           body: JSON.stringify({ custom: fsharp(), names: maps.map((m) => m.name) }),
         });
-        msg.textContent = r.ok ? "written — Fable will recompile" : "failed";
-      };
+        if (r.ok) saved = JSON.stringify(maps);
+        msg.textContent = r.ok ? "saved — Fable will recompile" : "failed";
+      }
+      document.getElementById("save").onclick = saveAll;
 
       const fit = () => {
         const w = document.getElementById("wrap");
