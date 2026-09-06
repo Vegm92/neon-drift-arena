@@ -150,7 +150,7 @@ let drawSmoke (vw: View) (w: World) dt =
             vw.Smoke.[i] <- vw.Smoke.[i] + dt
             if vw.Smoke.[i] > 0.07 then
                 vw.Smoke.[i] <- 0.
-                spawnCone vw s.Pos 0x5a3020 3 40. (atan2 -s.Vel.Y -s.Vel.X) 0.9 7.
+                spawnSmoke vw s.Pos 2 26. 22.
         else
             vw.Smoke.[i] <- 0.)
 
