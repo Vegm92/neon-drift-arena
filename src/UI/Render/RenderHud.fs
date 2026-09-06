@@ -44,13 +44,16 @@ let feedLine (vw: View) (w: World) victim by wpn ring =
         vw.Feed?lastElementChild?remove ()
     window.setTimeout ((fun () -> line.remove ()), 5000) |> ignore
 
+let private wname (w: Weapon) =
+    sprintf "<span class=\"wname\">%s</span>" (Strings.weaponName w)
+
 let private weaponHtml (s: Ship) =
     if Sim.launcher s then
-        sprintf "<span class=\"%s\">%s</span>" (if s.LaunchCd <= 0. then "ready" else "wait") (icon Rock false)
+        sprintf "<span class=\"%s\">%s</span>" (if s.LaunchCd <= 0. then "ready" else "wait") (icon Rock false) + wname Rock
     elif State.race && s.Weapon = Blaster then ""
     else
         let n = if weaponAmmo s.Weapon > 0 then s.Ammo else 0
-        icon s.Weapon false + sprintf "<span class=\"ammo\">%s</span>" (String.replicate n "●")
+        icon s.Weapon false + wname s.Weapon + sprintf "<span class=\"ammo\">%s</span>" (String.replicate n "●")
 
 let drawHud (vw: View) (w: World) dt =
     w.Ships

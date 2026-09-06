@@ -85,6 +85,9 @@ type Locale =
       WPulse: string
       WScatter: string
       WTractor: string
+      WCollision: string
+      WRock: string
+      WSingularity: string
       Loaded: string -> int -> string
       Go: string
       FirstBlood: string
@@ -266,6 +269,9 @@ let en =
       WPulse = "REPULSOR"
       WScatter = "SCATTER GUN"
       WTractor = "TRACTOR"
+      WCollision = "RAMMER"
+      WRock = "BOULDER"
+      WSingularity = "SINGULARITY"
       Loaded = fun n a -> sprintf "%s x%d" n a
       Go = "GO"
       FirstBlood = "FIRST BLOOD"
@@ -352,6 +358,19 @@ let en =
 let t = en
 
 module Bind = Domain.Binds
+
+let weaponName (w: Domain.Weapon) =
+    match w with
+    | Domain.Blaster -> t.WBlaster
+    | Domain.Rail -> t.WRail
+    | Domain.Mines -> t.WMines
+    | Domain.Swarm -> t.WSwarm
+    | Domain.Pulse -> t.WPulse
+    | Domain.Scatter -> t.WScatter
+    | Domain.Tractor -> t.WTractor
+    | Domain.Collision -> t.WCollision
+    | Domain.Rock -> t.WRock
+    | Domain.Singularity -> t.WSingularity
 
 /// Physical `KeyboardEvent.code` -> the cap printed on the player's keyboard.
 /// The AZERTY branch lives here and nowhere else, so no legend needs a second
