@@ -98,6 +98,11 @@
       <h3>Equipped Weapon (P1)</h3>
       <select id="selWeapon"></select>
 
+      <h3>Display Settings</h3>
+      <div class="row">
+        <button id="btnToggleDamageNumbers" class="on" title="Toggle 2D floating damage indicators above ships">Damage Numbers: ON</button>
+      </div>
+
       <h3>Real-time Config Tuning</h3>
       <div id="sliders"></div>
       <div class="row" style="margin-top: 5px; gap: 6px;">
@@ -184,6 +189,17 @@
       let damageNumbers = []; // { text, Pos, life }
       let damageAccumulated = { 0: 0, 1: 0, 2: 0, 3: 0 };
       let prevShipsState = null;
+      let showDamageNumbers = true;
+      const SHOW_NUMBERS_KEY = "nda_show_damage_numbers";
+
+      try {
+        const savedShow = localStorage.getItem(SHOW_NUMBERS_KEY);
+        if (savedShow !== null) {
+          showDamageNumbers = savedShow === "true";
+        }
+      } catch (e) {
+        console.error("Failed to load showDamageNumbers preference", e);
+      }
       
       // Explicitly instantiate using Fable's Input record constructor to ensure 100% compliance
       let inputP1 = new Input(0, undefined, false, false, 0, false, false, false, false, false, false, false, true);
@@ -523,6 +539,27 @@
         isPlaying = !isPlaying;
         btnPlay.textContent = isPlaying ? "Pause" : "Play Sandbox";
         btnPlay.className = isPlaying ? "on" : "";
+      };
+
+      // Display Settings Toggle
+      const btnToggleDamageNumbers = document.getElementById("btnToggleDamageNumbers");
+      btnToggleDamageNumbers.textContent = showDamageNumbers ? "Damage Numbers: ON" : "Damage Numbers: OFF";
+      btnToggleDamageNumbers.className = showDamageNumbers ? "on" : "";
+
+      btnToggleDamageNumbers.onclick = () => {
+        showDamageNumbers = !showDamageNumbers;
+        btnToggleDamageNumbers.textContent = showDamageNumbers ? "Damage Numbers: ON" : "Damage Numbers: OFF";
+        btnToggleDamageNumbers.className = showDamageNumbers ? "on" : "";
+        
+        try {
+          localStorage.setItem(SHOW_NUMBERS_KEY, showDamageNumbers ? "true" : "false");
+        } catch (e) {
+          console.error("Failed to save showDamageNumbers preference", e);
+        }
+
+        if (!showDamageNumbers) {
+          damageNumbers = []; // Clear existing floating numbers immediately
+        }
       };
 
       document.getElementById("btnStep").onclick = () => {
@@ -879,29 +916,31 @@
           overlay.height = window.innerHeight;
         }
 
-        damageNumbers.forEach((d, idx) => {
-          // Follow the target ship if it is active and alive
-          const ship = worldState && worldState.Ships[d.shipId];
-          const pos = (ship && ship.Active && ship.Alive) ? ship.Pos : d.Pos;
+        if (showDamageNumbers) {
+          damageNumbers.forEach((d, idx) => {
+            // Follow the target ship if it is active and alive
+            const ship = worldState && worldState.Ships[d.shipId];
+            const pos = (ship && ship.Active && ship.Alive) ? ship.Pos : d.Pos;
 
-          const proj = new THREE.Vector3(pos.X, 0, pos.Y);
-          proj.project(view.Camera);
+            const proj = new THREE.Vector3(pos.X, 0, pos.Y);
+            proj.project(view.Camera);
 
-          const sx = (proj.x + 1) * overlay.width / 2;
-          const sy = (-proj.y + 1) * overlay.height / 2;
+            const sx = (proj.x + 1) * overlay.width / 2;
+            const sy = (-proj.y + 1) * overlay.height / 2;
 
-          if (proj.z <= 1 && sx >= 0 && sx <= overlay.width && sy >= 0 && sy <= overlay.height) {
-            oCtx.fillStyle = "#ff4d4d";
-            oCtx.font = "bold 16px ui-monospace, monospace";
-            oCtx.shadowColor = "black";
-            oCtx.shadowBlur = 4;
-            oCtx.fillText(d.text, sx, sy - (1.0 - d.life) * 40 - 15);
-            oCtx.shadowBlur = 0;
-          }
-          // Slower decay (0.01 instead of 0.015) gives a 1.6s accumulation window
-          d.life -= 0.01;
-          if (d.life <= 0) damageNumbers.splice(idx, 1);
-        });
+            if (proj.z <= 1 && sx >= 0 && sx <= overlay.width && sy >= 0 && sy <= overlay.height) {
+              oCtx.fillStyle = "#ff4d4d";
+              oCtx.font = "bold 16px ui-monospace, monospace";
+              oCtx.shadowColor = "black";
+              oCtx.shadowBlur = 4;
+              oCtx.fillText(d.text, sx, sy - (1.0 - d.life) * 40 - 15);
+              oCtx.shadowBlur = 0;
+            }
+            // Slower decay (0.01 instead of 0.015) gives a 1.6s accumulation window
+            d.life -= 0.01;
+            if (d.life <= 0) damageNumbers.splice(idx, 1);
+          });
+        }
 
         updateStatsUI();
         requestAnimationFrame(loop);
