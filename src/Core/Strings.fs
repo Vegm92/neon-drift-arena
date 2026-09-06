@@ -7,7 +7,10 @@ type Locale =
       Rematch: string
       TitleMain: string
       TitleSub: string
-      Mode: string list
+      ModeFfa: string list
+      ModeTeams: string list
+      ModeRace: int -> string list
+      ModePractice: string list
       KbLegend: (string list * string) list
       PadLegend: (string list * string) list
       Gamepad: string
@@ -149,7 +152,10 @@ let en =
       Rematch = "REMATCH"
       TitleMain = "NEON DRIFT"
       TitleSub = "ARENA"
-      Mode = [ "STOCK BATTLE"; "3 LIVES"; "LAST SHIP FLYING WINS" ]
+      ModeFfa = [ "STOCK BATTLE"; "3 LIVES"; "LAST SHIP FLYING WINS" ]
+      ModeTeams = [ "TEAM BATTLE"; "3 LIVES"; "LAST TEAM FLYING WINS" ]
+      ModeRace = fun laps -> [ "CIRCUIT RACE"; sprintf "%d LAPS" laps; "FIRST ACROSS THE LINE WINS" ]
+      ModePractice = [ "TARGET RANGE"; "NO STOCKS"; "EVERY WEAPON IN ORDER" ]
       KbLegend =
         [ [ "W"; "S" ], "THRUST / REVERSE"
           [ "A"; "D" ], "TURN"
