@@ -266,7 +266,7 @@ let private towOf (t: obj) =
 let private eventOf (e: obj) : Event =
     let a (i: int) : 'a = unbox e?(i)
     match string e?(0) with
-    | "Hit" -> Hit(a 1, a 2, a 3)
+    | "Hit" -> Hit(a 1, a 2, a 3, a 4)
     | "Explode" -> Explode(a 1, a 2, a 3)
     | "Downed" -> Downed(a 1, a 2, weaponOf (a 3), a 4)
     | "Shot" -> Shot(a 1)

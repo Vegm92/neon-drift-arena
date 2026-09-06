@@ -182,6 +182,8 @@
       let worldState = null;
       let logs = [];
       let damageNumbers = []; // { text, Pos, life }
+      let damageAccumulated = { 0: 0, 1: 0, 2: 0, 3: 0 };
+      let prevShipsState = null;
       
       // Explicitly instantiate using Fable's Input record constructor to ensure 100% compliance
       let inputP1 = new Input(0, undefined, false, false, 0, false, false, false, false, false, false, false, true);
@@ -251,6 +253,10 @@
 
       // Initializing state
       const initSandbox = () => {
+        damageAccumulated = { 0: 0, 1: 0, 2: 0, 3: 0 };
+        prevShipsState = null;
+        damageNumbers = [];
+
         // Since we are running the REAL 3D renderer and real assets,
         // we use the real game's default arena half-size of 1350 for boundary calculations!
         Cfg.arenaHalf = 1350;
@@ -674,6 +680,8 @@
           s2.RespawnIn = 0;
           s2.Invuln = 0;
           s2.Cooldown = 0;
+          
+          damageAccumulated[1] = 0; // Reset P2 accumulated damage
           addLog("Target P2 respawned at original spot.", "event");
         }
 
@@ -685,38 +693,76 @@
 
         // Capture new events and log them
         const events = toArray(nextState.Events);
-        const hitsGrouped = {};
         
         events.forEach(evt => {
           // Event mapping tags
-          if (evt.tag === 0) { // Hit V2 * string * float
+          if (evt.tag === 0) { // Hit V2 * string * float * int
             const pos = evt.fields[0];
             const name = evt.fields[1];
             const dmg = evt.fields[2];
-            if (!hitsGrouped[name]) {
-              hitsGrouped[name] = { pos: pos, dmgUnit: dmg, count: 0, dmgTotal: 0 };
+            const targetId = evt.fields[3];
+
+            // 1. Update accumulated net damage for the target ship
+            damageAccumulated[targetId] += dmg;
+            const netDmgText = `${damageAccumulated[targetId].toFixed(0)}/100`;
+
+            // 2. Add log entry showing individual hit and running total net damage
+            addLog(`P${targetId + 1} Hit by ${name}: -${dmg.toFixed(0)} HP (Total: ${netDmgText})`, "hit");
+
+            // 3. Update or create floating damage number
+            // Look for an active damage number of the same target ship to merge/accumulate
+            let existing = damageNumbers.find(dn => dn.shipId === targetId && dn.life > 0.15);
+            if (existing) {
+              existing.dmgAccumulated += dmg;
+              existing.text = `-${existing.dmgAccumulated.toFixed(0)}`;
+              existing.life = 1.0; // Reset lifetime to keep it visible and floating
+              existing.Pos = pos;  // Keep fallback position updated
+            } else {
+              damageNumbers.push({
+                text: `-${dmg.toFixed(0)}`,
+                Pos: pos,
+                life: 1.0,
+                shipId: targetId,
+                dmgAccumulated: dmg
+              });
             }
-            hitsGrouped[name].count += 1;
-            hitsGrouped[name].dmgTotal += dmg;
-            hitsGrouped[name].pos = pos;
           } else if (evt.tag === 5) { // Cooked (overheat)
             addLog(`Blaster OVERHEATED! Locked out.`, "hit");
           }
         });
 
-        // Add log entry and floating damage number for each grouped weapon hit
-        Object.keys(hitsGrouped).forEach(name => {
-          const group = hitsGrouped[name];
-          const label = group.count > 1 
-            ? `${name} Hit: -${group.dmgTotal.toFixed(0)} HP (${group.count}x -${group.dmgUnit.toFixed(0)})`
-            : `${name} Hit: -${group.dmgTotal.toFixed(0)} HP`;
-          addLog(label, "hit");
+        // Track stats changes (heals/shields/respawns) by comparing with previous step's state
+        if (prevShipsState && prevShipsState.length === nextState.Ships.length) {
+          for (let i = 0; i < nextState.Ships.length; i++) {
+            const cur = nextState.Ships[i];
+            const prev = prevShipsState[i];
+            
+            if (cur.Active && prev.Active) {
+              // Reset damage tracker on respawn
+              if (cur.Alive && !prev.Alive) {
+                damageAccumulated[i] = 0;
+                damageNumbers = damageNumbers.filter(dn => dn.shipId !== i);
+              }
+              
+              // Track healing or shield gains while alive
+              if (cur.Alive && prev.Alive) {
+                const hpDiff = cur.Hp - prev.Hp;
+                const shieldDiff = cur.Shield - prev.Shield;
+                
+                if (hpDiff > 0) {
+                  damageAccumulated[i] = Math.max(0, damageAccumulated[i] - hpDiff);
+                  addLog(`P${i + 1} Healed: +${hpDiff.toFixed(0)} HP (Total: ${damageAccumulated[i].toFixed(0)}/100)`, "event");
+                }
+                if (shieldDiff > 0) {
+                  addLog(`P${i + 1} Shield Boosted: +${shieldDiff.toFixed(0)} (Shield: ${cur.Shield.toFixed(0)})`, "info");
+                }
+              }
+            }
+          }
+        }
 
-          const text = group.count > 1
-            ? `-${group.dmgTotal.toFixed(0)} (${group.count}x -${group.dmgUnit.toFixed(0)})`
-            : `-${group.dmgTotal.toFixed(0)}`;
-          damageNumbers.push({ text: text, Pos: group.pos, life: 1.0 });
-        });
+        // Save current ship states for next step comparison
+        prevShipsState = nextState.Ships.map(s => ({ Hp: s.Hp, Shield: s.Shield, Active: s.Active, Alive: s.Alive }));
 
         // Sync customRocks positions back from simulation
         const simRocks = toArray(nextState.Rocks);
@@ -834,7 +880,11 @@
         }
 
         damageNumbers.forEach((d, idx) => {
-          const proj = new THREE.Vector3(d.Pos.X, 0, d.Pos.Y);
+          // Follow the target ship if it is active and alive
+          const ship = worldState && worldState.Ships[d.shipId];
+          const pos = (ship && ship.Active && ship.Alive) ? ship.Pos : d.Pos;
+
+          const proj = new THREE.Vector3(pos.X, 0, pos.Y);
           proj.project(view.Camera);
 
           const sx = (proj.x + 1) * overlay.width / 2;
@@ -848,7 +898,8 @@
             oCtx.fillText(d.text, sx, sy - (1.0 - d.life) * 40 - 15);
             oCtx.shadowBlur = 0;
           }
-          d.life -= 0.015;
+          // Slower decay (0.01 instead of 0.015) gives a 1.6s accumulation window
+          d.life -= 0.01;
           if (d.life <= 0) damageNumbers.splice(idx, 1);
         });
 

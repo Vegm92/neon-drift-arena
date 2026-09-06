@@ -414,7 +414,7 @@ type Phase =
     | Over of winner: int option
 
 type Event =
-    | Hit of V2 * string * float
+    | Hit of V2 * string * float * int
     | Explode of V2 * int * bool
     | Downed of int * int * Weapon * bool
     | Shot of V2
