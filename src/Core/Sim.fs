@@ -633,7 +633,8 @@ let private stepBullet k rocks dt (b: Bullet) =
 
 let private stepPortals k dt sudden (ships: Ship[]) rng (w: World) =
     let live = w.Portals |> List.choose (fun p -> if p.Life <= dt then None else Some { p with Life = p.Life - dt })
-    if w.PortalIn > dt || sudden then
+    // One pair at a time: a new gate waits for the live one to close, whatever portalEvery is tuned to.
+    if w.PortalIn > dt || sudden || not live.IsEmpty then
         live, max 0. (w.PortalIn - dt), rng, []
     else
         let a, r1 = freeSpot k ships [] rng
