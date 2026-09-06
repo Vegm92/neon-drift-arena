@@ -59,7 +59,7 @@ let drawHud (vw: View) (w: World) dt =
         if s.Alive && s.Hp < vw.Hp.[i] then
             vw.Shake.[i] <- min 1. (vw.Shake.[i] + (vw.Hp.[i] - s.Hp) / 40.)
         vw.Hp.[i] <- if s.Alive then s.Hp else hpMax
-        vw.Shake.[i] <- max 0. (vw.Shake.[i] - dt * 3.4)
+        vw.Shake.[i] <- if screenFx then max 0. (vw.Shake.[i] - dt * 3.4) else 0.
         let k = vw.Shake.[i]
         let jolt = k * 9.
         el?style?transform <-
@@ -94,13 +94,13 @@ let drawHud (vw: View) (w: World) dt =
             wep.innerHTML <- html)
 
 let drawTint (vw: View) dt =
-    vw.Tint <- max 0. (vw.Tint - dt * 1.6)
+    vw.Tint <- if screenFx then max 0. (vw.Tint - dt * tintFade) else 0.
     vw.Vignette?style?opacity <- string vw.Tint
     if vw.Tint > 0. then
-        vw.Vignette?style?boxShadow <- sprintf "inset 0 0 220px 60px %s" vw.TintHex
+        vw.Vignette?style?boxShadow <- sprintf "inset 0 0 %dpx 0 %s" tintEdgePx vw.TintHex
 
 let drawPost (vw: View) dt =
-    vw.Spike <- max 0. (vw.Spike - dt * 2.6)
+    vw.Spike <- if screenFx then max 0. (vw.Spike - dt * 2.6) else 0.
     vw.Bloom.strength <- 1.3 + vw.Spike * 1.7
 
 let drawTags (vw: View) (w: World) =

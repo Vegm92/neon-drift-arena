@@ -148,7 +148,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
             spawnRing vw p hex 34. 2.4 0.46
             vw.Spike <- max vw.Spike 0.85
             vw.Jolt <- 1.
-            vw.Tint <- 0.75
+            vw.Tint <- killTint
             vw.TintHex <- sprintf "#%06x" (if ring then 0x3d5cff else hex)
         | Downed(victim, by, wpn, ring) -> feedLine vw w victim by wpn ring
         | Finished(i, _) -> spawnBurst vw w.Ships.[i].Pos (shipColor w.Ships.[i]) 40 260.
