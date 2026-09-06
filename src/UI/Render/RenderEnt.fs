@@ -215,7 +215,6 @@ let drawPortals (vw: View) (w: World) =
                     let m = vw.Gates.[k]
                     m.visible <- true
                     m.position.set (e.X, 2., e.Y)
-                    m.material.color.setHex (portalHueHex g.Hue)
                     m.rotation.z <- (if inner then -2.4 else 0.8) * w.Time
                     let fade = min 1. (g.Life / 1.5) * min 1. ((portalLife - g.Life) * 3.)
                     m.material.opacity <- fade * (if inner then 0.9 else 0.55 + 0.25 * sin (w.Time * 5.))

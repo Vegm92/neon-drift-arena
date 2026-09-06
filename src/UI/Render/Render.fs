@@ -121,13 +121,9 @@ let draw (vw: View) (w: World) (events: Event list) dt =
             spawnBurst vw p 0xff9955 18 200.
             spawnRing vw p 0xff9955 rockRadius 2.5 0.4
         | PortalOpen(a, b) ->
-            let hex =
-                w.Portals
-                |> List.tryPick (fun g -> if g.A = a && g.B = b then Some(portalHueHex g.Hue) else None)
-                |> Option.defaultValue portalHex
             for p in [ a; b ] do
-                spawnRing vw p hex portalRadius 3. 0.6
-                spawnBurst vw p hex 20 160.
+                spawnRing vw p portalHex portalRadius 3. 0.6
+                spawnBurst vw p portalHex 20 160.
         | Warp p -> spawnBurst vw p portalHex 12 140.
         | HoleOpen p ->
             spawnRing vw p holeHex (holeCore * 9.) -0.8 0.9
