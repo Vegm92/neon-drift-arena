@@ -235,6 +235,7 @@
       sfxTrack(false); // Play battle music track!
       const view = create();
       const rendererCanvas = view.Renderer.domElement;
+      window.__nda = { view, THREE, world: () => worldState };
 
       // Enable a completely blank canvas: hide background octagon frames, grids, spawn rings, stars, and black holes
       view.Frame.visible = false;

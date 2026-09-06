@@ -108,12 +108,14 @@ let setLevel k v =
     window.localStorage.setItem (audioKey, JS.JSON.stringify levels)
     apply ()
 
+let private assetRoot = if window.location.pathname.Contains "/play/" then "../" else "./"
+
 let private battle = [| "battle1"; "battle2"; "battle3" |]
 let mutable private inMenu = true
 
 let private pick () =
     let name = if inMenu then "menu" else battle.[rnd.Next battle.Length]
-    music.src <- sprintf "/music/%s.mp3" name
+    music.src <- sprintf "%smusic/%s.mp3" assetRoot name
     music.loop <- inMenu
     music.play () |> ignore
 

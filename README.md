@@ -37,7 +37,9 @@ Out of stocks? You are not out of the match — you take the rim as a launcher a
 
 Five arena layouts, three race tracks, and mutators that turn everything into railguns, crank the speed by half, or drop the drag to a quarter.
 
-![A lime ship charging the tractor beam while a railgun bolt crosses the arena](public/still-tractor.jpg)
+Every keyboard action rebinds in SETTINGS, and REDUCE FLASHING, SCREEN SHAKE and CATCH-UP are toggles, not fixed.
+
+![A ring-out: the kill feed names the victim, debris scatters off the rim and a seeker streaks across the arena](public/still-action.jpg)
 
 ## Play it
 
@@ -49,7 +51,7 @@ Coming to Steam, CrazyGames and itch.io.
 
 ## Made with
 
-F# compiled to JavaScript with [Fable](https://fable.io/), rendered with Three.js. Every sound is synthesised in the browser — there are no audio files. The whole match runs in one tab.
+F# compiled to JavaScript with [Fable](https://fable.io/), rendered with Three.js. Every sound effect is synthesised in the browser — no sample files, just the music tracks. The whole match runs in one tab.
 
 - [GAMEPLAY.md](GAMEPLAY.md) — controls, rules, weapons, every mode
 - [DEVELOPING.md](DEVELOPING.md) — build, test, deploy, file layout
