@@ -39,7 +39,7 @@ Five arena layouts, three race tracks, and mutators that turn everything into ra
 
 Every keyboard action rebinds in SETTINGS, and REDUCE FLASHING, SCREEN SHAKE and CATCH-UP are toggles, not fixed.
 
-![A lime ship charging the tractor beam while a railgun bolt crosses the arena](public/still-tractor.jpg)
+![A ring-out: the kill feed names the victim, debris scatters off the rim and a seeker streaks across the arena](public/still-action.jpg)
 
 ## Play it
 

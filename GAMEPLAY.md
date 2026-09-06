@@ -76,6 +76,16 @@ Four weapon crates sit in the arena at all times, one per quadrant. Grabbing one
 | BARRIER | Two charges. RB plants a glowing wall 60 units ahead, across your nose. It swallows every bullet that touches it - yours included - and bounces any ship that runs into it. Gone after 6 s. |
 | SENTRY | One charge. RB drops a hexagonal turret at your tail. It tracks the nearest enemy inside 420 units and fires your blaster at them every 0.25 s, never at you or your team. It has 60 hull, enemy fire chews through it, and it packs up after 15 s. |
 | TIME BUBBLE | One charge. RB drops a 220-unit dome of slow time around you that lasts 4 s. You and your team pass through untouched; every enemy ship, bullet, mine and rolling rock inside runs at 40% speed, cooldowns and all. |
+
+### Every special, up close
+
+Each shot is the weapon firing in the sandbox (`combat.html`), cyan ship on the left, magenta target on the right.
+
+| | | |
+|---|---|---|
+| ![The railgun beam crossing the arena into a bright impact burst](public/weapons/railgun.jpg)<br>**RAILGUN** | ![A dormant mag mine glowing between the two ships](public/weapons/mag-mines.jpg)<br>**MAG MINES** | ![A seeker trailing sparks into the target's hit arc](public/weapons/seekers.jpg)<br>**SEEKERS** |
+| ![The repulsor shockwave expanding as a white ring](public/weapons/repulsor.jpg)<br>**REPULSOR** | ![The scatter gun's electrical discharge spraying forward](public/weapons/scatter-gun.jpg)<br>**SCATTER GUN** | ![The tractor beam latched onto the enemy ship](public/weapons/tractor.jpg)<br>**TRACTOR** |
+| ![A barrier wall planted across the ship's nose](public/weapons/barrier.jpg)<br>**BARRIER** | ![A sentry turret firing on the enemy ship](public/weapons/sentry.jpg)<br>**SENTRY** | ![The time bubble as a pale dome around the ship](public/weapons/time-bubble.jpg)<br>**TIME BUBBLE** |
 | TRACTOR | Two charges. Hold RB to charge like the railgun; a faint bubble shows the reach (half a blaster shot). On full charge it latches the thing you are facing, enemy ships first, then asteroids. A ship gets dragged toward you for 1.4 s so you can ram it; a rock reels you in instead. |
 
 ## Race mode
