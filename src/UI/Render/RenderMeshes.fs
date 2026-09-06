@@ -3,23 +3,51 @@ module RenderMeshes
 open System
 open Browser
 open Browser.Types
+open Fable.Core
+open Fable.Core.JsInterop
 open Vec
 open Domain
 open Domain.Cfg
 open Three
 open RenderTypes
 
-let private shipSheet =
-    lazy
-        (let t = three.loadTexture "/ships.png"
-         t.colorSpace <- three.SRGBColorSpace
-         t.repeat.set (fst cell / fst sheet, snd cell / snd sheet)
-         t)
+[<ImportDefault("./ShipHulls.json")>]
+let private hulls: obj[] = jsNative
 
-let private shipGeometry = lazy (three.PlaneGeometry(64., 54.).rotateZ (-Math.PI / 2.) |> flat)
+let private hullTop = 2.5
+
+let private shapeOf (pts: float[][]) =
+    let sh = three.Shape()
+    pts |> Array.iteri (fun k p -> (if k = 0 then sh.moveTo else sh.lineTo) (p.[0], -p.[1]))
+    sh
+
+let private loopOf (pts: float[][]) y =
+    let g = three.BufferGeometry()
+    g.setAttribute ("position", three.Float32BufferAttribute(pts |> Array.collect (fun p -> [| p.[0]; y; p.[1] |]), 3))
+    g
+
+let private mkHull k hex =
+    let h = hulls.[k]
+    let pts: float[][] = !!h?hull
+    let g = three.ExtrudeGeometry(shapeOf pts, box {| depth = hullTop; bevelEnabled = false |}) |> flat
+    let root = three.Group()
+    root.add (three.Mesh(g, !! [| three.MeshBasicMaterial(box {| color = 0x0a0e1e |}); three.MeshBasicMaterial(box {| color = 0x1a2244 |}) |]))
+    root.add (three.LineLoop(loopOf pts (hullTop + 0.1), lineMat hex 1.))
+    root.add (three.LineLoop(loopOf pts 0., lineMat hex 0.35))
+    for d in (!!h?decals: float[][][]) do
+        root.add (three.Mesh((three.ShapeGeometry(shapeOf d) |> flat).translate (0., hullTop + 0.2, 0.), glowMat hex 0.9))
+    root
 
 let private rgb hex =
     float ((hex >>> 16) &&& 0xff) / 255., float ((hex >>> 8) &&& 0xff) / 255., float (hex &&& 0xff) / 255.
+
+let tintHull (hull: Object3D) hex opacity solid =
+    hull.children.[0].visible <- solid
+    hull.children.[1..]
+    |> Array.iteri (fun j c ->
+        let m = (!!c: Mesh).material
+        m.color.setHex hex
+        m.opacity <- opacity * (match j with 0 -> 1. | 1 -> 0.35 | _ -> 0.9))
 
 let mkTrail hex =
     let g = three.BufferGeometry()
@@ -46,12 +74,9 @@ let mkTrail hex =
 let mkShip (scene: Object3D) i =
     let hex = colors.[i]
     let root = three.Group()
-    let body =
-        three.Mesh(
-            shipGeometry.Value,
-            three.MeshBasicMaterial(box {| map = shipSheet.Value.clone (); transparent = true; depthWrite = false |})
-        )
-    body.position.y <- 1.
+    let body = three.Group()
+    for k in 0..4 do
+        body.add (mkHull k hex)
     let flame = three.Mesh((three.CircleGeometry(7., 12) |> flat).translate (-16., 3., 0.), glowMat hex 0.9)
     root.add body
     root.add flame

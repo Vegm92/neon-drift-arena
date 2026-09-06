@@ -94,6 +94,8 @@ type Lib =
     abstract BufferGeometry: unit -> BufferGeometry
     [<Emit("new $0.Float32BufferAttribute($1,$2)")>]
     abstract Float32BufferAttribute: float[] * int -> BufferAttribute
+    [<Emit("new $0.ShapeGeometry($1)")>]
+    abstract ShapeGeometry: Shape -> BufferGeometry
     [<Emit("new $0.ExtrudeGeometry($1,$2)")>]
     abstract ExtrudeGeometry: Shape * obj -> BufferGeometry
     [<Emit("new $0.EdgesGeometry($1)")>]

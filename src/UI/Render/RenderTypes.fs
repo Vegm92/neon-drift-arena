@@ -40,10 +40,6 @@ let mutable screenShake = true
 let maxCamH () = (arenaHalf + 100.) / tan (20. * Math.PI / 180.)
 let minCamH () = maxCamH () * 0.75
 let rnd = Random()
-let sheet = 1536., 1024.
-let cell = 530., 450.
-let cells = [| 217., 40.; 790., 46.; 12., 452.; 502., 481.; 984., 474. |]
-
 let spriteOf (s: Ship) =
     if s.Team > 0 then s.Team - 1 else [| 0; 1; 3; 4 |].[playerColor.[s.Id]]
 
@@ -63,7 +59,7 @@ type ShipView =
     { Shield: Mesh
       Vent: Mesh
       Root: Object3D
-      Body: Mesh
+      Body: Object3D
       Flame: Mesh
       Retro: Object3D
       Coil: Mesh

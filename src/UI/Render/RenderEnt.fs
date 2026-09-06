@@ -53,7 +53,7 @@ let drawShip t (vw: View) (sv: ShipView) (s: Ship) =
         sv.Laser.visible <- false
         sv.Bubble.visible <- false
         sv.Shield.visible <- false
-        sv.Body.material.opacity <- if s.LaunchCd <= 0. then 0.3 + 0.1 * sin (t * 6.) else 0.18
+        RenderMeshes.tintHull sv.Body.children.[spriteOf s] (shipColor s) (if s.LaunchCd <= 0. then 0.3 + 0.1 * sin (t * 6.) else 0.18) false
         sv.History.Clear()
     elif launcher then
         let k = 2.5 * vw.CamH / maxCamH ()
@@ -89,12 +89,10 @@ let drawShip t (vw: View) (sv: ShipView) (s: Ship) =
         if s.Shield > 0. then
             sv.Shield.material.opacity <- 0.35 + 0.45 * (s.Shield / shieldAmount) + 0.2 * sin (t * 8.)
             sv.Shield.rotation.z <- t * 0.9
-        sv.Body.material.opacity <- if s.Invuln > 0. then 0.4 + 0.4 * sin (t * 30.) else 1.
-        sv.Body.material.color.setHex (if s.Team > 0 then teamColors.[s.Team] else 0xffffff)
         let k = spriteOf s
-        let cx, cy = cells.[k]
-        sv.Body.rotation.y <- if k = 3 then Math.PI else 0.
-        sv.Body.material?map?offset?set (cx / fst sheet, 1. - (cy + snd cell) / snd sheet)
+        let shown = s.Invuln <= 0. || sin (t * 30.) > 0.
+        sv.Body.children |> Array.iteri (fun j c -> c.visible <- shown && j = k)
+        RenderMeshes.tintHull sv.Body.children.[k] (shipColor s) 1. true
         sv.Flame.material.color.setHex (shipColor s)
         sv.Trail.material.opacity <- min 1. (0.55 + 0.18 * float s.Streak)
         sv.History.Insert(0, s.Pos)
