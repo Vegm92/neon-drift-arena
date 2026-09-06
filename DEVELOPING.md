@@ -62,11 +62,11 @@ SETTINGS > TUNING is a developer tool and only appears with `?dev=1` in the URL,
 |------|----------------|
 | **Core** (pure .NET, no browser deps) | |
 | `src/Core/Vec.fs` | 2D vector struct and helpers |
-| `src/Core/Domain.fs` | Tunables (`Cfg`), input, ship, bullet, pad, world records |
+| `src/Core/Domain.fs` | Tunables (`Cfg`), the keyboard action -> key-code map (`Binds`), input, ship, bullet, pad, world records |
 | `src/Core/Strings.fs` | All user-facing strings and locale |
 | `src/Core/Sim.fs` | Pure fixed-step simulation: movement, firing, bullets, rams, pads, deaths, match phase |
 | **Platform** (browser bindings) | |
-| `src/Platform/Input.fs` | Keyboard + Gamepad API → `Input[]` for the four slots |
+| `src/Platform/Input.fs` | Keyboard (through `Domain.Binds`) + Gamepad API → `Input[]` for the four slots |
 | `src/Platform/Three.fs` | Minimal Three.js bindings used by the renderer |
 | `src/Platform/CrazyGames.fs` | Typed bindings over `CrazyGames.js` — the only door to the SDK |
 | `src/Platform/CrazyGames.js` | SDK v2 wrapper: gameplay events, mute, rooms, user, ads, banners, data, leaderboard, relay socket |
@@ -79,7 +79,7 @@ SETTINGS > TUNING is a developer tool and only appears with `?dev=1` in the URL,
 | `src/UI/Render/RenderHud.fs` | DOM HUD: panels, kill feed, weapon icons, tags, tint, bloom |
 | `src/UI/Render/RenderCam.fs` | Camera framing, intro flyby, resize |
 | `src/UI/Render/Render.fs` | `create()`, `draw()` orchestrator, event → effect dispatch |
-| `src/UI/Settings.fs` | Settings model: rows for controller slots, swap sticks (`nda-pads`) and `Cfg.tunables` (`nda-tweaks`), plus their persistence |
+| `src/UI/Settings.fs` | Settings model: rows for controller slots, swap sticks (`nda-pads`), keyboard bindings (`nda-binds`, including the key-capture state) and `Cfg.tunables` (`nda-tweaks`), plus their persistence |
 | `src/UI/Menu.fs` | Lobby, settings, pause and result overlays: join/leave/launch by device, owns the `joined` slot set, renders the phone QR (`src/qr.js`) |
 | `src/UI/Pad.fs` | Phone controller page (`pad.html`): lobby card, floating stick, fire/boost zone, menu buttons; talks to the host over the HMR socket |
 | **Entry point** | |

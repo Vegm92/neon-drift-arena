@@ -5,6 +5,90 @@ open Vec
 type Layout = Qwerty | Azerty
 let mutable layout = Qwerty
 
+/// Keyboard action -> physical `KeyboardEvent.code` list. Several actions carry
+/// two codes by default (a letter and an arrow), so the map is a list per action,
+/// never a single code. Pure data: `Settings.fs` persists it, `Input.fs` reads it
+/// and `Strings.fs` renders the labels.
+module Binds =
+    type Act =
+        | TurnLeft
+        | TurnRight
+        | StrafeLeft
+        | StrafeRight
+        | Thrust
+        | Reverse
+        | Boost
+        | Fire
+        | Special
+        | Start
+        | Back
+
+    let all =
+        [| TurnLeft; TurnRight; StrafeLeft; StrafeRight; Thrust; Reverse; Boost; Fire; Special; Start; Back |]
+
+    let ord a =
+        match a with
+        | TurnLeft -> 0
+        | TurnRight -> 1
+        | StrafeLeft -> 2
+        | StrafeRight -> 3
+        | Thrust -> 4
+        | Reverse -> 5
+        | Boost -> 6
+        | Fire -> 7
+        | Special -> 8
+        | Start -> 9
+        | Back -> 10
+
+    /// Stable storage key, independent of the display label.
+    let name a =
+        match a with
+        | TurnLeft -> "turnLeft"
+        | TurnRight -> "turnRight"
+        | StrafeLeft -> "strafeLeft"
+        | StrafeRight -> "strafeRight"
+        | Thrust -> "thrust"
+        | Reverse -> "reverse"
+        | Boost -> "boost"
+        | Fire -> "fire"
+        | Special -> "special"
+        | Start -> "start"
+        | Back -> "back"
+
+    /// The letter comes first so the legends read W/S/A/D as they always have.
+    let defaults a =
+        match a with
+        | TurnLeft -> [| "KeyA"; "ArrowLeft" |]
+        | TurnRight -> [| "KeyD"; "ArrowRight" |]
+        | StrafeLeft -> [| "KeyQ" |]
+        | StrafeRight -> [| "KeyE" |]
+        | Thrust -> [| "KeyW"; "ArrowUp" |]
+        | Reverse -> [| "KeyS"; "ArrowDown" |]
+        | Boost -> [| "ShiftLeft"; "ShiftRight" |]
+        | Fire -> [| "Space" |]
+        | Special -> [| "KeyF" |]
+        | Start -> [| "Enter" |]
+        | Back -> [| "Escape" |]
+
+    let private codes = all |> Array.map defaults
+
+    let get a = codes.[ord a]
+
+    /// An action never ends up with an empty list: an empty write is ignored.
+    let set a (cs: string[]) = if cs.Length > 0 then codes.[ord a] <- cs
+
+    let reset () =
+        for a in all do
+            codes.[ord a] <- defaults a
+
+    let isBound (code: string) = codes |> Array.exists (fun cs -> Array.contains code cs)
+
+    /// True when `code` is the last binding another action has left, which makes
+    /// it unsafe to steal for `except`.
+    let isSoleBindingOf (code: string) (except: Act) =
+        all
+        |> Array.exists (fun b -> ord b <> ord except && (get b).Length = 1 && Array.contains code (get b))
+
 module Cfg =
     let mutable arenaHalf = 1350.
     let arenaDefault = 1350.

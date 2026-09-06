@@ -353,18 +353,18 @@ let private renderLobby (devices: Input.Device[]) =
           Strings.t.Mutator, Strings.t.Mutators.[Sim.mutator], true
           "", (if joined.Count < 4 then Strings.t.AddBot else Strings.t.ClearBots), true
           "", Strings.t.Settings, true
-          Strings.t.KeysLaunch, Strings.t.Start, go ]
+          Strings.keysLaunch (), Strings.t.Start, go ]
         |> List.mapi (fun i (top, t, ok) ->
             let sel = i = lobbyPick && who <> ""
             let cls = (if sel then " sel" else "") + (if ok then "" else " dim") + (if i = 5 && go then " go" else "")
             sprintf "<div class=\"item%s\" data-pick=\"%d\"><em>%s</em><b>%s</b><div class=\"who\">%s</div></div>" cls i top t (if sel then who else ""))
         |> String.concat ""
     let hints =
-        [ Strings.t.KeysJoin, Strings.t.Join + " / " + Strings.t.Ready
+        [ Strings.keysJoin (), Strings.t.Join + " / " + Strings.t.Ready
           "&#9664; / &#9654;", (if teamMode then Strings.t.TeamLabel else Strings.t.ColorLabel)
           "&#9650;", Strings.t.RenameLabel
           "&#9660;", Strings.t.RowLabel
-          Strings.t.KeysLeave, Strings.t.Leave ]
+          Strings.keysLeave (), Strings.t.Leave ]
         |> List.map (fun (k, l) -> hint k l)
         |> String.concat ""
     let note =
@@ -413,8 +413,8 @@ let private renderList (title: string) =
         |> String.concat ""
     let hints =
         (match screen with
-         | Pause -> Strings.t.NavKeys
-         | _ -> Strings.t.NavKeys @ [ Strings.t.KeysJoin, Strings.t.Join; Strings.t.KeysLeave, Strings.t.Leave ])
+         | Pause -> Strings.navKeys ()
+         | _ -> Strings.navKeys () @ [ Strings.keysJoin (), Strings.t.Join; Strings.keysLeave (), Strings.t.Leave ])
         |> List.map (fun (k, l) -> hint k l)
         |> String.concat ""
     el.innerHTML <-
@@ -532,18 +532,31 @@ let private updateOptions () =
             if Settings.selectable optRows.[i] then go <- false
         optCursor <- i
     let mutable back = false
-    for d in Input.devices () do
-        let inp = d.Input
-        let k = d.Key
-        if pulse k "up" inp.Thrust then move -1
-        if pulse k "down" inp.Reverse then move 1
-        let h = inp.Turn + inp.Strafe
-        if pulse k "left" (h < -0.5) then Settings.adjust optRows.[optCursor] -1
-        if pulse k "right" (h > 0.5) then Settings.adjust optRows.[optCursor] 1
-        if rising k "fire" (inp.Fire || inp.Boost) then Settings.activate optRows.[optCursor]
-        let esc = rising k "back" inp.Back
-        let start = rising k "start" inp.Start
-        if esc || start then back <- true
+    if Settings.capturing () then
+        // Every keydown is being swallowed for the rebind, so a pad or phone needs
+        // its own way out of the capture.
+        for d in Input.devices () do
+            if d.Key <> "kb" && (rising d.Key "back" d.Input.Back || rising d.Key "start" d.Input.Start) then
+                Settings.cancelCapture ()
+    else
+        // a binding row arms a key capture, so left/right must not auto-repeat into it
+        let once =
+            match optRows.[optCursor] with
+            | Settings.Bind _ -> true
+            | _ -> false
+        let step k name down = if once then rising k name down else pulse k name down
+        for d in Input.devices () do
+            let inp = d.Input
+            let k = d.Key
+            if pulse k "up" inp.Thrust then move -1
+            if pulse k "down" inp.Reverse then move 1
+            let h = inp.Turn + inp.Strafe
+            if step k "left" (h < -0.5) then Settings.adjust optRows.[optCursor] -1
+            if step k "right" (h > 0.5) then Settings.adjust optRows.[optCursor] 1
+            if rising k "fire" (inp.Fire || inp.Boost) then Settings.activate optRows.[optCursor]
+            let esc = rising k "back" inp.Back
+            let start = rising k "start" inp.Start
+            if esc || start then back <- true
     renderOptions ()
     if back then
         if optBack = Lobby then dropMissing (Input.devices ())
