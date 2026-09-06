@@ -17,7 +17,7 @@ No brakes. You keep the momentum you built, and every shot shoves you backwards 
 
 Grab a crate and you get a **special** on its own button: a one-shot railgun that pierces the whole arena, homing seekers, mines that hunt you down, a tractor beam that drags a rival into your nose, a barrier that eats incoming fire, a sentry turret that covers your back, a bubble of slow time you can drop on a chaser. Wormholes open, black holes swallow bullets, and when the clock runs out the border closes in until only one ship is left.
 
-Out of stocks? You are not out of the match — you take the rim as a launcher and hurl rolling rocks at whoever is still alive.
+Out of stocks? You are not out of the match — you take the rim as a launcher and hurl rolling rocks at whoever is still alive, or press B to roam the arena as a ghost dropping mines.
 
 ## Bring whatever you have
 

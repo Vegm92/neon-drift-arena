@@ -211,7 +211,10 @@ let executeWeapon live dt (inp: Input) (s0: Ship) (def: WeaponDef) =
 
 let fire live dt (inp: Input) (s: Ship) =
     if launcher s then
-        if inp.Fire && s.LaunchCd <= 0. then
+        if inp.Fire && s.LaunchCd <= 0. && s.Ghosting then
+            let m = { Owner = s.Id; Pos = s.Pos; Vel = zero; Fuse = mineFuse * 1.5 }
+            { s with LaunchCd = ghostCooldown }, [], [ m ], [], [ MineLive s.Pos ]
+        elif inp.Fire && s.LaunchCd <= 0. then
             let r = { Owner = s.Id; Pos = s.Pos; Vel = norm (zero - s.Pos) * rockSpeed; Radius = rockRadius; Life = rockLife }
             { s with LaunchCd = rockCooldown }, [], [], [ r ], [ Launch s.Pos ]
         else

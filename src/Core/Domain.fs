@@ -22,9 +22,10 @@ module Binds =
         | Special
         | Start
         | Back
+        | Swap
 
     let all =
-        [| TurnLeft; TurnRight; StrafeLeft; StrafeRight; Thrust; Reverse; Boost; Fire; Special; Start; Back |]
+        [| TurnLeft; TurnRight; StrafeLeft; StrafeRight; Thrust; Reverse; Boost; Fire; Special; Start; Back; Swap |]
 
     let ord a =
         match a with
@@ -39,6 +40,7 @@ module Binds =
         | Special -> 8
         | Start -> 9
         | Back -> 10
+        | Swap -> 11
 
     /// Stable storage key, independent of the display label.
     let name a =
@@ -54,6 +56,7 @@ module Binds =
         | Special -> "special"
         | Start -> "start"
         | Back -> "back"
+        | Swap -> "swap"
 
     /// The letter comes first so the legends read W/S/A/D as they always have.
     let defaults a =
@@ -69,6 +72,7 @@ module Binds =
         | Special -> [| "KeyF" |]
         | Start -> [| "Enter" |]
         | Back -> [| "Escape" |]
+        | Swap -> [| "KeyB" |]
 
     let private codes = all |> Array.map defaults
 
@@ -188,6 +192,8 @@ module Cfg =
     // Fraction of the normal minimum camera height used once duelShips remain.
     let duelCamFactor = 0.6
     let seriesTo = 5
+    let mutable ghostSpeed = 240.
+    let mutable ghostCooldown = 8.
     let mutable rockSpeed = 300.
     let mutable rockRadius = 20.
     let mutable rockCooldown = 6.
@@ -278,6 +284,8 @@ module Cfg =
            "tractorPull", (fun () -> tractorPull), (fun x -> tractorPull <- x)
            "tractorTime", (fun () -> tractorTime), (fun x -> tractorTime <- x)
            "matchTime", (fun () -> matchTime), (fun x -> matchTime <- x)
+           "ghostSpeed", (fun () -> ghostSpeed), (fun x -> ghostSpeed <- x)
+           "ghostCooldown", (fun () -> ghostCooldown), (fun x -> ghostCooldown <- x)
            "rockSpeed", (fun () -> rockSpeed), (fun x -> rockSpeed <- x)
            "rockRadius", (fun () -> rockRadius), (fun x -> rockRadius <- x)
            "rockCooldown", (fun () -> rockCooldown), (fun x -> rockCooldown <- x)
@@ -324,10 +332,11 @@ type Input =
       Special: bool
       Start: bool
       Back: bool
+      Swap: bool
       Present: bool }
 
 let noInput =
-    { Turn = 0.; Aim = None; Absolute = false; Steer = false; Strafe = 0.; Thrust = false; Reverse = false; Boost = false; Fire = false; Special = false; Start = false; Back = false; Present = false }
+    { Turn = 0.; Aim = None; Absolute = false; Steer = false; Strafe = 0.; Thrust = false; Reverse = false; Boost = false; Fire = false; Special = false; Start = false; Back = false; Swap = false; Present = false }
 
 type Weapon =
     | Blaster
@@ -409,6 +418,7 @@ type Ship =
       LastWeapon: Weapon
       LaunchCd: float
       LaunchAngle: float
+      Ghosting: bool
       WarpCd: float
       Next: int
       Laps: int

@@ -403,7 +403,9 @@ let private localFrame (t: float) dt =
         let mutable pause = false
         inputs
         |> Array.iteri (fun i inp ->
-            if Menu.rising (sprintf "s%d" i) "start" inp.Start then pause <- true)
+            if Menu.rising (sprintf "s%d" i) "start" inp.Start then pause <- true
+            if Menu.rising (sprintf "s%d" i) "swap" inp.Swap && Sim.launcher world.Ships.[i] then
+                world <- { world with Ships = world.Ships |> Array.mapi (fun j s -> if j = i then { s with Ghosting = not s.Ghosting } else s) })
         if events |> List.exists (function Explode _ -> true | _ -> false) then hitstop <- 0.09
         announce world events
         shout <- max 0. (shout - dt)
