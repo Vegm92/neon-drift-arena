@@ -127,7 +127,7 @@ let private threat (w: World) (me: Ship) =
             else None)
     let hole =
         match w.Hole with
-        | Some h when len (h.Pos - me.Pos) < holeCore * 12. -> [ toward h.Pos (1. - len (h.Pos - me.Pos) / (holeCore * 12.)) ]
+        | Some h when len (h.Pos - me.Pos) < State.holeCoreNow () * 12. -> [ toward h.Pos (1. - len (h.Pos - me.Pos) / (State.holeCoreNow () * 12.)) ]
         | _ -> []
     match bullets @ rocks @ mines @ charging @ hole with
     | [] when State.race -> Some(toward State.gates.[me.Next] 0.5, true)
@@ -227,16 +227,20 @@ let drawPortals (vw: View) (w: World) =
 let drawHole (vw: View) (w: World) dt =
     match w.Hole with
     | Some h ->
+        let core = State.holeCoreNow ()
         vw.Hole.visible <- true
         vw.Hole.position.set (h.Pos.X, 0., h.Pos.Y)
-        let fade = min 1. (h.Life / 1.5) * min 1. ((holeLife - h.Life) * 2.)
+        vw.Hole.scale.set (core / holeCore, 1., core / holeCore)
+        let fade =
+            if Double.IsInfinity h.Life then 1.
+            else min 1. (h.Life / 1.5) * min 1. ((holeLife - h.Life) * 2.)
         vw.Horizon.material.opacity <- fade * (0.85 + 0.15 * sin (w.Time * 7.))
         vw.Horizon.rotation.y <- w.Time * 1.5
         vw.Halo.material.opacity <- fade * 0.2
         vw.Halo.rotation.y <- -w.Time * 0.4
         if vw.Puff + dt > 0.05 then
             let a = rnd.NextDouble() * Math.PI * 2.
-            spawnCone vw (h.Pos + ofAngle a * (holeCore * 8.)) holeHex 3 260. (a + Math.PI + 0.5) 0.25 14.
+            spawnCone vw (h.Pos + ofAngle a * (State.holeCoreNow () * 8.)) holeHex 3 260. (a + Math.PI + 0.5) 0.25 14.
     | None -> vw.Hole.visible <- false
 
 let drawMines (vw: View) (w: World) =
