@@ -433,8 +433,10 @@ let private renderOptions () =
             sprintf "<div class=\"%s\" data-i=\"%d\"><span>%s</span><b data-dir=\"1\">%s</b></div>" cls i (Settings.label r) (Settings.value r))
         |> String.concat ""
     el.innerHTML <-
-        sprintf "<h1>%s</h1><div class=\"rows\">%s</div><div class=\"hint\">%s%s</div>"
-            Strings.t.Settings rows
+        sprintf "<h1>%s</h1><div class=\"cue\">%s</div><div class=\"rows\">%s</div><div class=\"hint\">%s%s</div>"
+            Strings.t.Settings
+            (if top > 0 then Strings.t.MoreUp else "")
+            rows
             (if top + window' < n then Strings.t.More + "\n" else "")
             (Strings.optHint ())
 

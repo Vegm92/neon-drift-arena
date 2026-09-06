@@ -130,6 +130,7 @@ type Locale =
       Sounds: string
       On: string
       Off: string
+      MoreUp: string
       More: string
       OptHint: string
       TutTitle: string
@@ -292,6 +293,7 @@ let en =
       Sounds = "SOUNDS"
       On = "ON"
       Off = "OFF"
+      MoreUp = "▲ MORE ABOVE"
       More = "▼ MORE BELOW"
       OptHint = "W S / STICK  ·  MOVE        A D / STICK  ·  ADJUST        SPACE / A  ·  TOGGLE        ESC / B  ·  BACK"
       TutTitle = "HOW TO PLAY"
