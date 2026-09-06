@@ -108,11 +108,12 @@ let drawTags (vw: View) (w: World) =
     w.Ships
     |> Array.iteri (fun i s ->
         let el = vw.Tags.[i]
-        let show = (s.Alive && s.Invuln > 0.) || Sim.launcher s
+        let p = (three.Vector3(s.Pos.X, 0., s.Pos.Y)).project vw.Camera
+        let show =
+            vw.Intro <= 0. && p.z < 1. && ((s.Alive && s.Invuln > 0.) || Sim.launcher s)
         el.hidden <- not show
         if show then
             el.textContent <- vw.Names.[i]
-            let p = (three.Vector3(s.Pos.X, 0., s.Pos.Y)).project vw.Camera
             let x = (p.x + 1.) / 2. * window.innerWidth
             let y = (1. - p.y) / 2. * window.innerHeight - 44.
             el?style?left <- sprintf "%.0fpx" (max 40. (min (window.innerWidth - 40.) x))
