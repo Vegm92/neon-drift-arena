@@ -321,7 +321,10 @@
         { key: Weapon.Swarm, name: "Seeker Swarm" },
         { key: Weapon.Pulse, name: "Repulsor Pulse" },
         { key: Weapon.Scatter, name: "Scatter Gun" },
-        { key: Weapon.Tractor, name: "Tractor Beam" }
+        { key: Weapon.Tractor, name: "Tractor Beam" },
+        { key: Weapon.Barrier, name: "Barrier" },
+        { key: Weapon.Sentry, name: "Sentry Turret" },
+        { key: Weapon.Bubble, name: "Time Bubble" }
       ];
 
       // Populate weapon dropdown
@@ -360,7 +363,18 @@
         { name: "seekerDamage", label: "Swarm Missile Damage", min: 1, max: 100, step: 1, default: 34 },
         { name: "pulseForce", label: "Pulse Wave Force", min: 100, max: 3000, step: 50, default: 1400 },
         { name: "mineFuse", label: "Mine Detonation Delay", min: 0.1, max: 5.0, step: 0.1, default: 1.5 },
-        { name: "tractorRange", label: "Tractor Max Range", min: 50, max: 500, step: 10, default: 280 }
+        { name: "tractorRange", label: "Tractor Max Range", min: 50, max: 500, step: 10, default: 280 },
+        { name: "wallLife", label: "Barrier Lifetime", min: 1, max: 20, step: 0.5, default: 6 },
+        { name: "wallLen", label: "Barrier Width", min: 40, max: 400, step: 10, default: 140 },
+        { name: "wallThick", label: "Barrier Thickness", min: 2, max: 40, step: 1, default: 8 },
+        { name: "sentryRange", label: "Sentry Range", min: 100, max: 1200, step: 20, default: 420 },
+        { name: "sentryLife", label: "Sentry Lifetime", min: 2, max: 40, step: 1, default: 15 },
+        { name: "sentryHp", label: "Sentry Hull", min: 10, max: 300, step: 5, default: 60 },
+        { name: "sentryCooldown", label: "Sentry Fire Rate", min: 0.05, max: 2, step: 0.05, default: 0.25 },
+        { name: "sentryDamage", label: "Sentry Damage", min: 1, max: 60, step: 1, default: 12 },
+        { name: "bubbleRadius", label: "Bubble Radius", min: 60, max: 600, step: 10, default: 220 },
+        { name: "bubbleLife", label: "Bubble Lifetime", min: 1, max: 20, step: 0.5, default: 4 },
+        { name: "bubbleFactor", label: "Bubble Time Scale", min: 0.05, max: 1, step: 0.05, default: 0.4 }
       ];
 
       const createSliders = () => {
@@ -376,7 +390,10 @@
           "Seeker Swarm": ["seekerSpeed", "seekerDamage"],
           "Repulsor Pulse": ["pulseForce"],
           "Scatter Gun": [], // Uses standard blaster bullet settings directly
-          "Tractor Beam": ["railCharge", "tractorRange"]
+          "Tractor Beam": ["railCharge", "tractorRange"],
+          "Barrier": ["wallLife", "wallLen", "wallThick"],
+          "Sentry Turret": ["sentryRange", "sentryLife", "sentryHp", "sentryCooldown", "sentryDamage"],
+          "Time Bubble": ["bubbleRadius", "bubbleLife", "bubbleFactor"]
         };
         
         const allowedSpecial = showMapping[selectedWpn.name] || [];
@@ -685,26 +702,37 @@
 
         // Capture new events and log them
         const events = toArray(nextState.Events);
+        const hitsGrouped = {};
+        
         events.forEach(evt => {
           // Event mapping tags
-          if (evt.tag === 0) { // Hit V2
-            addLog(`Bullet Hit registered at [${evt.fields[0].X.toFixed(0)}, ${evt.fields[0].Y.toFixed(0)}]`, "hit");
-            damageNumbers.push({ text: `-${Cfg.bulletDamage.toFixed(0)}`, Pos: evt.fields[0], life: 1.0 });
-          } else if (evt.tag === 3) { // Shot nose
-            addLog(`P1 fired Weapon!`, "shoot");
-          } else if (evt.tag === 13) { // Wave(Pos, Angle, Id)
-            addLog(`Pulse shockwave emitted!`, "shoot");
-          } else if (evt.tag === 15) { // Zap(Pos, Angle, Id)
-            addLog(`Scatter Zap shockwave emitted!`, "shoot");
-          } else if (evt.tag === 16) { // Latch(Pos, Id)
-            addLog(`Tractor Latch beam locked!`, "shoot");
-          } else if (evt.tag === 11) { // Beam(nose, far, Id)
-            addLog(`Rail beam fired!`, "shoot");
-          } else if (evt.tag === 12) { // Charging
-            addLog(`Rail/Tractor Charging up...`, "info");
+          if (evt.tag === 0) { // Hit V2 * string * float
+            const pos = evt.fields[0];
+            const name = evt.fields[1];
+            const dmg = evt.fields[2];
+            if (!hitsGrouped[name]) {
+              hitsGrouped[name] = { pos: pos, dmgUnit: dmg, count: 0, dmgTotal: 0 };
+            }
+            hitsGrouped[name].count += 1;
+            hitsGrouped[name].dmgTotal += dmg;
+            hitsGrouped[name].pos = pos;
           } else if (evt.tag === 5) { // Cooked (overheat)
             addLog(`Blaster OVERHEATED! Locked out.`, "hit");
           }
+        });
+
+        // Add log entry and floating damage number for each grouped weapon hit
+        Object.keys(hitsGrouped).forEach(name => {
+          const group = hitsGrouped[name];
+          const label = group.count > 1 
+            ? `${name} Hit: -${group.dmgTotal.toFixed(0)} HP (${group.count}x -${group.dmgUnit.toFixed(0)})`
+            : `${name} Hit: -${group.dmgTotal.toFixed(0)} HP`;
+          addLog(label, "hit");
+
+          const text = group.count > 1
+            ? `-${group.dmgTotal.toFixed(0)} (${group.count}x -${group.dmgUnit.toFixed(0)})`
+            : `-${group.dmgTotal.toFixed(0)}`;
+          damageNumbers.push({ text: text, Pos: group.pos, life: 1.0 });
         });
 
         // Sync customRocks positions back from simulation

@@ -203,6 +203,24 @@ module Cfg =
     let mutable holeG = 9e6
     let mutable holeCore = 30.
 
+    let mutable wallLife = 6.
+    let mutable wallLen = 140.
+    let mutable wallThick = 8.
+    let barrierAmmo = 2
+
+    let sentryRadius = 16.
+    let mutable sentryRange = 420.
+    let mutable sentryLife = 15.
+    let mutable sentryHp = 60.
+    let mutable sentryCooldown = 0.25
+    let mutable sentryDamage = 12.
+    let sentryAmmo = 1
+
+    let mutable bubbleRadius = 220.
+    let mutable bubbleLife = 4.
+    let mutable bubbleFactor = 0.4
+    let bubbleAmmo = 1
+
     let mutable laps = 3.
     let mutable gateRadius = 150.
     let mutable raceGrace = 20.
@@ -272,6 +290,17 @@ module Cfg =
            "holeLife", (fun () -> holeLife), (fun x -> holeLife <- x)
            "holeG", (fun () -> holeG), (fun x -> holeG <- x)
            "holeCore", (fun () -> holeCore), (fun x -> holeCore <- x)
+           "wallLife", (fun () -> wallLife), (fun x -> wallLife <- x)
+           "wallLen", (fun () -> wallLen), (fun x -> wallLen <- x)
+           "wallThick", (fun () -> wallThick), (fun x -> wallThick <- x)
+           "sentryRange", (fun () -> sentryRange), (fun x -> sentryRange <- x)
+           "sentryLife", (fun () -> sentryLife), (fun x -> sentryLife <- x)
+           "sentryHp", (fun () -> sentryHp), (fun x -> sentryHp <- x)
+           "sentryCooldown", (fun () -> sentryCooldown), (fun x -> sentryCooldown <- x)
+           "sentryDamage", (fun () -> sentryDamage), (fun x -> sentryDamage <- x)
+           "bubbleRadius", (fun () -> bubbleRadius), (fun x -> bubbleRadius <- x)
+           "bubbleLife", (fun () -> bubbleLife), (fun x -> bubbleLife <- x)
+           "bubbleFactor", (fun () -> bubbleFactor), (fun x -> bubbleFactor <- x)
            "shrinkTime", (fun () -> shrinkTime), (fun x -> shrinkTime <- x)
            "laps", (fun () -> laps), (fun x -> laps <- x)
            "gateRadius", (fun () -> gateRadius), (fun x -> gateRadius <- x)
@@ -311,6 +340,9 @@ type Weapon =
     | Collision
     | Rock
     | Singularity
+    | Barrier
+    | Sentry
+    | Bubble
 
 type ShipArchetype =
     | Standard
@@ -319,7 +351,7 @@ type ShipArchetype =
     | Engineer
     | Scout
 
-let crateTiers = [| Rail, 1; Pulse, 2; Scatter, 2; Tractor, 2; Mines, 3; Swarm, 3 |]
+let crateTiers = [| Rail, 1; Bubble, 1; Pulse, 2; Scatter, 2; Tractor, 2; Barrier, 2; Sentry, 2; Mines, 3; Swarm, 3 |]
 let crateWeapons = crateTiers |> Array.collect (fun (w, n) -> Array.create n w)
 
 let weaponAmmo w =
@@ -334,6 +366,9 @@ let weaponAmmo w =
     | Collision -> 0
     | Rock -> 0
     | Singularity -> 0
+    | Barrier -> Cfg.barrierAmmo
+    | Sentry -> Cfg.sentryAmmo
+    | Bubble -> Cfg.bubbleAmmo
 
 type Tether =
     | NoTether
@@ -401,6 +436,19 @@ type Portal = { A: V2; B: V2; Life: float }
 
 type Hole = { Pos: V2; Life: float }
 
+type Deployable =
+    { Owner: int
+      Kind: int
+      Pos: V2
+      Angle: float
+      Hp: float
+      Life: float
+      Cooldown: float }
+
+let wallKind = 0
+let turretKind = 1
+let bubbleKind = 2
+
 type Pad = { Pos: V2; Amount: float; RespawnIn: float; Kind: int }
 
 type Crate = { Pos: V2; RespawnIn: float }
@@ -412,7 +460,7 @@ type Phase =
     | Over of winner: int option
 
 type Event =
-    | Hit of V2
+    | Hit of V2 * string * float
     | Explode of V2 * int * bool
     | Downed of int * int * Weapon * bool
     | Shot of V2
@@ -434,6 +482,7 @@ type Event =
     | PortalOpen of V2 * V2
     | Warp of V2
     | HoleOpen of V2
+    | Deployed of Deployable
     | Finished of int * int
 
 type World =
@@ -445,6 +494,7 @@ type World =
       PortalIn: float
       Hole: Hole option
       HoleIn: float
+      Deploys: Deployable list
       RaceEnd: float
       Pads: Pad[]
       Crates: Crate[]

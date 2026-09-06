@@ -46,6 +46,9 @@ let create () =
           Mines = Array.init minePool (fun _ -> mkMine scene)
           Boulders = Array.init rockPool (fun _ -> mkAsteroid scene 0xff7a1e 0xffe0b0 { Pos = zero; Radius = rockRadius })
           Gates = Array.init (portalPool * 4) (mkGate scene)
+          Walls = Array.init deployPool (fun _ -> mkWall scene)
+          Turrets = Array.init deployPool (fun _ -> mkTurret scene)
+          Bubbles = Array.init deployPool (fun _ -> mkBubble scene)
           Hole = hole
           Horizon = horizon
           Halo = halo
@@ -85,7 +88,7 @@ let syncArena = RenderMeshes.syncArena
 let draw (vw: View) (w: World) (events: Event list) dt =
     for e in events do
         match e with
-        | Hit p -> spawnBurst vw p 0xffffff 10 160.
+        | Hit(p, _, _) -> spawnBurst vw p 0xffffff 10 160.
         | Ram p -> spawnBurst vw p 0xffffff 16 200.
         | Bump p -> spawnBurst vw p 0xff9955 8 130.
         | Pickup(p, big) -> spawnBurst vw p 0x33ffcc (if big then 26 else 14) 150.
@@ -126,6 +129,11 @@ let draw (vw: View) (w: World) (events: Event list) dt =
                 spawnRing vw p portalHex portalRadius 3. 0.6
                 spawnBurst vw p portalHex 20 160.
         | Warp p -> spawnBurst vw p portalHex 12 140.
+        | Deployed d ->
+            let hex = shipColor w.Ships.[d.Owner]
+            let r = if d.Kind = bubbleKind then bubbleRadius elif d.Kind = wallKind then wallLen / 2. else sentryRadius + 8.
+            spawnRing vw d.Pos hex r 2.4 0.4
+            spawnBurst vw d.Pos hex 18 150.
         | HoleOpen p ->
             spawnRing vw p holeHex (holeCore * 9.) -0.8 0.9
             spawnBurst vw p holeHex 40 240.
@@ -168,6 +176,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
     drawMines vw w
     drawRocks vw w dt
     drawPortals vw w
+    drawDeploys vw w
     drawHole vw w dt
     drawBullets vw w dt
     updateBursts vw dt

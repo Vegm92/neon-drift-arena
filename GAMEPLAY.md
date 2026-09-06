@@ -64,7 +64,7 @@ Playing on CrazyGames adds a few things the standalone site does not have:
 
 The blaster is always on RT. Crate weapons are a **special** on RB, fired independently, so you never lose your gun.
 
-Four weapon crates sit in the arena at all times, one per quadrant. Grabbing one hands out a random loadout - MAG MINES and SEEKERS common (3/13 each), REPULSOR, SCATTER GUN and TRACTOR uncommon (2/13 each), RAILGUN rare (1/13) - and that crate reappears 10 s later on a free spot. Spend the ammo and the special is gone.
+Four weapon crates sit in the arena at all times, one per quadrant. Grabbing one hands out a random loadout - MAG MINES and SEEKERS common (3/18 each), REPULSOR, SCATTER GUN, TRACTOR, BARRIER and SENTRY uncommon (2/18 each), RAILGUN and TIME BUBBLE rare (1/18 each) - and that crate reappears 10 s later on a free spot. Spend the ammo and the special is gone.
 
 | Weapon | Behaviour |
 |--------|-----------|
@@ -73,6 +73,9 @@ Four weapon crates sit in the arena at all times, one per quadrant. Grabbing one
 | SEEKERS | One homing missile per RB press, not a volley. 34 damage, so a full salvo of three is a kill; chases for 12 s. |
 | REPULSOR | No damage: a forward cone of pure knockback. Ring-outs count as your kill. |
 | SCATTER GUN | Two shots of electrical discharge: a forward cone reaching half a blaster shot that knocks out every enemy in it for 1 s and chips 12 HP. |
+| BARRIER | Two charges. RB plants a glowing wall 60 units ahead, across your nose. It swallows every bullet that touches it - yours included - and bounces any ship that runs into it. Gone after 6 s. |
+| SENTRY | One charge. RB drops a hexagonal turret at your tail. It tracks the nearest enemy inside 420 units and fires your blaster at them every 0.25 s, never at you or your team. It has 60 hull, enemy fire chews through it, and it packs up after 15 s. |
+| TIME BUBBLE | One charge. RB drops a 220-unit dome of slow time around you that lasts 4 s. You and your team pass through untouched; every enemy ship, bullet, mine and rolling rock inside runs at 40% speed, cooldowns and all. |
 | TRACTOR | Two charges. Hold RB to charge like the railgun; a faint bubble shows the reach (half a blaster shot). On full charge it latches the thing you are facing, enemy ships first, then asteroids. A ship gets dragged toward you for 1.4 s so you can ram it; a rock reels you in instead. |
 
 ## Race mode
@@ -81,4 +84,4 @@ MODE → RACE turns the ARENA row into a track picker - GRAND PRIX (a full-width
 
 ## Practice mode
 
-PRACTICE starts as soon as one player from any device - keyboard, gamepad or phone - has joined and pressed Start (no READY needed), and drops a passive target bot into the first free slot. Everyone lines up on the left facing the target, with a crate above the centre and a dormant mine below. Nobody loses stocks, so the range never ends until QUIT TO LOBBY. The crate reappears a second after every grab and hands out the weapons in order - RAILGUN, MAG MINES, SEEKERS, REPULSOR, SCATTER GUN, TRACTOR - so a pad can cycle through all of them. With a keyboard in the game, `0`–`6` arm it directly (0 = BLASTER), `K` kills the target, `G` turns the keyboard player into a launcher, `T` jumps to sudden death and `R` resets the stage.
+PRACTICE starts as soon as one player from any device - keyboard, gamepad or phone - has joined and pressed Start (no READY needed), and drops a passive target bot into the first free slot. Everyone lines up on the left facing the target, with a crate above the centre and a dormant mine below. Nobody loses stocks, so the range never ends until QUIT TO LOBBY. The crate reappears a second after every grab and hands out the weapons in order - RAILGUN, MAG MINES, SEEKERS, REPULSOR, SCATTER GUN, TRACTOR, BARRIER, SENTRY, TIME BUBBLE - so a pad can cycle through all of them. With a keyboard in the game, `0`–`9` arm it directly (0 = BLASTER), `K` kills the target, `G` turns the keyboard player into a launcher, `T` jumps to sudden death and `R` resets the stage.

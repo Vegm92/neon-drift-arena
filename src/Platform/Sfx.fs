@@ -338,7 +338,7 @@ let play (events: Event list) =
                 if shots < 2 then
                     shots <- shots + 1
                     shot p
-            | Hit p -> hit p
+            | Hit(p, _, _) -> hit p
             | Ram p -> ram p
             | Bump p ->
                 if bumps < 2 then
@@ -360,6 +360,7 @@ let play (events: Event list) =
             | PortalOpen(p, _) -> mineLive p
             | Warp p -> pickup p false
             | HoleOpen p -> blast p
+            | Deployed d -> mineSet d.Pos
             | Explode(p, _, _) -> explode p
             | Downed _ -> ()
             | Finished _ -> ()

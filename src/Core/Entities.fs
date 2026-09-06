@@ -92,11 +92,56 @@ let resolveWarps dt (portals: Portal list) (ships: Ship[]) =
             else sh)
     s, List.ofSeq events
 
-let stepRocks k dt (rocks: Rock list) =
+let wallEnds (d: Deployable) =
+    let arm = ofAngle (d.Angle + Math.PI / 2.) * (wallLen / 2.)
+    d.Pos - arm, d.Pos + arm
+
+let slowAt (ships: Ship[]) (deploys: Deployable list) sd (p: V2) dt =
+    if deploys |> List.exists (fun d -> d.Kind = bubbleKind && sideOf ships d.Owner <> sd && len (d.Pos - p) < bubbleRadius) then
+        dt * bubbleFactor
+    else
+        dt
+
+let stepDeploys dt (ships: Ship[]) (deploys: Deployable list) =
+    let bullets = ResizeArray()
+    let events = ResizeArray()
+    let live =
+        deploys
+        |> List.choose (fun d ->
+            if d.Life <= dt || (d.Kind = turretKind && d.Hp <= 0.) then
+                if d.Kind = turretKind then events.Add(Blast d.Pos)
+                None
+            elif d.Kind <> turretKind then
+                Some { d with Life = d.Life - dt }
+            else
+                let cd = max 0. (d.Cooldown - dt)
+                let d = { d with Life = d.Life - dt; Cooldown = cd }
+                match nearest ships d.Owner d.Pos with
+                | Some t when len (t.Pos - d.Pos) < sentryRange ->
+                    let a = atan2 (t.Pos.Y - d.Pos.Y) (t.Pos.X - d.Pos.X)
+                    if cd > 0. || race then
+                        Some { d with Angle = a }
+                    else
+                        let dir = ofAngle a
+                        let nose = d.Pos + dir * (sentryRadius + 4.)
+                        bullets.Add
+                            { Owner = d.Owner
+                              Pos = nose
+                              Vel = dir * bulletSpeed
+                              Life = bulletLife
+                              Kind = 0
+                              Damage = sentryDamage }
+                        events.Add(Shot nose)
+                        Some { d with Angle = a; Cooldown = sentryCooldown }
+                | _ -> Some d)
+    live, List.ofSeq bullets, List.ofSeq events
+
+let stepRocks k dtOf (rocks: Rock list) =
     let events = ResizeArray()
     let live =
         rocks
         |> List.choose (fun r ->
+            let dt = dtOf r
             let r = { r with Pos = r.Pos + r.Vel * dt; Life = r.Life - dt }
             let hitRock = asteroids |> Array.exists (fun a -> len (a.Pos - r.Pos) < a.Radius + r.Radius)
             if hitRock then events.Add(Bump r.Pos)
@@ -110,7 +155,7 @@ let resolveBeams (ships: Ship[]) beams =
         let dir = norm (b - a)
         for i in 0 .. s.Length - 1 do
             if s.[i].Alive && side s.[i] <> side s.[owner] && segDist a b s.[i].Pos < shipRadius + 6. then
-                events.Add(Hit s.[i].Pos)
+                events.Add(Hit(s.[i].Pos, "Rail", railDamage))
                 if s.[i].Invuln <= 0. then
                     s.[owner] <- { s.[owner] with Hits = s.[owner].Hits + 1 }
                 s.[i] <- { s.[i] with Vel = s.[i].Vel + dir * bulletKnockback } |> tag owner Rail |> damage railDamage
@@ -142,7 +187,7 @@ let resolveZaps (ships: Ship[]) zaps =
         for i in 0 .. s.Length - 1 do
             match inCone s p a scatterRange scatterCone owner i with
             | Some _ ->
-                events.Add(Hit s.[i].Pos)
+                events.Add(Hit(s.[i].Pos, "Scatter", scatterDamage))
                 if s.[i].Invuln <= 0. then
                     s.[owner] <- { s.[owner] with Hits = s.[owner].Hits + 1 }
                 s.[i] <- { s.[i] with Stun = max s.[i].Stun scatterStun; Thrusting = 0. } |> tag owner Scatter |> damage scatterDamage
@@ -186,12 +231,13 @@ let resolveTows dt (ships: Ship[]) latches =
                 | _ -> drop ()
     s
 
-let stepMines k dt (ships: Ship[]) (mines: Mine list) =
+let stepMines k dtOf (ships: Ship[]) (mines: Mine list) =
     let events = ResizeArray()
     let blasts = ResizeArray()
     let kept =
         mines
         |> List.choose (fun m ->
+            let dt = dtOf m
             let near = nearest ships m.Owner m.Pos
             if race then
                 match near with
@@ -221,11 +267,15 @@ let stepMines k dt (ships: Ship[]) (mines: Mine list) =
 
 let resolveBlasts (ships: Ship[]) blasts =
     let s = Array.copy ships
+    let events = ResizeArray()
     for (p, owner) in blasts do
         for i in 0 .. s.Length - 1 do
             let d = s.[i].Pos - p
             let dist = len d
             if s.[i].Alive && dist < mineBlast then
                 let f = 1. - dist / mineBlast
-                s.[i] <- { s.[i] with Vel = s.[i].Vel + norm d * (pulseForce * f) } |> tag owner Mines |> damage (mineDamage * f)
-    s
+                let dmg = mineDamage * f
+                if dmg > 0. then
+                    events.Add(Hit(s.[i].Pos, "Mines", dmg))
+                s.[i] <- { s.[i] with Vel = s.[i].Vel + norm d * (pulseForce * f) } |> tag owner Mines |> damage dmg
+    s, List.ofSeq events
