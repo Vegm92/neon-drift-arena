@@ -34,6 +34,12 @@
   .wep .ammo{font-size:8px;letter-spacing:.25em;color:#fff45c;text-shadow:0 0 6px #fff45c}
   .wep .wait svg{opacity:.3;filter:none}
   .wep .ready svg{color:#ff9955;filter:drop-shadow(0 0 6px #ff9955);animation:sos .5s steps(2,end) infinite}
+  .panel .medals{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+  .panel .medal{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font-size:10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);box-shadow:0 0 4px rgba(255,255,255,.1)}
+  .panel .medal.fb{background:rgba(255,60,92,.25);border-color:#ff3c5c}
+  .panel .medal.dk{background:rgba(0,246,255,.2);border-color:#00f6ff}
+  .panel .medal.tk{background:rgba(255,213,79,.2);border-color:#ffd54f}
+  .panel .medal.rk{background:rgba(124,255,58,.2);border-color:#7cff3a}
   #clock{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-size:15px;letter-spacing:.3em;opacity:.8;text-shadow:0 0 10px currentColor}
   #clock.sudden{color:#ff3b5c;animation:sos .7s steps(2,end) infinite}
   .tag{position:absolute;transform:translateX(-50%);font-size:15px;font-weight:700;letter-spacing:.25em;text-shadow:0 0 10px currentColor,0 0 2px #000}
@@ -75,6 +81,12 @@
   #menu .stats .award{display:flex;align-items:center;gap:12px;font-size:12px;letter-spacing:.18em}
   #menu .stats .award b{min-width:128px;font-size:9px;font-weight:400;letter-spacing:.3em;text-shadow:0 0 12px currentColor}
   #menu .stats .award span{color:#cfe;opacity:.8}
+  #menu .stats .medals{display:flex;align-items:center;gap:8px;margin-left:12px;flex-wrap:wrap}
+  #menu .stats .medal{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border:1px solid rgba(255, 255, 255, 0.15);white-space:nowrap;background:rgba(8, 14, 26, 0.6);text-shadow:0 0 6px currentColor;box-shadow:0 0 10px -4px currentColor}
+  #menu .stats .medal.fb{color:#ff3c5c;background:rgba(255,60,92,0.15);border-color:rgba(255,60,92,0.4)}
+  #menu .stats .medal.dk{color:#00f6ff;background:rgba(0,246,255,0.1);border-color:rgba(0,246,255,0.3)}
+  #menu .stats .medal.tk{color:#ffd54f;background:rgba(255,213,79,0.1);border-color:rgba(255,213,79,0.3)}
+  #menu .stats .medal.rk{color:#7cff3a;background:rgba(124,255,58,0.1);border-color:rgba(124,255,58,0.3)}
   #banner{position:fixed;left:0;right:0;top:40%;text-align:center;font-size:22px;letter-spacing:.35em;text-shadow:0 0 18px #fff;white-space:pre-line;line-height:2}
   #banner.hidden{display:none}
   #banner.count{font-size:min(30vh,240px);font-weight:700;letter-spacing:.1em;line-height:1;color:#fff;text-shadow:0 0 30px #00f6ff,0 0 80px #00f6ff;

@@ -141,9 +141,49 @@ let step dt (inputs: Input[]) (w: World) =
         let settled, deaths = ships |> Array.map (settle ships rng k dt) |> Array.unzip
         let ships = Array.copy settled
         let kills = deaths |> Array.toList |> List.choose id
-        for (_, victim, _, by, _) in kills do
+        let mutable medalEvents = []
+        let mutable hasFirstBlood = ships |> Array.exists (fun s -> s.FirstBloodMedal > 0)
+        for (_, victim, _, by, wpn) in kills do
             if by >= 0 && by <> victim then
-                ships.[by] <- { ships.[by] with Kills = ships.[by].Kills + 1; Streak = ships.[by].Streak + 1 }
+                let s = ships.[by]
+                let isRail = (wpn = Rail)
+                
+                // First Blood check
+                let fbAwarded, newHasFB =
+                    if not hasFirstBlood then
+                        medalEvents <- Medal(by, "firstblood") :: medalEvents
+                        1, true
+                    else
+                        0, hasFirstBlood
+                hasFirstBlood <- newHasFB
+                
+                // Multi-kill tracking
+                let nextMulti, dkIncrement, tkIncrement =
+                    if w.Time - s.LastKillTime <= 4.0 then
+                        let m = s.MultiKillCount + 1
+                        let dk = if m = 2 then 1 else 0
+                        let tk = if m >= 3 then 1 else 0
+                        m, dk, tk
+                    else
+                        1, 0, 0
+                
+                if dkIncrement > 0 then medalEvents <- Medal(by, "doublekill") :: medalEvents
+                if tkIncrement > 0 then medalEvents <- Medal(by, "triplekill") :: medalEvents
+                
+                // Rail kill tracking
+                let rkIncrement = if isRail then 1 else 0
+                if rkIncrement > 0 then medalEvents <- Medal(by, "railkill") :: medalEvents
+                
+                ships.[by] <-
+                    { s with
+                        Kills = s.Kills + 1
+                        Streak = s.Streak + 1
+                        FirstBloodMedal = s.FirstBloodMedal + fbAwarded
+                        DoubleKillMedals = s.DoubleKillMedals + dkIncrement
+                        TripleKillMedals = s.TripleKillMedals + tkIncrement
+                        RailKillMedals = s.RailKillMedals + rkIncrement
+                        LastKillTime = w.Time
+                        MultiKillCount = nextMulti }
         { Ships = ships
           Bullets = bullets
           Mines = mines
@@ -165,6 +205,7 @@ let step dt (inputs: Input[]) (w: World) =
             @ hits
             @ mineEvents
             @ mineBlasts
+            @ medalEvents
             @ rams
             @ bumps
             @ rockEvents

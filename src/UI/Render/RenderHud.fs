@@ -91,7 +91,18 @@ let drawHud (vw: View) (w: World) dt =
         let html = weaponHtml s
         if wep?dataset?html <> html then
             wep?dataset?html <- html
-            wep.innerHTML <- html)
+            wep.innerHTML <- html
+        let medals = el.querySelector ".medals" :?> HTMLElement
+        let mHtml =
+            let m = ResizeArray()
+            if s.FirstBloodMedal > 0 then m.Add("<span class=\"medal fb\" title=\"First Blood! 🩸\">🩸</span>")
+            if s.DoubleKillMedals > 0 then m.Add("<span class=\"medal dk\" title=\"Double Kill! ⚔️\">⚔️</span>")
+            if s.TripleKillMedals > 0 then m.Add("<span class=\"medal tk\" title=\"Triple Kill, ACE! ⚡\">⚡</span>")
+            if s.RailKillMedals > 0 then m.Add("<span class=\"medal rk\" title=\"Railed Down! 🎯\">🎯</span>")
+            String.concat "" m
+        if medals?dataset?html <> mHtml then
+            medals?dataset?html <- mHtml
+            medals.innerHTML <- mHtml)
 
 let drawTint (vw: View) dt =
     vw.KillCd <- max 0. (vw.KillCd - dt)

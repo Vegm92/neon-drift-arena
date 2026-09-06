@@ -69,7 +69,13 @@ let freshShip i =
       Hits = 0
       Grabs = 0
       Rings = 0
-      Kills = 0 }
+      Kills = 0
+      FirstBloodMedal = 0
+      DoubleKillMedals = 0
+      TripleKillMedals = 0
+      RailKillMedals = 0
+      LastKillTime = -999.
+      MultiKillCount = 0 }
 
 let respawn (s: Ship) =
     { freshShip s.Id with
@@ -78,4 +84,8 @@ let respawn (s: Ship) =
         Hits = s.Hits
         Grabs = s.Grabs
         Rings = s.Rings
-        Kills = s.Kills }
+        Kills = s.Kills
+        FirstBloodMedal = s.FirstBloodMedal
+        DoubleKillMedals = s.DoubleKillMedals
+        TripleKillMedals = s.TripleKillMedals
+        RailKillMedals = s.RailKillMedals }
