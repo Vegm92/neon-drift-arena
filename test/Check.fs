@@ -466,6 +466,8 @@ let main _ =
         let solo = { initial with Ships = initial.Ships |> Array.mapi (fun i s -> if i = 1 then { freshShip 1 with Invuln = 0. } else s) }
         let lapped = Seq.fold (fun w _ -> step dt (Array.init 4 (fun i -> if i = 1 then bot w 1 else noInput)) w) solo (seq { 1 .. 120 * 90 })
         check (sprintf "track %d: a lone bot laps the circuit within 90 s" t) (lapped.Ships.[1].Laps >= 1)
+        let boosts = layouts.[layouts.Length - tracks.Length + t].Pads |> List.filter (fun (_, _, k) -> k = 0)
+        check (sprintf "track %d: boost pads come in clusters and every one sits on the road" t) (boosts.Length >= 14 && boosts |> List.forall (fun (p, _, _) -> Track.onTrack p))
     setLayout (layouts |> Array.findIndex (fun l -> l.Track.IsSome))
     let quiet = grid |> place 0 gates.[0] 0. |> step dt shooter
     check "the blaster stays silent in a race" (quiet.Bullets.IsEmpty)

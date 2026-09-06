@@ -169,18 +169,28 @@ let private figureEight =
     [ v 350. -350.; v -350. 350.; v -750. 480.; v -1050. 300.; v -1150. 0.; v -1050. -300.; v -750. -480.
       v -350. -350.; v 350. 350.; v 750. 480.; v 1050. 300.; v 1150. 0.; v 1050. -300.; v 750. -480. ]
 
+let private boostClusters (road: V2 list) (w: float) =
+    let arr = List.toArray road
+    let n = arr.Length
+    let h = w / 2.
+    let shape =
+        function
+        | 2 -> [ -0.55, -0.35; 0.55, 0.35 ]
+        | 3 -> [ 0.0, -0.55; -0.6, 0.3; 0.6, 0.3 ]
+        | _ -> [ -0.6, -0.45; 0.6, -0.45; -0.3, 0.5; 0.3, 0.5 ]
+    [ for (f, k) in [ 0.06, 3; 0.19, 2; 0.32, 4; 0.45, 2; 0.58, 3; 0.71, 2; 0.86, 4 ] do
+        let i = int (f * float n) % n
+        let p = arr.[i]
+        let t = norm (arr.[(i + 1) % n] - arr.[(i + n - 1) % n])
+        let s = v -t.Y t.X
+        for (lat, lon) in shape k -> p + s * (lat * h) + t * (lon * h), padRefill, 0 ]
+
 let tracks =
     [| { Rocks = [ v 0. -500., 50.; v 300. 300., 46.; v -200. -700., 40.; v -700. 450., 44. ]
          Pads =
-           [ v 100. -1000., padRefill, 0
-             v -400. -1000., padRefill, 0
-             v 1050. -700., padRefill, 0
-             v 300. 900., padRefill, 0
-             v 950. 950., padRefill, 0
-             v -1050. 850., padRefill, 0
-             v -750. 150., padRefill, 0
-             v 1050. -400., healAmount, 1
-             v -1150. 550., healAmount, 1 ]
+           boostClusters grandPrix 280.
+           @ [ v 1050. -400., healAmount, 1
+               v -1150. 550., healAmount, 1 ]
          Crates = [ v 600. -1000.; v 750. 400.; v -550. 650.; v -550. -350. ]
          Track = Some(grandPrix, 280., 3)
          Hole = None
@@ -188,14 +198,9 @@ let tracks =
 
        { Rocks = [ v 400. -50., 50.; v 400. 500., 46.; v -700. -50., 44. ]
          Pads =
-           [ v 300. -850., padRefill, 0
-             v 600. -850., padRefill, 0
-             v 600. 250., padRefill, 0
-             v 0. 750., padRefill, 0
-             v -700. 750., padRefill, 0
-             v -1150. 300., padRefill, 0
-             v -1180. -50., healAmount, 1
-             v 650. -350., healAmount, 1 ]
+           boostClusters hairpin 260.
+           @ [ v -1180. -50., healAmount, 1
+               v 650. -350., healAmount, 1 ]
          Crates = [ v -200. -850.; v 1200. -600.; v -300. 0.; v 1200. 500. ]
          Track = Some(hairpin, 260., 3)
          Hole = None
@@ -203,14 +208,9 @@ let tracks =
 
        { Rocks = [ v 0. 450., 46.; v 0. -450., 46. ]
          Pads =
-           [ v 1150. 0., padRefill, 0
-             v -1150. 0., padRefill, 0
-             v 1050. -300., padRefill, 0
-             v -1050. 300., padRefill, 0
-             v 350. 350., padRefill, 0
-             v -350. -350., padRefill, 0
-             v 750. 480., healAmount, 1
-             v -750. -480., healAmount, 1 ]
+           boostClusters figureEight 300.
+           @ [ v 750. 480., healAmount, 1
+               v -750. -480., healAmount, 1 ]
          Crates = [ v 750. -480.; v -750. 480.; v 1050. 300.; v -1050. -300. ]
          Track = Some(figureEight, 300., 2)
          Hole = None
