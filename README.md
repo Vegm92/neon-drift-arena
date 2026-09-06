@@ -1,117 +1,57 @@
-# Neon Drift Arena
+<h1 align="center">NEON DRIFT ARENA</h1>
+<p align="center"><b>Four ships. One couch. Last ship flying wins.</b></p>
 
-Local couch brawler for up to 4 ships. Asteroids-style Newtonian drift, recoil-driven blaster, boost pads, last ship standing. F# compiled to JavaScript with Fable 5, rendered with Three.js + bloom.
+<p align="center">
+  <a href="https://neondriftarena.com/"><b>▶ PLAY FREE — neondriftarena.com</b></a>
+</p>
 
-## Run
+<p align="center">
+  Free in your browser · No download · No account · 2 to 4 players on one screen
+</p>
 
-```bash
-npm install
-npm run dev
-```
+![The arena: octagon border, boost pads, weapon crates and asteroid lanes](public/still-arena.jpg)
 
-Opens Vite on http://localhost:5173 with Fable in watch mode. The landing page is served at `/`, the game at `/play/` and the phone pad at `/pad.html`.
+## Asteroids drift with a gun that kicks back
 
-Requires the .NET 10 SDK (Fable 5.15 ships as a net10.0 tool) and Node 18+.
+No brakes. You keep the momentum you built, and every shot shoves you backwards — so the blaster doubles as your reverse thruster. Ram at speed and you both pay for it.
 
-## Landing page
+Grab a crate and you get a **special** on its own button: a one-shot railgun that pierces the whole arena, homing seekers, mines that hunt you down, a tractor beam that drags a rival into your nose. Wormholes open, black holes swallow bullets, and when the clock runs out the border closes in until only one ship is left.
 
-`index.html` at the root is the marketing page: a muted autoplay loop of `public/trailer.mp4` (a 27 s cut of real bots matches, poster `public/trailer.jpg`), one PLAY FREE button pointing at `/play/`, four feature rows, a hub block with WATCH TRAILER and the store links (Steam, CrazyGames, itch.io — dimmed SOON chips until a `url` is filled in under `stores` in `strings.json`) and the OG card `public/og.jpg`. Every string on it lives in `strings.json`; the `site-strings` hook in `vite.config.js` substitutes `{{key}}` placeholders in dev and build. The game is desktop only for now: both the landing page and `/play/` test `(any-hover: hover) and (any-pointer: fine)` plus `navigator.userAgentData.mobile`, so on a phone the CTA reads DESKTOP ONLY and `/play/` shows a gate screen instead of loading the game (`?desktop=1` gets in anyway). `pad.html` is never gated. `npm run build` emits the page, the game and the pad into `dist/`. The root `Dockerfile` builds it on Railway (a .NET 10 + Node stage runs Fable and Vite, a Node image serves `dist/`): the `site` service of the `neon-drift-arena` project deploys it from GitHub on every push (https://site-production-a98b.up.railway.app), and `npm run deploy` uploads the working tree for a one-off build. `deploy/server.mjs` serves those files gzipped and carries the phone-pad relay on `/relay`, so the pad works on the deployed build too.
+Out of stocks? You are not out of the match — you take the rim as a launcher and hurl rolling rocks at whoever is still alive.
 
-## Controls
+## Bring whatever you have
 
-| Slot | Source | Turn | Strafe | Thrust | Reverse | Boost | Fire | Special | Rematch |
-|------|--------|------|--------|--------|---------|-------|------|---------|---------|
-| P1 | Keyboard | A / D or arrows | Q / E | W / Up | S / Down | Shift | Space | F | Enter |
-| Any | Gamepad (slot from lobby or SETTINGS) | Right stick X | Left stick X | Left stick up | Left stick down | A / LT | RT | RB | Start |
-| Any | Phone (`pad.html`) | Left thumb direction | Strafe slider | Left thumb past half deflection | - | BOOST button | FIRE hex | SPECIAL button | ☰ |
+| | |
+|---|---|
+| ⌨️ **Keyboard** | One player, straight away. |
+| 🎮 **Gamepads** | Up to four. Drop in mid-match by pressing Start. |
+| 📱 **Phones** | Out of pads? Scan the QR code in the lobby and a phone becomes one. |
+| 🤖 **Bots** | Fill the empty seats and actually fight back. |
 
-SWAP STICKS in SETTINGS > CONTROLLERS flips the stick roles per pad. `M` mutes everything, music included; SETTINGS > AUDIO sets MUSIC and SOUNDS levels (left/right steps 10%, Fire toggles OFF/100%).
+## Four ways to lose a friendship
 
-SETTINGS lives in the lobby: a READY player moves down to the SETTINGS entry and confirms. The panel is a single controller-driven list - up/down moves, left/right adjusts, A/Space toggles, B/Esc goes back - covering controller slots, SWAP STICKS, every tunable in `Cfg`, and RESET.
+- **FREE FOR ALL** — three stocks each, last ship flying wins.
+- **TEAMS** — two against two, shared colour, no friendly fire.
+- **RACE** — same physics, a circuit instead of an arena. Portals for checkpoints, weapons that stun instead of kill.
+- **PRACTICE** — a target dummy, every weapon on tap, nothing on the line.
 
-The lobby's menu row holds MODE, ARENA (the five layouts plus RANDOM, rolled at every launch and rematch), MUTATOR (NONE, RAILS ONLY - every crate is a railgun, TURBO - half again as fast in every axis, ICE - a quarter of the drag), ADD BOT (fills the first empty slot with a chase-and-shoot bot; when the lobby is full it turns into CLEAR BOTS), SETTINGS and START. Wins carry across rematches as ★ on the cards and on the result screen; the first to 5 takes the series and the tally resets, as it does whenever the roster or mode changes. On the result screen Back leaves your slot and a device that is not in yet joins with Fire, so a pad can change hands before REMATCH. Mid-match drop-in works too: a pad, phone or the keyboard that is not in the game presses Start or Fire and its ship spawns straight away with full stocks - into a free slot, or in place of a bot when the lobby is full - with a "JOINS THE FIGHT" shout. No menu, no restart. SETTINGS > ARENA has a CATCH-UP toggle (on by default): the ship with the fewest stocks respawns with a full boost bar and a shield.
+Five arena layouts, three race tracks, and mutators that turn everything into railguns, crank the speed by half, or drop the drag to a quarter.
 
-The lobby opens on load. Each device presses Fire or A to claim one of the four slots (explicit slot from SETTINGS, else the first free one); the keyboard holds no slot until it joins, so four gamepads can fill the lobby without it. On your ship card, left/right picks your colour - CYAN / MAGENTA / LIME / AMBER, never two players on the same one - or your side in TEAMS mode, Fire confirms you as READY, and Back (Esc / B) un-confirms, then leaves. Down moves you from your card onto the shared menu row below the slots, where left/right moves the cursor and Up (or Back) returns to your card; the cursor pulses and shows the tags of the players sitting on it, and a card whose player went down dims with a ▼. MODE cycles FREE FOR ALL, TEAMS, PRACTICE and RACE (any change resets everyone to unconfirmed), START launches, SETTINGS opens the panel. A device whose saved slot is already taken joins the first free slot instead. START only lights up with 2+ players, everyone READY, and - in TEAMS - both sides filled; Start (Enter) launches from anywhere once that holds. Teammates share a colour, do not damage each other, and win together. Slots not in the lobby are ignored during the match. Every launch opens with a 5 s countdown while the camera flies low over the four spawn rings - each lit in its ship's colour with the player's tag floating above - and resuming from pause counts 3-2-1 from the normal view. Start during play opens the pause menu (RESUME / RESTART MATCH / QUIT TO LOBBY); the result screen offers REMATCH / QUIT TO LOBBY. Menus navigate with stick, d-pad or W/S, confirm with A / Fire / Start, back with B / Esc.
+![A lime ship charging the tractor beam while a railgun bolt crosses the arena](public/still-tractor.jpg)
 
-## Play from your phone
+## Play it
 
-`npm run dev` serves the game on the LAN (`--host`). The lobby shows a QR code with the pad URL (`http://<lan-ip>:5173/pad.html`); the pause menu shows it again. A phone that opens it becomes a controller: JOIN, then ◀ ▶ picks the colour (or side in TEAMS), the big button readies up, BACK and START match the gamepad buttons. In play the left half is a floating stick — the ship turns toward the thumb at the keyboard turn rate and thrusts once the thumb is near the rim (`padAimOn` / `padThrustOn` in TUNING) — the middle column shows that player's hull, boost, stocks and kills, and the right panel holds the SPECIAL, BOOST and FIRE hexes (hold them) with a strafe slider underneath; ☰ in the header pauses. Pause and result menus turn the phone into ▲ ▼ OK BACK. A phone silent for 2 s drops out of the lobby. Under the dev server messages travel over Vite's HMR WebSocket. On the deployed build there is no HMR, so the host page mints a four-character room code (kept in `sessionStorage`), the QR points at `https://<site>/pad.html#<code>`, and both ends meet on `/relay` in `deploy/server.mjs`, which only ever forwards a room's phones to that room's host. The relay carries pad input, nothing else - the match still runs entirely in the host browser.
+**[neondriftarena.com](https://neondriftarena.com/)** — free, in the browser, nothing to install.
 
-A second PC on the LAN can open the game URL itself (`http://<lan-ip>:5173/`). The first browser to open the game is the host and runs the simulation; every later one becomes a mirror: it sends its keyboard and gamepads to the host as `LAN PC` devices (join with Fire like a phone) and renders the host's world, menu and banner as they arrive over the same WebSocket. If the host closes, the mirror falls back to a local lobby after a second.
+Needs a modern desktop browser. It is a couch game: a keyboard or gamepads and a screen everyone can see. Phones are welcome as controllers, not as the screen.
 
-## Rules
+Coming to Steam, CrazyGames and itch.io.
 
-- 3 stocks each, 100 HP. Bullets deal 20 and knock the target back. Ramming exchanges momentum and deals damage proportional to closing speed.
-- The clock at the top counts down from 2:30. At zero it is SUDDEN DEATH: heal pads go dark and the border closes over 40 s to 45% of the arena, killing anything left outside.
-- A ship respawns at whichever of the two spawn points farthest from enemies the match seed picks, never at a camped corner. Its tag shows for the 1.5 s of spawn protection.
-- Out of stocks? You become a launcher: a chevron in your colour on the arena rim, moved around the edge with the stick (or A/D). Fire hurls a rolling rock from there straight at the centre every 6 s. Rocks bounce, stun and hurt every ship they touch, block bullets, shatter on asteroids and any takedown credits you in the feed. Launchers never win and are not in the camera frame.
-- The kill feed under the clock reads killer, weapon icon, victim; a ring-out shows the exit arrow. A red arc around your ship points at the nearest incoming bullet, rolling rock, seeker, live mine or a railgun/tractor charging at you, brighter the closer it is.
-- Bots chase the nearest enemy, fire when lined up, use whatever crate they grab, and steer clear of rocks and the closing border.
-- The blaster runs on heat, not a magazine: every shot adds heat, sustained fire hits 100 and locks the gun for 1.5 s while it vents.
-- Below 25 HP a ship smokes and runs 25% slower in every axis - turn, thrust, boost, strafe and top speed.
-- Four heal pads sit at the far ends of the two lanes: +40 HP, 30 s respawn, ignored by a ship at full health.
-- The blaster is always on RT. Crate weapons are a **special** on RB, fired independently, so you never lose your gun.
-- Four weapon crates sit in the arena at all times, one per quadrant. Grabbing one hands out a random loadout - MAG MINES and SEEKERS common (3/13 each), REPULSOR, SCATTER GUN and TRACTOR uncommon (2/13 each), RAILGUN rare (1/13) - and that crate reappears 10 s later on a free spot. Spend the ammo and the special is gone.
+## Made with
 
-| Weapon | Behaviour |
-|--------|-----------|
-| RAILGUN | Hold RB to charge 1 s, release fires a full-arena beam that pierces ships and asteroids. **One hit kills.** Heavy recoil, and letting go early loses the charge. |
-| MAG MINES | Drops a dormant orb behind you. An enemy inside 130 units arms it; it then chases them and detonates 1.5 s later, hurting anyone in the blast - you included. |
-| SEEKERS | One homing missile per RB press, not a volley. 34 damage, so a full salvo of three is a kill; chases for 12 s. |
-| REPULSOR | No damage: a forward cone of pure knockback. Ring-outs count as your kill. |
-| SCATTER GUN | Two shots of electrical discharge: a forward cone reaching half a blaster shot that knocks out every enemy in it for 1 s and chips 12 HP. |
-| TRACTOR | Two charges. Hold RB to charge like the railgun; a faint bubble shows the reach (half a blaster shot). On full charge it latches the thing you are facing, enemy ships first, then asteroids. A ship gets dragged toward you for 1.4 s so you can ram it; a rock reels you in instead. |
-- Boost drains at 21/s and only refills from pads: eight ring pads give 26, the centre pad refills fully. Pads respawn 7 s after pickup. All pads sit inside two narrow lanes (a cross through the centre) walled by asteroids.
-- Asteroids block bullets and bounce ships; a bump stuns the ship for 0.6 s and sends it spinning.
-- Every 20 s a violet wormhole pair opens on two free spots for 12 s. Anything that crosses one ring - ships, bullets, seekers, mines, rocks - pops out of the other ring at the same speed and heading. A ship gets half a second before it can warp again. No new pairs open in sudden death.
-- Every 35 s a black hole opens on a free spot for 15 s: a black disc with a bright violet horizon and a swirl of light falling in. It never moves. It drags ships, bullets, seekers, mines and rocks toward it with a pull that grows sharply near the horizon; touching the core destroys the ship, credited to whoever hit it last. The danger arc points at it when you are inside the pull. None open in sudden death.
-- Leaving the arena border by more than 60 units destroys the ship.
-- Firing recoils the shooter, so the blaster doubles as a reverse thruster.
-- Every sim event drives a synthesised voice — no audio files. Browsers keep audio suspended until a key or click, so a gamepad-only session stays silent until someone touches the keyboard or the window; the lobby's note line says so until sound is unlocked.
+F# compiled to JavaScript with [Fable](https://fable.io/), rendered with Three.js. Every sound is synthesised in the browser — there are no audio files. The whole match runs in one tab.
 
-Every tunable in `Cfg` is a row in SETTINGS > TUNING, adjusted with left/right in steps of a twentieth of the code default and clamped to three times it. Changes save to `localStorage` (`nda-tweaks`) immediately; RESET clears it and reloads with the code defaults. Reverse thrust is `reverseFactor` × thrust.
+- [GAMEPLAY.md](GAMEPLAY.md) — controls, rules, weapons, every mode
+- [DEVELOPING.md](DEVELOPING.md) — build, test, deploy, file layout
 
-## Layout
-
-| File | Responsibility |
-|------|----------------|
-| **Core** (pure .NET, no browser deps) | |
-| `src/Core/Vec.fs` | 2D vector struct and helpers |
-| `src/Core/Domain.fs` | Tunables (`Cfg`), input, ship, bullet, pad, world records |
-| `src/Core/Strings.fs` | All user-facing strings and locale |
-| `src/Core/Sim.fs` | Pure fixed-step simulation: movement, firing, bullets, rams, pads, deaths, match phase |
-| **Platform** (browser bindings) | |
-| `src/Platform/Input.fs` | Keyboard + Gamepad API → `Input[]` for the four slots |
-| `src/Platform/Three.fs` | Minimal Three.js bindings used by the renderer |
-| `src/Platform/Sfx.fs` | WebAudio synth: arcade square/noise voices, shimmer delay bus, stereo pan, boost engine drone; music player (`public/music/menu.mp3` loops in menus, `battle1..3.mp3` shuffle in play) |
-| **UI** (browser-dependent screens) | |
-| `src/UI/Render/RenderTypes.fs` | Render types, constants, shared material helpers |
-| `src/UI/Render/RenderMeshes.fs` | Mesh factories (`mkShip`, `mkPad`, `mkArena`...) and `syncArena` |
-| `src/UI/Render/RenderFx.fs` | Particle effects: bursts, rings, bolts, beams, flashes |
-| `src/UI/Render/RenderEnt.fs` | Per-entity draw functions (ships, pads, crates, bullets, portals, holes) |
-| `src/UI/Render/RenderHud.fs` | DOM HUD: panels, kill feed, weapon icons, tags, tint, bloom |
-| `src/UI/Render/RenderCam.fs` | Camera framing, intro flyby, resize |
-| `src/UI/Render/Render.fs` | `create()`, `draw()` orchestrator, event → effect dispatch |
-| `src/UI/Settings.fs` | Settings model: rows for controller slots, swap sticks (`nda-pads`) and `Cfg.tunables` (`nda-tweaks`), plus their persistence |
-| `src/UI/Menu.fs` | Lobby, settings, pause and result overlays: join/leave/launch by device, owns the `joined` slot set, renders the phone QR (`src/qr.js`) |
-| `src/UI/Pad.fs` | Phone controller page (`pad.html`): lobby card, floating stick, fire/boost zone, menu buttons; talks to the host over the HMR socket |
-| **Entry point** | |
-| `src/Main.fs` | requestAnimationFrame loop with a 120 Hz accumulator |
-| **Test** | |
-| `test/Check.fs` | Headless .NET run of the simulation with assertions |
-
-## Race mode
-
-MODE → RACE turns the ARENA row into a track picker - GRAND PRIX (a full-width circuit with a dozen corners), HAIRPIN (two tight right-handers and an S between two long straights) and INFINITY (a figure of eight that crosses itself in the middle) - and RANDOM rolls among tracks. The intro fly-by follows the road instead of the spawn rings. Tracks sit in a bigger arena than the battles (1800 half-width against 1350) and the road is smoothed through every corner, drawn as a ribbon of two neon edges with a yellow start line; every few bends a violet portal ring sits on the road as a checkpoint, the finish ring is yellow. You must fly through the portals in order, so cutting the infield gains nothing; the rings you have to take next glow, and when nothing is threatening you the arc around your ship turns violet and points at your next portal. The panel shows `LAP n/3` instead of stocks and the clock counts up. The blaster is off - RACE is about piloting, not shooting - and crates only hand out SCATTER GUN, CONTACT MINES (a race-only variant: the mine sits still where you drop it and blasts the first enemy that touches it) and a single MISSILE (the race-only seeker: it flies straight, no homing); any hit that would hurt stuns for a second instead, so hulls never drop and the only way to wreck is to leave the arena. Nobody loses stocks: a wreck respawns after 3 s at the last checkpoint you crossed, facing the next one. No match clock, no sudden death, no wormholes or black holes. Crossing the start line after the last lap parks the ship, shouts its place and starts a 20 s grace period; the race ends when everyone is in or the grace runs out, and the first across the line wins. `laps`, `gateRadius` and `raceGrace` live in SETTINGS > TUNING.
-
-## Practice mode
-
-MODE in the lobby cycles FREE FOR ALL, TEAMS and PRACTICE. PRACTICE starts as soon as one player from any device - keyboard, gamepad or phone - has joined and pressed Start (no READY needed), and drops a passive target bot into the first free slot. Everyone lines up on the left facing the target, with a crate above the centre and a dormant mine below. Nobody loses stocks, so the range never ends until QUIT TO LOBBY. The crate reappears a second after every grab and hands out the weapons in order - RAILGUN, MAG MINES, SEEKERS, REPULSOR, SCATTER GUN, TRACTOR - so a pad can cycle through all of them. With a keyboard in the game, `0`–`6` arm it directly (0 = BLASTER), `K` kills the target, `G` turns the keyboard player into a launcher, `T` jumps to sudden death and `R` resets the stage.
-
-## Check the physics
-
-```bash
-npm run check
-```
-
-Runs `Sim` on .NET (no browser) and asserts traverse time, recoil, hits, pads, out-of-bounds, respawn, rams and win condition.
+A game by Victor Granda.

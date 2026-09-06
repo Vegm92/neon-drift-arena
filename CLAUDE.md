@@ -1,6 +1,6 @@
 # Neon Drift Arena
 
-Fable 5 (F# → JS) + Vite + Three.js couch brawler. Read `README.md` for rules, controls and layout.
+Fable 5 (F# → JS) + Vite + Three.js couch brawler. `README.md` is the commercial front page; read `GAMEPLAY.md` for rules and controls and `DEVELOPING.md` for build, deploy and file layout.
 
 ## Commands
 
@@ -12,10 +12,13 @@ Fable 5 (F# → JS) + Vite + Three.js couch brawler. Read `README.md` for rules,
 
 - `Core/Vec.fs`, `Core/Domain.fs`, `Core/Sim.fs` stay free of Fable/browser dependencies so `test/Check.fsproj` can compile them on plain .NET.
 - All tunables live in `Domain.Cfg`. Keep `2 * arenaHalf / maxSpeed` inside 8–10 s.
-- No internet networking between hosts, no inventories; the match always runs in one browser. Phone pads ride the Vite dev socket in dev and the `/relay` room socket in `deploy/server.mjs` on the deployed build (`pad.html`); LAN mirror clients (`nda:state`, host-authoritative) ride the Vite dev socket only. UI is the lobby overlay (`Menu.fs`), the SETTINGS panel, the four corner panels and one banner.
+- No inventories; the match always runs in one browser. Phone pads ride the Vite dev socket in dev and the `/relay` room socket in `deploy/server.mjs` on the deployed build (`pad.html`) — `Input.initNetwork ()` picks the room from a CrazyGames invite (`getInviteParams`), else `sessionStorage`, else a fresh code, and opens it through `CrazyGames.createRelaySocket` (WebRTC where available, WebSocket otherwise). LAN mirror clients (`nda:state`, host-authoritative) ride the Vite dev socket only. UI is the lobby overlay (`Menu.fs`), the SETTINGS panel, the four corner panels and one banner.
 - User-facing strings go through `Strings.fs`; landing-page copy goes through `strings.json` (substituted by the `site-strings` Vite hook).
 - Landing page is `index.html` at the root, the game lives at `play/index.html` (served at `/play/`).
 - The site is the hub: `index.html` sends traffic to `/play/` first and to the store links (`stores` in `strings.json`) second. A store with an empty `url` renders as a dimmed SOON chip.
 - Domain is `neondriftarena.com` (`siteUrl` in `strings.json`).
 - Desktop only for now. `index.html` and `play/index.html` test `(any-hover: hover) and (any-pointer: fine)` plus `navigator.userAgentData.mobile`; on a phone or tablet the landing CTA turns into DESKTOP ONLY and `/play/` shows the `#gate` screen instead of importing `build/Main.js`. `?desktop=1` overrides the gate. `pad.html` is never gated — it is the phone controller.
 - Three.js bindings in `Three.fs` are hand-written and minimal; add a member only when the renderer uses it.
+- Everything CrazyGames goes through `src/Platform/CrazyGames.fs` → `src/Platform/CrazyGames.js` (SDK v2 loaded from `sdk.crazygames.com` in `index.html` and `play/index.html`): gameplay start/stop, mute, invite rooms, user, ads, banners, data, leaderboard. Never call `window.CrazyGames` from anywhere else, and keep every path relative — `base: "./"` in `vite.config.js` is what lets the build run from a CrazyGames subpath.
+- Ads and banners are menu-only: banners live in `#cg-banner-1` / `#cg-banner-2` (refreshed at most every 31 s, cleared on hide) and the midgame ad runs between the match ending and the result screen. `Sfx.isMuted ()` ORs the CrazyGames mute, the ad mute and the local `M` toggle.
+- The lobby opens pre-seeded: `Menu.fs` claims slot 0 for the keyboard and slot 1 for a bot at load, so a solo player can press Start straight away.
