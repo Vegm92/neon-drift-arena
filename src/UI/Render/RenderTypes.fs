@@ -62,7 +62,7 @@ type ShipView =
     { Shield: Mesh
       Vent: Mesh
       Root: Object3D
-      Body: Mesh
+      Body: Object3D
       Flame: Mesh
       Retro: Object3D
       Coil: Mesh

@@ -82,12 +82,13 @@ let drawShip t (vw: View) (sv: ShipView) (s: Ship) =
         if s.Shield > 0. then
             sv.Shield.material.opacity <- 0.35 + 0.45 * (s.Shield / shieldAmount) + 0.2 * sin (t * 8.)
             sv.Shield.rotation.z <- t * 0.9
-        sv.Body.material.opacity <- if s.Invuln > 0. then 0.4 + 0.4 * sin (t * 30.) else 1.
-        sv.Body.material.color.setHex (if s.Team > 0 then teamColors.[s.Team] else 0xffffff)
-        let k = spriteOf s
-        let cx, cy = cells.[k]
-        sv.Body.rotation.y <- if k = 3 then Math.PI else 0.
-        sv.Body.material?map?offset?set (cx / fst sheet, 1. - (cy + snd cell) / snd sheet)
+        let fade = if s.Invuln > 0. then 0.4 + 0.4 * sin (t * 30.) else 1.
+        let tint = shipColor s
+        sv.Body.traverse (fun o ->
+            if o?isMesh then
+                o?material?opacity <- fade
+                o?material?emissive?setHex tint
+                o?material?emissiveIntensity <- 0.08)
         sv.Flame.material.color.setHex (shipColor s)
         sv.Trail.material.opacity <- min 1. (0.55 + 0.18 * float s.Streak)
         sv.Trail.material.color.setHex (shipColor s)

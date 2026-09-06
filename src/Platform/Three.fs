@@ -48,6 +48,7 @@ type Object3D =
     abstract add: Object3D -> unit
     abstract remove: Object3D -> unit
     abstract lookAt: float * float * float -> unit
+    abstract traverse: (Object3D -> unit) -> unit
 
 type Mesh =
     inherit Object3D
@@ -132,6 +133,14 @@ type Lib =
     abstract loadTexture: string -> Texture
     [<Emit("$0.SRGBColorSpace")>]
     abstract SRGBColorSpace: string
+    [<Emit("new $0.HemisphereLight($1,$2,$3)")>]
+    abstract HemisphereLight: int * int * float -> Object3D
+    [<Emit("new $0.DirectionalLight($1,$2)")>]
+    abstract DirectionalLight: int * float -> Object3D
+    [<Emit("new $0.Box3().setFromObject($1).getSize(new $0.Vector3())")>]
+    abstract sizeOf: Object3D -> Vector3
+    [<Emit("new $0.Box3().setFromObject($1).getCenter(new $0.Vector3())")>]
+    abstract centerOf: Object3D -> Vector3
 
 type Bloom =
     abstract strength: float with get, set
@@ -147,6 +156,13 @@ let private renderPassCtor: obj = jsNative
 
 [<Import("UnrealBloomPass", "three/addons/postprocessing/UnrealBloomPass.js")>]
 let private bloomPassCtor: obj = jsNative
+
+[<Import("GLTFLoader", "three/addons/loaders/GLTFLoader.js")>]
+let private gltfLoaderCtor: obj = jsNative
+
+let loadGltf (url: string) (onLoad: Object3D -> unit) =
+    let loader: obj = createNew gltfLoaderCtor ()
+    loader?load (url, (fun (g: obj) -> onLoad (unbox g?scene)))
 
 
 let effectComposer (r: Renderer) : Composer = createNew effectComposerCtor r |> unbox

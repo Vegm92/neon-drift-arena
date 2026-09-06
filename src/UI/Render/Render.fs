@@ -27,6 +27,10 @@ let create () =
     let bloom = bloomPass (three.Vector2(w, h), 1.3, 0.5, 0.12)
     composer.addPass (renderPass (scene, camera))
     composer.addPass (box bloom)
+    scene.add (three.HemisphereLight(0x9fd8ff, 0x331155, 3.2))
+    let sun = three.DirectionalLight(0xffffff, 4.5)
+    sun.position.set (200., 400., 150.)
+    scene.add sun
     let border, spawns, frame = mkArena scene
     let hole, horizon, halo = mkHole scene
     let hud = document.getElementById "hud"

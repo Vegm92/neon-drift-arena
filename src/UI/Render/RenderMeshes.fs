@@ -3,20 +3,15 @@ module RenderMeshes
 open System
 open Browser
 open Browser.Types
+open Fable.Core.JsInterop
 open Vec
 open Domain
 open Domain.Cfg
 open Three
 open RenderTypes
 
-let private shipSheet =
-    lazy
-        (let t = three.loadTexture "/ships.png"
-         t.colorSpace <- three.SRGBColorSpace
-         t.repeat.set (fst cell / fst sheet, snd cell / snd sheet)
-         t)
-
-let private shipGeometry = lazy (three.PlaneGeometry(64., 54.).rotateZ (-Math.PI / 2.) |> flat)
+let private hulls = [| "phantom", Math.PI / 2.; "shadow", Math.PI; "star-a", Math.PI; "star-b", Math.PI |]
+let private shipLength = 64.
 
 let mkTrail () =
     let g = three.BufferGeometry()
@@ -37,12 +32,18 @@ let mkTrail () =
 let mkShip (scene: Object3D) i =
     let hex = colors.[i]
     let root = three.Group()
-    let body =
-        three.Mesh(
-            shipGeometry.Value,
-            three.MeshBasicMaterial(box {| map = shipSheet.Value.clone (); transparent = true; depthWrite = false |})
-        )
+    let body = three.Group()
     body.position.y <- 1.
+    let name, yaw = hulls.[i % hulls.Length]
+    loadGltf ("/models/" + name + ".glb") (fun hull ->
+        hull.rotation.y <- yaw
+        let size = three.sizeOf hull
+        let mid = three.centerOf hull
+        let k = shipLength / size.x
+        hull.scale.set (k, k, k)
+        hull.position.set (-mid.x * k, -mid.y * k, -mid.z * k)
+        hull.traverse (fun o -> if o?isMesh then o?material?transparent <- true)
+        body.add hull)
     let flame = three.Mesh((three.CircleGeometry(7., 12) |> flat).translate (-16., 3., 0.), glowMat hex 0.9)
     root.add body
     root.add flame
