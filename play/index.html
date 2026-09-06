@@ -15,16 +15,18 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   canvas{display:block}
   #hud{position:fixed;inset:0;pointer-events:none}
-  .panel{position:absolute;width:180px;opacity:.95;border:1.5px solid currentColor;border-radius:0;
-    padding:11px 16px;background:linear-gradient(rgba(10,14,10,0.95),rgba(4,6,4,0.92));
+  .panel{position:absolute;width:180px;opacity:.95;background:transparent;
+    padding:11px 16px;font-family:"JetBrains Mono","Space Mono",monospace;box-sizing:border-box;
+    display:flex;flex-direction:column;gap:10px}
+  .panel::before{content:"";position:absolute;inset:0;z-index:-1;border:1.5px solid currentColor;border-radius:0;
+    background:linear-gradient(rgba(10,14,10,0.95),rgba(4,6,4,0.92));
     background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.2) 2px,rgba(0,0,0,0.2) 4px);
-    box-shadow:0 0 20px rgba(0,0,0,0.8);font-family:"JetBrains Mono","Space Mono",monospace;box-sizing:border-box;
-    display:flex;flex-direction:column;gap:10px;
+    box-shadow:0 0 20px rgba(0,0,0,0.8);box-sizing:border-box;pointer-events:none;
     filter:drop-shadow(0 0 1.5px currentColor) drop-shadow(0 0 4px rgba(0,0,0,0.5))}
-  .panel.p0{left:20px;top:16px;clip-path:polygon(6px 0%, calc(100% - 6px) 0%, 100% 6px, 100% calc(100% - 20px), calc(100% - 20px) 100%, 6px 100%, 0% calc(100% - 6px), 0% 6px)}
-  .panel.p1{right:20px;top:16px;clip-path:polygon(6px 0%, calc(100% - 6px) 0%, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 20px 100%, 0% calc(100% - 20px), 0% 6px)}
-  .panel.p2{left:20px;bottom:16px;clip-path:polygon(6px 0%, calc(100% - 20px) 0%, 100% 20px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0% calc(100% - 6px), 0% 6px)}
-  .panel.p3{right:20px;bottom:16px;clip-path:polygon(20px 0%, calc(100% - 6px) 0%, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0% calc(100% - 6px), 0% 20px)}
+  .panel.p0{left:20px;top:16px}.panel.p0::before{clip-path:polygon(6px 0%, calc(100% - 6px) 0%, 100% 6px, 100% calc(100% - 20px), calc(100% - 20px) 100%, 6px 100%, 0% calc(100% - 6px), 0% 6px)}
+  .panel.p1{right:20px;top:16px}.panel.p1::before{clip-path:polygon(6px 0%, calc(100% - 6px) 0%, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 20px 100%, 0% calc(100% - 20px), 0% 6px)}
+  .panel.p2{left:20px;bottom:16px}.panel.p2::before{clip-path:polygon(6px 0%, calc(100% - 20px) 0%, 100% 20px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0% calc(100% - 6px), 0% 6px)}
+  .panel.p3{right:20px;bottom:16px}.panel.p3::before{clip-path:polygon(20px 0%, calc(100% - 6px) 0%, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0% calc(100% - 6px), 0% 20px)}
   .panel.off{opacity:.18}
   .p-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid var(--p-color, currentColor);padding-bottom:4px;margin-bottom:4px}
   .name{font-size:17px;font-weight:700;letter-spacing:.05em;text-shadow:0 0 8px currentColor;margin-bottom:0}
