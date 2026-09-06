@@ -206,13 +206,15 @@
   #menu .item.sel{opacity:1;border-color:#00f6ff;box-shadow:0 0 14px #00f6ff}
   #menu .list.row2{flex-direction:row;gap:14px}
   #menu .item.dim{color:#5b6480}
-  #menu .rows{display:flex;flex-direction:column;gap:2px;width:540px;font-size:12px;letter-spacing:.12em}
-  #menu .row{display:grid;grid-template-columns:1fr auto;gap:14px;padding:3px 10px;opacity:.5;border:1px solid transparent;text-align:left}
+  #menu .rows{display:flex;flex-direction:column;gap:2px;width:min(760px,88vw);font-size:clamp(12px,1.15vw,20px);letter-spacing:.12em}
+  #menu .row{display:grid;grid-template-columns:1fr auto;gap:1.2em;padding:.25em .85em;opacity:.5;border:1px solid transparent;text-align:left}
   #menu .row.sel{opacity:1;border-color:#00f6ff;box-shadow:0 0 12px #00f6ff}
   #menu .row.hdr{grid-template-columns:1fr;text-align:center;opacity:.95;color:#ff2bd6;margin-top:10px}
-  #menu .row.note{opacity:.45;font-size:11px}
+  #menu .row.note{opacity:.45;font-size:.9em}
   #menu .row b{color:#00f6ff;font-weight:400}
-  #menu .hint{font-size:11px;opacity:.7;white-space:pre-line;line-height:2}
+  #menu .hint{font-size:clamp(11px,1vw,17px);opacity:.7;white-space:pre-line;line-height:2}
+  #menu .cue{font-size:clamp(11px,1vw,17px);opacity:.7;letter-spacing:.12em}
+  #menu .cue:empty{display:none}
   #gate{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:20px;padding:32px;text-align:center;background:#03030a}
   #gate[hidden]{display:none}
