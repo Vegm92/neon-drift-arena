@@ -44,7 +44,7 @@ let create () =
           Layout = -1
           Bullets = Array.init bulletPool (fun _ -> mkBullet scene)
           Mines = Array.init minePool (fun _ -> mkMine scene)
-          Boulders = Array.init rockPool (fun _ -> mkAsteroid scene { Pos = zero; Radius = rockRadius })
+          Boulders = Array.init rockPool (fun _ -> mkAsteroid scene 0xff7a1e 0xffe0b0 { Pos = zero; Radius = rockRadius })
           Gates = Array.init (portalPool * 4) (mkGate scene)
           Hole = hole
           Horizon = horizon

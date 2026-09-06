@@ -146,11 +146,11 @@ let mkCrate (scene: Object3D) =
     scene.add root
     root
 
-let mkAsteroid (scene: Object3D) (a: Asteroid) =
+let mkAsteroid (scene: Object3D) (fill: int) (edge: int) (a: Asteroid) =
     let g = three.IcosahedronGeometry(a.Radius, 1)
     let root = three.Group()
-    root.add (three.Mesh(g, three.MeshBasicMaterial(box {| color = 0x05060f |})))
-    root.add (three.LineSegments(three.EdgesGeometry g, lineMat 0x6a7cff 0.8))
+    root.add (three.Mesh(g, three.MeshBasicMaterial(box {| color = fill |})))
+    root.add (three.LineSegments(three.EdgesGeometry g, lineMat edge 0.8))
     root.position.set (a.Pos.X, 0., a.Pos.Y)
     root.rotation.set (a.Pos.X * 0.01, a.Pos.Y * 0.01, 0.)
     scene.add root
@@ -311,7 +311,7 @@ let syncArena (vw: View) =
             vw.Scene.remove o
         for m in vw.Pads do
             vw.Scene.remove m
-        vw.Rocks <- Sim.asteroids |> Array.map (mkAsteroid vw.Scene)
+        vw.Rocks <- Sim.asteroids |> Array.map (mkAsteroid vw.Scene 0x05060f 0x6a7cff)
         vw.Pads <- Sim.initial.Pads |> Array.map (mkPad vw.Scene)
 
 let mkPanel (hud: HTMLElement) i =
