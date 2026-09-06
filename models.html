@@ -5,12 +5,16 @@
 body{margin:0;background:#05060d;color:#cfe;font:12px monospace;overflow:hidden}
 #ui{position:fixed;top:10px;left:10px;display:flex;flex-wrap:wrap;gap:6px;width:60vw;z-index:2}
 #acts{position:fixed;bottom:10px;left:10px;display:flex;gap:6px;z-index:2}
+#cols{position:fixed;bottom:10px;right:10px;display:flex;gap:6px;z-index:2}
+#cols button{width:28px;height:28px;padding:0;border-color:#123}
+#cols button.on{outline:2px solid #fff}
 button{background:#0a1226;color:#8ff;border:1px solid #2a4;padding:6px 10px;font:inherit;cursor:pointer}
 button.on{background:#0f3;color:#000}
 #info{position:fixed;top:10px;right:10px;text-align:right;opacity:.75;z-index:2}
 </style>
 <div id="ui"></div>
 <div id="acts"></div>
+<div id="cols"></div>
 <div id="info">drag = orbit · wheel = zoom</div>
 <script type="module">
 import * as THREE from "three";
@@ -25,6 +29,8 @@ const MODELS = [
   ["star-c tex", "/models/star-c-tex.glb"],
 ];
 const ACTS = ["idle", "thrust", "bank", "shoot", "damaged", "explode"];
+const TEAM = [0x00f6ff, 0xff2bd6, 0x7cff3a, 0xffb300, 0xff6a00];
+let team = TEAM[0];
 
 const R = new THREE.WebGLRenderer({ antialias: true });
 R.setSize(innerWidth, innerHeight); R.setPixelRatio(devicePixelRatio);
@@ -57,10 +63,23 @@ const sparks = new THREE.Points(sparkGeo, new THREE.PointsMaterial({ color: 0xff
 sparks.visible = false; rig.add(sparks);
 
 const loader = new GLTFLoader();
-let act = "idle", t = 0, boom = 0, shotAt = 0;
+let act = "idle", t = 0, boom = 0, shotAt = 0, plain = true;
+
+function tint() {
+  ship.traverse(o => {
+    if (!o.isMesh) return;
+    if (plain) {
+      o.material.color.setHex(team);
+      o.material.metalness = 0.6; o.material.roughness = 0.3;
+      o.material.emissive?.setHex(team); o.material.emissiveIntensity = 0.25;
+    }
+    o.material.userData.base = plain ? team : 0x000000;
+  });
+}
 
 function load(url) {
   ship.clear();
+  plain = url.includes("-plain");
   loader.load(url, g => {
     const box = new THREE.Box3().setFromObject(g.scene);
     const size = box.getSize(new THREE.Vector3());
@@ -71,6 +90,7 @@ function load(url) {
     ship.add(g.scene);
     radius = Math.max(size.x, size.y, size.z) * s * 0.5;
     thruster.position.set(0, 0, radius + 0.5);
+    tint();
   }, undefined, e => console.error(e));
 }
 
@@ -101,6 +121,17 @@ ACTS.forEach((a, i) => {
   };
   if (i === 0) b.classList.add("on");
   acts.append(b);
+});
+const cols = document.getElementById("cols");
+TEAM.forEach((c, i) => {
+  const b = document.createElement("button");
+  b.style.background = "#" + c.toString(16).padStart(6, "0");
+  b.onclick = () => {
+    [...cols.children].forEach(x => x.classList.remove("on")); b.classList.add("on");
+    team = c; thruster.material.color.setHex(c); tint();
+  };
+  if (i === 0) b.classList.add("on");
+  cols.append(b);
 });
 load(MODELS[0][1]);
 
@@ -135,11 +166,11 @@ function frame() {
     rig.rotation.y = t * 0.5; rig.rotation.z = Math.sin(t * 9) * 0.15;
     rig.position.y = Math.sin(t * 17) * 0.05;
     const hit = Math.sin(t * 25) > 0.4;
-    ship.traverse(o => { if (o.isMesh) o.material.emissive?.setHex(hit ? 0xff2200 : 0x000000); });
+    ship.traverse(o => { if (o.isMesh) o.material.emissive?.setHex(hit ? 0xff2200 : o.material.userData.base ?? 0x000000); });
     if (!sparks.visible) { burst(); sparks.visible = true; }
     if (boom > 0.8) burst();
   } else {
-    ship.traverse(o => { if (o.isMesh) o.material.emissive?.setHex(0x000000); });
+    ship.traverse(o => { if (o.isMesh) o.material.emissive?.setHex(o.material.userData.base ?? 0x000000); });
   }
   if (act === "explode") {
     boom += dt;
