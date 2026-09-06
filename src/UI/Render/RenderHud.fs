@@ -27,6 +27,9 @@ let icon (w: Weapon) ring =
             | Singularity -> "M32 32 m-22 0 a22 22 0 1 0 44 0 a22 22 0 1 0 -44 0 M32 32 m-9 0 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0 M10 32 L4 32 M54 32 L60 32"
     sprintf "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"%s\"/></svg>" path
 
+let medalIcon (i: int) =
+    sprintf "<i class=\"mi\" style=\"background-position:%.4f%% %.4f%%\"></i>" (float (i % 4) * 100. / 3.) (float (i / 4) * 100. / 3.)
+
 let feedLine (vw: View) (w: World) victim by wpn ring =
     let tag i cls = sprintf "<b class=\"%s\" style=\"color:#%06x\">%s</b>" cls (shipColor w.Ships.[i]) vw.Names.[i]
     let wep i r =
@@ -106,16 +109,16 @@ let drawHud (vw: View) (w: World) dt =
         let medals = el.querySelector ".medals" :?> HTMLElement
         let mHtml =
             let m = ResizeArray()
-            if s.FirstBloodMedal > 0 then m.Add("<span class=\"medal fb\" title=\"First Blood! 🩸\">🩸</span>")
-            if s.DoubleKillMedals > 0 then m.Add("<span class=\"medal dk\" title=\"Double Kill! ⚔️\">⚔️</span>")
-            if s.TripleKillMedals > 0 then m.Add("<span class=\"medal tk\" title=\"Triple Kill, ACE! ⚡\">⚡</span>")
-            if s.RailKillMedals > 0 then m.Add("<span class=\"medal rk\" title=\"Railed Down! 🎯\">🎯</span>")
-            if s.RamKillMedals > 0 then m.Add(sprintf "<span class=\"medal rm\" title=\"%s 💥\">💥</span>" Strings.t.RamKillMedal)
-            if s.OnFireMedals > 0 then m.Add(sprintf "<span class=\"medal of\" title=\"%s 🔥\">🔥</span>" Strings.t.OnFireMedal)
-            if s.VoidMedals > 0 then m.Add(sprintf "<span class=\"medal vd\" title=\"%s 🌀\">🌀</span>" Strings.t.VoidMedal)
-            if s.HoleMedals > 0 then m.Add(sprintf "<span class=\"medal eh\" title=\"%s 🕳️\">🕳️</span>" Strings.t.HoleMedal)
-            if s.AbductMedals > 0 then m.Add(sprintf "<span class=\"medal ab\" title=\"%s 🛸\">🛸</span>" Strings.t.AbductMedal)
-            if s.GraveMedals > 0 then m.Add(sprintf "<span class=\"medal gr\" title=\"%s 👻\">👻</span>" Strings.t.GraveMedal)
+            if s.FirstBloodMedal > 0 then m.Add(sprintf "<span class=\"medal fb\" title=\"%s\">%s</span>" Strings.t.FirstBlood (medalIcon 0))
+            if s.DoubleKillMedals > 0 then m.Add(sprintf "<span class=\"medal dk\" title=\"%s\">%s</span>" Strings.t.DoubleKill (medalIcon 1))
+            if s.TripleKillMedals > 0 then m.Add(sprintf "<span class=\"medal tk\" title=\"%s\">%s</span>" Strings.t.TripleKill (medalIcon 2))
+            if s.RailKillMedals > 0 then m.Add(sprintf "<span class=\"medal rk\" title=\"%s\">%s</span>" Strings.t.RailKillMedal (medalIcon 3))
+            if s.RamKillMedals > 0 then m.Add(sprintf "<span class=\"medal rm\" title=\"%s\">%s</span>" Strings.t.RamKillMedal (medalIcon 4))
+            if s.OnFireMedals > 0 then m.Add(sprintf "<span class=\"medal of\" title=\"%s\">%s</span>" Strings.t.OnFireMedal (medalIcon 5))
+            if s.VoidMedals > 0 then m.Add(sprintf "<span class=\"medal vd\" title=\"%s\">%s</span>" Strings.t.VoidMedal (medalIcon 6))
+            if s.HoleMedals > 0 then m.Add(sprintf "<span class=\"medal eh\" title=\"%s\">%s</span>" Strings.t.HoleMedal (medalIcon 7))
+            if s.AbductMedals > 0 then m.Add(sprintf "<span class=\"medal ab\" title=\"%s\">%s</span>" Strings.t.AbductMedal (medalIcon 8))
+            if s.GraveMedals > 0 then m.Add(sprintf "<span class=\"medal gr\" title=\"%s\">%s</span>" Strings.t.GraveMedal (medalIcon 9))
             String.concat "" m
         if medals?dataset?html <> mHtml then
             medals?dataset?html <- mHtml

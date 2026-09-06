@@ -77,23 +77,23 @@ Four weapon crates sit in the arena at all times, one per quadrant. Grabbing one
 
 ## Medals
 
-Medals appear as an icon on your HUD panel during the match and as an icon, code and count on the results screen. The first five are shouted by the announcer as you earn them.
+Medals appear as a coin on your HUD panel during the match and as a coin, code and count on the results screen; the art is one sprite sheet, `public/medals.png`, in the order below. The first five are shouted by the announcer as you earn them.
 
-| Icon | Medal | Earned by |
-|------|-------|-----------|
-| 💥 | RAMMER (`RM`) | Killing an enemy by colliding with them. |
-| 🌀 | VOID (`VD`) | Knocking an enemy out of the arena. |
-| 🕳️ | EVENT HORIZON (`EH`) | An enemy you last hit dies in a black hole. |
-| 🛸 | ABDUCTOR (`AB`) | Killing an enemy you had latched with the tractor. |
-| 👻 | FROM THE GRAVE (`GR`) | Killing an enemy with a boulder after you are eliminated. |
-| 🩸 | FIRST BLOOD (`FB`) | The first kill of the match. |
-| ⚔️ | DOUBLE KILL (`DK`) | Two kills inside 4 s. |
-| ⚡ | TRIPLE KILL (`TK`) | Three or more kills inside 4 s. |
-| 🎯 | RAILED DOWN (`RD`) | A railgun kill. |
-| 🔥 | ON FIRE (`OF`) | A third kill without dying. |
-| 👁️ | DEADEYE (`DE`) | Finishing at 60% accuracy or better over at least 10 shots. |
-| 🛡️ | FLAWLESS (`FL`) | Winning without losing a stock. |
-| 📦 | SCAVENGER (`SC`) | Grabbing five crates in a match. |
+| Medal | Earned by |
+|-------|-----------|
+| FIRST BLOOD (`FB`) | The first kill of the match. |
+| DOUBLE KILL (`DK`) | Two kills inside 4 s. |
+| TRIPLE KILL (`TK`) | Three or more kills inside 4 s. |
+| RAILED DOWN (`RD`) | A railgun kill. |
+| RAMMER (`RM`) | Killing an enemy by colliding with them. |
+| ON FIRE (`OF`) | A third kill without dying. |
+| VOID (`VD`) | Knocking an enemy out of the arena. |
+| EVENT HORIZON (`EH`) | An enemy you last hit dies in a black hole. |
+| ABDUCTOR (`AB`) | Killing an enemy you had latched with the tractor. |
+| FROM THE GRAVE (`GR`) | Killing an enemy with a boulder after you are eliminated. |
+| DEADEYE (`DE`) | Finishing at 60% accuracy or better over at least 10 shots. |
+| FLAWLESS (`FL`) | Winning without losing a stock. |
+| SCAVENGER (`SC`) | Grabbing five crates in a match. |
 
 DEADEYE, FLAWLESS and SCAVENGER are awarded on the results screen only.
 

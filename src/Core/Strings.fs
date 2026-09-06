@@ -92,6 +92,8 @@ type Locale =
       Go: string
       FirstBlood: string
       DoubleKill: string
+      TripleKill: string
+      RailKillMedal: string
       RamKill: string
       RamKillMedal: string
       VoidKill: string
@@ -290,6 +292,8 @@ let en =
       Go = "GO"
       FirstBlood = "FIRST BLOOD"
       DoubleKill = "DOUBLE KILL"
+      TripleKill = "TRIPLE KILL"
+      RailKillMedal = "RAILED DOWN"
       RamKill = "RAMMED!"
       RamKillMedal = "RAMMER"
       VoidKill = "VOIDED!"
