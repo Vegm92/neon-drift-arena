@@ -9,6 +9,7 @@ let private tweaksKey = "nda-tweaks"
 let private padsKey = "nda-pads"
 let private arenaKey = "nda-arena"
 let private catchKey = "nda-catchup"
+let private fxKey = "nda-screenfx"
 
 let private defaults = Cfg.tunables |> Array.map (fun (_, get, _) -> get ())
 
@@ -98,6 +99,14 @@ let rows () =
       yield Header Strings.t.Arena
       yield Arena
       yield Swap(Strings.t.CatchUp, (fun () -> Sim.catchUp), (fun b -> Sim.catchUp <- b; window.localStorage.setItem (catchKey, string b)))
+      yield
+          Swap(
+              Strings.t.ScreenFx,
+              (fun () -> RenderTypes.screenFx),
+              fun b ->
+                  RenderTypes.screenFx <- b
+                  window.localStorage.setItem (fxKey, string b)
+          )
       yield Header Strings.t.Audio
       yield Level(Strings.t.Music, 1)
       yield Level(Strings.t.Sounds, 0)
@@ -201,4 +210,5 @@ let init () =
         | _ -> ()
     fixArena ()
     Sim.catchUp <- window.localStorage.getItem catchKey <> "false"
+    RenderTypes.screenFx <- window.localStorage.getItem fxKey <> "false"
     Input.changed <- savePads

@@ -24,6 +24,9 @@ let holeHex = 0xd48cff
 let killTint = 0.3
 let tintFade = 2.2
 let tintEdgePx = 90
+/// Off kills every full-screen effect: the kill tint, the bloom surge,
+/// the camera jolt and the HUD panel shake. Localised particle flashes stay.
+let mutable screenFx = true
 let maxCamH () = (arenaHalf + 100.) / tan (20. * Math.PI / 180.)
 let minCamH () = maxCamH () * 0.75
 let rnd = Random()

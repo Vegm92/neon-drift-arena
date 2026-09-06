@@ -119,6 +119,7 @@ type Locale =
       SoundHint: string
       Joins: string -> string
       CatchUp: string
+      ScreenFx: string
       SeriesWin: string -> string
       LaunchReady: string
       LaunchWait: string
@@ -285,6 +286,7 @@ let en =
       SoundHint = "TAP ANY KEY OR CLICK THE SCREEN FOR SOUND"
       Joins = sprintf "%s JOINS THE FIGHT"
       CatchUp = "CATCH-UP"
+      ScreenFx = "FLASH & SHAKE"
       SeriesWin = sprintf "%s TAKES THE SERIES"
       LaunchReady = "LAUNCHER · FIRE HURLS A ROCK"
       LaunchWait = "LAUNCHER · RELOADING"
