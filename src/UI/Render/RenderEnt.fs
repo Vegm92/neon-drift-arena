@@ -30,8 +30,9 @@ let drawTether t (w: World) (sv: ShipView) (s: Ship) =
 
 let drawShip t (vw: View) (sv: ShipView) (s: Ship) =
     let launcher = Sim.launcher s
-    sv.Root.visible <- s.Alive
-    sv.Mark.visible <- launcher
+    let ghost = launcher && s.Ghosting
+    sv.Root.visible <- s.Alive || ghost
+    sv.Mark.visible <- launcher && not ghost
     sv.Vent.visible <- s.Alive && s.Heat > 0.001
     if sv.Vent.visible then
         let h = min 1. (s.Heat / heatMax)
@@ -43,7 +44,18 @@ let drawShip t (vw: View) (sv: ShipView) (s: Ship) =
         if s.Locked > 0. && rnd.NextDouble() < 0.35 then
             let n = ofAngle (s.Angle + (if rnd.NextDouble() < 0.5 then 1. else -1.) * Math.PI / 2.)
             spawnCone vw (s.Pos + n * (shipRadius + 2.)) 0xffc0a0 1 70. (atan2 n.Y n.X) 0.35 6.
-    if launcher then
+    if ghost then
+        sv.Root.position.set (s.Pos.X, 0., s.Pos.Y)
+        sv.Root.rotation.y <- -s.Angle
+        sv.Flame.visible <- false
+        sv.Retro.visible <- false
+        sv.Coil.visible <- false
+        sv.Laser.visible <- false
+        sv.Bubble.visible <- false
+        sv.Shield.visible <- false
+        sv.Body.material.opacity <- if s.LaunchCd <= 0. then 0.3 + 0.1 * sin (t * 6.) else 0.18
+        sv.History.Clear()
+    elif launcher then
         let k = 2.5 * vw.CamH / maxCamH ()
         sv.Mark.position.set (s.Pos.X, 3., s.Pos.Y)
         sv.Mark.scale.set (k, 1., k)

@@ -13,6 +13,21 @@ open Combat
 let private turbo () = if mutator = 2 then 1.5 else 1.
 let private slick () = if mutator = 3 then 0.25 else 1.
 
+let private stepGhost dt (inp: Input) (s: Ship) =
+    let angle =
+        match inp.Aim with
+        | Some a -> a
+        | None -> s.Angle + inp.Turn * turnRate * dt
+    let vel = if inp.Thrust || inp.Boost then ofAngle angle * ghostSpeed else zero
+    let p = s.Pos + vel * dt
+    let clamp x = max -arenaHalf (min arenaHalf x)
+    { s with
+        Angle = angle
+        LaunchAngle = angle
+        Vel = vel
+        Pos = v (clamp p.X) (clamp p.Y)
+        LaunchCd = max 0. (s.LaunchCd - dt) }
+
 let private stepLauncher k dt (inp: Input) (s: Ship) =
     let angle =
         match inp.Aim with
@@ -33,7 +48,7 @@ let join (inp: Input) (s: Ship) =
 
 let stepShip k dt (inp: Input) (s: Ship) =
     if launcher s then
-        stepLauncher k dt inp s
+        if s.Ghosting then stepGhost dt inp s else stepLauncher k dt inp s
     elif not s.Alive then
         s
     else

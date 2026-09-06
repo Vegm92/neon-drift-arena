@@ -159,6 +159,8 @@ type Locale =
       BindSpecial: string
       BindStart: string
       BindBack: string
+      BindSwap: string
+      SwapMode: string -> string
       TutTitle: string
       TutThrust: string
       TutTurn: string
@@ -340,6 +342,8 @@ let en =
       BindSpecial = "SPECIAL"
       BindStart = "PAUSE / START"
       BindBack = "BACK / CANCEL"
+      BindSwap = "GHOST / LAUNCHER"
+      SwapMode = sprintf "%s SWAP"
       TutTitle = "HOW TO PLAY"
       TutThrust = "THRUST / REVERSE"
       TutTurn = "TURN"
@@ -428,6 +432,7 @@ let actionName (a: Bind.Act) =
     | Bind.Special -> t.BindSpecial
     | Bind.Start -> t.BindStart
     | Bind.Back -> t.BindBack
+    | Bind.Swap -> t.BindSwap
 
 let bindHint () =
     sprintf "%s  ·  \u25b6 %s  ·  \u25c0 %s  ·  %s %s"

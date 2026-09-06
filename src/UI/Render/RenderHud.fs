@@ -46,7 +46,10 @@ let feedLine (vw: View) (w: World) victim by wpn ring =
 
 let private weaponHtml (s: Ship) =
     if Sim.launcher s then
-        sprintf "<span class=\"%s\">%s</span>" (if s.LaunchCd <= 0. then "ready" else "wait") (icon Rock false)
+        sprintf "<span class=\"%s\">%s</span><span class=\"ammo\">%s</span>"
+            (if s.LaunchCd <= 0. then "ready" else "wait")
+            (icon (if s.Ghosting then Mines else Rock) false)
+            (Strings.t.SwapMode(Strings.bindKeys Binds.Swap))
     elif State.race && s.Weapon = Blaster then ""
     else
         let n = if weaponAmmo s.Weapon > 0 then s.Ammo else 0

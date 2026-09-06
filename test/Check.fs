@@ -356,6 +356,12 @@ let main _ =
     check "a heavier map hole pulls harder" (heavier.Ships.[0].Vel.X < lighter.Ships.[0].Vel.X)
     check "layouts without a hole leave the wandering one alone" (layouts |> Array.forall (fun l -> l.Hole.IsNone))
 
+    let ghosting = out |> edit 0 (fun s -> { s with Ghosting = true })
+    let drifting = run 12 (Array.init 4 (fun i -> if i = 0 then { present with Thrust = true } else present)) ghosting
+    check "a ghost drifts with thrust" (launcher drifting.Ships.[0] && drifting.Ships.[0].Pos.X > 20.)
+    let dropped = ghosting |> step dt firing
+    check "a ghost drops a live mine instead of a rock" (dropped.Rocks.IsEmpty && dropped.Mines.Length = 1 && dropped.Mines.Head.Fuse > 0. && dropped.Ships.[0].LaunchCd > 0.)
+
     check "launchers never win" ((step dt (all present) { out with Ships = out.Ships |> Array.mapi (fun i s -> if i = 1 then s else { s with Alive = false; Stocks = 0 }) }).Phase = Over(Some 1))
 
     practice <- true
