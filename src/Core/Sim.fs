@@ -523,7 +523,7 @@ let private blaster (inp: Input) (s: Ship) =
     else
         s, [], []
 
-let private special dt (inp: Input) (s: Ship) =
+let private special live dt (inp: Input) (s: Ship) =
     let press = inp.Special && not s.Held
     let s = { s with Held = inp.Special }
     if not s.Alive then
@@ -538,18 +538,16 @@ let private special dt (inp: Input) (s: Ship) =
         | Singularity -> s, [], [], []
         | Rail ->
             if inp.Special then
-                let c = s.Charge + dt
-                if c >= railCharge then
-                    let far = s.Pos + dir * (4. * arenaHalf)
-                    { spend s with
-                        Charge = 0.
-                        Vel = s.Vel - dir * railRecoil
-                        Shots = s.Shots + 1 },
-                    [],
-                    [],
-                    [ Beam(nose, far, s.Id) ]
-                else
-                    { s with Charge = c }, [], [], (if press then [ Charging s.Pos ] else [])
+                { s with Charge = min railCharge (s.Charge + dt) }, [], [], (if press then [ Charging s.Pos ] else [])
+            elif live && s.Charge >= railCharge then
+                let far = s.Pos + dir * (4. * arenaHalf)
+                { spend s with
+                    Charge = 0.
+                    Vel = s.Vel - dir * railRecoil
+                    Shots = s.Shots + 1 },
+                [],
+                [],
+                [ Beam(nose, far, s.Id) ]
             else
                 { s with Charge = 0. }, [], [], []
         | Mines ->
@@ -599,7 +597,7 @@ let private special dt (inp: Input) (s: Ship) =
             else
                 { s with Charge = 0. }, [], [], []
 
-let private fire dt (inp: Input) (s: Ship) =
+let private fire live dt (inp: Input) (s: Ship) =
     if launcher s then
         if inp.Fire && s.LaunchCd <= 0. then
             let r = { Owner = s.Id; Pos = s.Pos; Vel = norm (zero - s.Pos) * rockSpeed; Radius = rockRadius; Life = rockLife }
@@ -608,7 +606,7 @@ let private fire dt (inp: Input) (s: Ship) =
             s, [], [], [], []
     else
     let s, shots, e1 = blaster inp s
-    let s, more, mines, e2 = special dt inp s
+    let s, more, mines, e2 = special live dt inp s
     s, shots @ more, mines, [], e1 @ e2
 
 let private blocked (rocks: Rock list) (p: V2) =
@@ -1139,13 +1137,14 @@ let bot (w: World) i =
             let off = abs (atan2 (sin (aim - me.Angle)) (cos (aim - me.Angle)))
             let facing = off < 0.25 && dodging.IsNone && not (rockBetween me.Pos shot)
             let hold = me.Weapon = Rail || me.Weapon = Tractor
+            let charged = me.Weapon = Rail && me.Charge >= railCharge
             { idle with
                 Aim = Some aim
                 Steer = true
                 Thrust = dodging.IsSome || dist > 320. || off > 0.6
                 Boost = dist > 900. && me.Boost > 40.
                 Fire = facing && dist < 650.
-                Special = facing && dist < 520. && me.Weapon <> Blaster && (hold || int (w.Time * 2.) % 2 = 0) }
+                Special = not charged && facing && dist < 520. && me.Weapon <> Blaster && (hold || int (w.Time * 2.) % 2 = 0) }
 
 let stage (w: World) =
     let shooters = w.Ships |> Array.filter (fun s -> s.Active && s.Id <> target) |> Array.map (fun s -> s.Id)
@@ -1180,9 +1179,10 @@ let step dt (inputs: Input[]) (w: World) =
     | Over _ when inputs |> Array.exists (fun i -> i.Start) -> reset (fun i -> w.Ships.[i].Active) w
     | _ ->
         let k = bounds w.Time
+        let live = (match w.Phase with Playing -> true | Over _ -> false)
         let fired =
             w.Ships
-            |> Array.map (fun s -> join inputs.[s.Id] s |> stepShip k dt inputs.[s.Id] |> fire dt inputs.[s.Id])
+            |> Array.map (fun s -> join inputs.[s.Id] s |> stepShip k dt inputs.[s.Id] |> fire live dt inputs.[s.Id])
         let ships = fired |> Array.map (fun (s, _, _, _, _) -> s)
         let newBullets = fired |> Array.toList |> List.collect (fun (_, b, _, _, _) -> b)
         let newMines = fired |> Array.toList |> List.collect (fun (_, _, m, _, _) -> m)
