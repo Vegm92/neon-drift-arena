@@ -224,6 +224,45 @@ let drawPortals (vw: View) (w: World) =
     for i in k .. vw.Gates.Length - 1 do
         vw.Gates.[i].visible <- false
 
+let drawDeploys (vw: View) (w: World) =
+    let mutable wk, tk, bk = 0, 0, 0
+    for d in w.Deploys do
+        let hex = shipColor w.Ships.[d.Owner]
+        if d.Kind = wallKind && wk < vw.Walls.Length then
+            let m = vw.Walls.[wk]
+            m.visible <- true
+            m.position.set (d.Pos.X, 3., d.Pos.Y)
+            m.rotation.y <- -(d.Angle + Math.PI / 2.)
+            m.material.color.setHex 0x3b7bff
+            m.material.opacity <- min 1. d.Life * (0.55 + 0.25 * sin (w.Time * 6.))
+            wk <- wk + 1
+        elif d.Kind = turretKind && tk < vw.Turrets.Length then
+            let root, rim, ring = vw.Turrets.[tk]
+            root.visible <- true
+            root.position.set (d.Pos.X, 0., d.Pos.Y)
+            root.rotation.y <- -d.Angle
+            rim.material.color.setHex hex
+            rim.material.opacity <- min 1. d.Life
+            ring.material.color.setHex hex
+            ring.material.opacity <- 0.15 + 0.65 * max 0. (d.Hp / sentryHp)
+            tk <- tk + 1
+        elif d.Kind = bubbleKind && bk < vw.Bubbles.Length then
+            let root, disc, rim = vw.Bubbles.[bk]
+            root.visible <- true
+            root.position.set (d.Pos.X, 0., d.Pos.Y)
+            root.rotation.y <- w.Time * 0.5
+            let fade = min 1. (d.Life / 0.6)
+            disc.material.opacity <- fade * 0.12
+            rim.material.color.setHex hex
+            rim.material.opacity <- fade * (0.5 + 0.3 * sin (w.Time * 4.))
+            bk <- bk + 1
+    for i in wk .. vw.Walls.Length - 1 do
+        vw.Walls.[i].visible <- false
+    for i in tk .. vw.Turrets.Length - 1 do
+        let root, _, _ = vw.Turrets.[i] in root.visible <- false
+    for i in bk .. vw.Bubbles.Length - 1 do
+        let root, _, _ = vw.Bubbles.[i] in root.visible <- false
+
 let drawHole (vw: View) (w: World) dt =
     match w.Hole with
     | Some h ->

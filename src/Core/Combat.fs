@@ -7,6 +7,9 @@ open State
 
 let side (s: Ship) = if s.Team > 0 then -s.Team else s.Id
 
+let sideOf (ships: Ship[]) i =
+    if i >= 0 && i < ships.Length then side ships.[i] else i - ships.Length
+
 let nearest (ships: Ship[]) owner (p: V2) =
     ships
     |> Array.filter (fun s -> s.Alive && side s <> side ships.[owner])

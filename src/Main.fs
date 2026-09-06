@@ -256,7 +256,8 @@ let private sendState () =
 let private weaponOf (s: string) =
     match s with
     | "Rail" -> Rail | "Mines" -> Mines | "Swarm" -> Swarm | "Pulse" -> Pulse | "Scatter" -> Scatter
-    | "Tractor" -> Tractor | "Collision" -> Collision | "Rock" -> Rock | "Singularity" -> Singularity | _ -> Blaster
+    | "Tractor" -> Tractor | "Collision" -> Collision | "Rock" -> Rock | "Singularity" -> Singularity
+    | "Barrier" -> Barrier | "Sentry" -> Sentry | "Bubble" -> Bubble | _ -> Blaster
 
 let private towOf (t: obj) =
     if not (JS.Constructors.Array.isArray t) then NoTether
@@ -287,6 +288,7 @@ let private eventOf (e: obj) : Event =
     | "Launch" -> Launch(a 1)
     | "PortalOpen" -> PortalOpen(a 1, a 2)
     | "Warp" -> Warp(a 1)
+    | "Deployed" -> Deployed(a 1)
     | "Finished" -> Finished(a 1, a 2)
     | _ -> HoleOpen(a 1)
 
@@ -299,6 +301,7 @@ let private worldOf (w: obj) : World =
       PortalIn = w?PortalIn
       Hole = unbox w?Hole
       HoleIn = w?HoleIn
+      Deploys = List.ofArray w?Deploys
       RaceEnd = w?RaceEnd
       Pads = w?Pads
       Crates = w?Crates

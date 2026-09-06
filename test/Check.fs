@@ -404,6 +404,32 @@ let main _ =
         |> step dt (all present)
     check "heal pads sleep in sudden death" (starving.Ships.[0].Hp = 10.)
 
+    let special = Array.init 4 (fun i -> if i = 0 then { present with Special = true } else present)
+
+    let walled = w0 |> place 0 zero 0. |> arm 0 Barrier |> step dt special
+    check "a barrier drops in front of its owner" (walled.Deploys |> List.exists (fun d -> d.Kind = wallKind))
+    let incoming = { Owner = 1; Pos = v 300. 0.; Vel = v -600. 0.; Life = 2.; Kind = 0; Damage = bulletDamage }
+    let stopped = { walled with Bullets = [ incoming ] } |> edit 0 (fun s -> { s with Invuln = 0. }) |> run 60 (all present)
+    check "a barrier eats a bullet before it reaches the ship behind" (stopped.Bullets.IsEmpty && stopped.Ships.[0].Hp = hpMax)
+
+    let turret = w0 |> place 0 zero 0. |> place 1 (v 200. 0.) 0. |> arm 0 Sentry |> step dt special
+    check "a sentry lands at its owner's tail" (turret.Deploys |> List.exists (fun d -> d.Kind = turretKind))
+    let firing = turret |> run 30 (all present)
+    check "a sentry shoots the nearest enemy and never its owner" (not firing.Bullets.IsEmpty && firing.Bullets |> List.forall (fun b -> b.Owner = 0))
+    let nest = (turret.Deploys |> List.find (fun d -> d.Kind = turretKind)).Pos
+    let shells = [ for i in 0..1 -> { Owner = 1; Pos = nest + v 0. (float i * 2.); Vel = zero; Life = 1.; Kind = 0; Damage = sentryHp / 2. } ]
+    let wrecked = { turret with Bullets = shells } |> run 2 (all present)
+    check "enemy fire wrecks a sentry" (wrecked.Deploys |> List.forall (fun d -> d.Kind <> turretKind))
+
+    let glide (w: World) =
+        let b = { Owner = 1; Pos = v -150. -500.; Vel = v 600. 0.; Life = 3.; Kind = 0; Damage = 0. }
+        match ({ w with Bullets = [ b ] } |> run 40 (all present)).Bullets with
+        | [ x ] -> x.Pos.X + 150.
+        | _ -> 0.
+    let bubbled = glide (w0 |> place 0 (v 0. -600.) 0. |> arm 0 Bubble |> step dt special)
+    let plain = glide (w0 |> place 0 (v 0. -600.) 0. |> step dt (all present))
+    check "a time bubble drags an enemy bullet down to bubbleFactor speed" (plain > 100. && abs (bubbled - plain * bubbleFactor) < 4.)
+
     race <- true
     setLayout (layouts |> Array.findIndex (fun l -> l.Track.IsSome))
     let grid = step dt (all present) initial

@@ -165,6 +165,43 @@ let mkGate (scene: Object3D) i =
     scene.add m
     m
 
+let mkWall (scene: Object3D) =
+    let m = three.Mesh(three.PlaneGeometry(wallLen, wallThick * 2.) |> flat, glowMat 0x3b7bff 0.75)
+    m.position.y <- 3.
+    m.visible <- false
+    scene.add m
+    m
+
+let mkTurret (scene: Object3D) =
+    let root = three.Group()
+    let hex = three.Mesh(three.RingGeometry(0., sentryRadius, 6) |> flat, three.MeshBasicMaterial(box {| color = 0x0a0a1e |}))
+    hex.position.y <- 1.
+    root.add hex
+    let rim = three.Mesh(three.RingGeometry(sentryRadius - 3., sentryRadius, 6) |> flat, glowMat 0xffffff 1.)
+    rim.position.y <- 2.
+    root.add rim
+    let barrel = three.Mesh(three.BoxGeometry(sentryRadius * 1.7, 4., 5.), glowMat 0xffffff 1.)
+    barrel.position.set (sentryRadius * 0.85, 4., 0.)
+    root.add barrel
+    let ring = three.Mesh(three.RingGeometry(sentryRadius + 5., sentryRadius + 8., 24) |> flat, glowMat 0xffffff 0.8)
+    ring.position.y <- 1.
+    root.add ring
+    root.visible <- false
+    scene.add root
+    root, rim, ring
+
+let mkBubble (scene: Object3D) =
+    let root = three.Group()
+    let disc = three.Mesh(three.CircleGeometry(bubbleRadius, 48) |> flat, glowMat 0x8ad8ff 0.12)
+    disc.position.y <- 1.
+    root.add disc
+    let rim = three.Mesh(three.RingGeometry(bubbleRadius - 5., bubbleRadius, 48) |> flat, glowMat 0x8ad8ff 0.7)
+    rim.position.y <- 2.
+    root.add rim
+    root.visible <- false
+    scene.add root
+    root, disc, rim
+
 let mkHole (scene: Object3D) =
     let root = three.Group()
     let disc = three.Mesh(three.CircleGeometry(holeCore * 3., 48) |> flat, three.MeshBasicMaterial(box {| color = 0x000000 |}))

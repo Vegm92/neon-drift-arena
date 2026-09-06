@@ -7,14 +7,12 @@ let private gateAhead i = gates.[(i + 1) % gates.Length]
 
 let roadAhead i = road.[(i + 1) % road.Length]
 
-let segDist (a: V2) (b: V2) (p: V2) =
+let segClosest (a: V2) (b: V2) (p: V2) =
     let ab = b - a
     let l2 = dot ab ab
-    if l2 < 1e-9 then
-        len (p - a)
-    else
-        let t = max 0. (min 1. (dot (p - a) ab / l2))
-        len (p - (a + ab * t))
+    if l2 < 1e-9 then a else a + ab * (max 0. (min 1. (dot (p - a) ab / l2)))
+
+let segDist (a: V2) (b: V2) (p: V2) = len (p - segClosest a b p)
 
 let onTrack (p: V2) =
     not race

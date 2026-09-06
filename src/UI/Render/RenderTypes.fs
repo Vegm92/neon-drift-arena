@@ -18,6 +18,7 @@ let bulletPool = 96
 let minePool = 24
 let rockPool = 8
 let portalPool = 2
+let deployPool = 6
 let portalHex = 0xb36bff
 let holeHex = 0xd48cff
 // Takedown flash: low, brief and confined to the screen edges, and damped again on a
@@ -110,6 +111,9 @@ type View =
       Mines: Object3D[]
       Boulders: Object3D[]
       Gates: Mesh[]
+      Walls: Mesh[]
+      Turrets: (Object3D * Mesh * Mesh)[]
+      Bubbles: (Object3D * Mesh * Mesh)[]
       Hole: Object3D
       Horizon: Mesh
       Halo: Mesh

@@ -25,6 +25,9 @@ let icon (w: Weapon) ring =
             | Collision -> "M32 8 L36 26 L54 22 L40 34 L52 50 L34 42 L28 58 L26 40 L8 44 L22 32 L12 16 L28 24 Z"
             | Rock -> "M20 12 L44 10 L56 28 L50 50 L26 54 L10 38 Z M26 30 L36 26 L40 36"
             | Singularity -> "M32 32 m-22 0 a22 22 0 1 0 44 0 a22 22 0 1 0 -44 0 M32 32 m-9 0 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0 M10 32 L4 32 M54 32 L60 32"
+            | Barrier -> "M14 20 L50 20 M14 20 L14 44 M50 20 L50 44 M14 44 L50 44 M32 20 L32 44 M20 52 L26 58 M38 58 L44 52"
+            | Sentry -> "M32 12 L48 21 L48 39 L32 48 L16 39 L16 21 Z M32 30 L58 30 M32 30 m-5 0 a5 5 0 1 0 10 0 a5 5 0 1 0 -10 0"
+            | Bubble -> "M32 32 m-22 0 a22 22 0 1 0 44 0 a22 22 0 1 0 -44 0 M32 18 L32 32 L42 38 M32 4 L32 10 M32 54 L32 60"
     sprintf "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"%s\"/></svg>" path
 
 let feedLine (vw: View) (w: World) victim by wpn ring =

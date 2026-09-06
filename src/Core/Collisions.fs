@@ -4,7 +4,9 @@ open Vec
 open Domain
 open Domain.Cfg
 open State
+open Track
 open Combat
+open Entities
 
 let private bump (events: ResizeArray<Event>) (sh: Ship) (a: Asteroid) =
     let d = sh.Pos - a.Pos
@@ -43,6 +45,49 @@ let resolveRocks (ships: Ship[]) (rocks: Rock list) =
             sh
     let s = ships |> Array.map (fun sh -> if sh.Alive then List.fold hit sh rocks else sh)
     s, List.ofSeq events
+
+let resolveDeploys (ships: Ship[]) (deploys: Deployable list) (bullets: Bullet list) =
+    let events = ResizeArray()
+    let ds = List.toArray deploys
+    let s = Array.copy ships
+    for i in 0 .. ds.Length - 1 do
+        if ds.[i].Kind = wallKind then
+            let a, b = wallEnds ds.[i]
+            for j in 0 .. s.Length - 1 do
+                let sh = s.[j]
+                if sh.Alive then
+                    let cp = segClosest a b sh.Pos
+                    let d = sh.Pos - cp
+                    let dist = len d
+                    let minDist = wallThick + shipRadius
+                    if dist < minDist && dist > 1e-6 then
+                        let n = d * (1. / dist)
+                        let vn = dot sh.Vel n
+                        s.[j] <-
+                            { sh with
+                                Pos = cp + n * minDist
+                                Vel = if vn < 0. then sh.Vel - n * ((1. + restitution) * vn) else sh.Vel }
+    let stopper (b: Bullet) =
+        ds
+        |> Array.tryFindIndex (fun d ->
+            if d.Kind = wallKind then
+                let a, e = wallEnds d
+                segDist a e b.Pos < wallThick + 4.
+            elif d.Kind = turretKind then
+                sideOf ships d.Owner <> sideOf ships b.Owner && len (d.Pos - b.Pos) < sentryRadius + 4.
+            else
+                false)
+    let remaining =
+        bullets
+        |> List.filter (fun b ->
+            match stopper b with
+            | Some i ->
+                if ds.[i].Kind = turretKind then
+                    ds.[i] <- { ds.[i] with Hp = ds.[i].Hp - b.Damage }
+                events.Add(Bump b.Pos)
+                false
+            | None -> true)
+    s, List.ofArray ds, remaining, List.ofSeq events
 
 let resolveBullets (ships: Ship[]) (bullets: Bullet list) =
     let s = Array.copy ships
