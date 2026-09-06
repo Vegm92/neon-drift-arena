@@ -121,7 +121,7 @@ let init () =
                 // auto-repeat of the key that opened the capture must not bind it
                 if ((box ke)?repeat: bool) <> true then capture ke.code
             else
-                keys.Add ke.code |> ignore
+                if ((box ke)?repeat: bool) <> true then keys.Add ke.code |> ignore
                 keyboardSeen <- true
                 // a rebound key scrolls the page unless it is swallowed too, but
                 // leave browser shortcuts (Ctrl/Alt/Cmd + key) alone
@@ -149,6 +149,8 @@ let press (code: string) =
     keys.Add code |> ignore
     taps.Add code |> ignore
     keyboardSeen <- true
+
+let clearHeld () = keys.Clear()
 
 let release () =
     window.requestAnimationFrame (fun _ ->

@@ -517,7 +517,9 @@ let private updateLobby () =
             false
         else
             renderLobby (Input.devices ())
-            if launch then hide ()
+            if launch then
+                Input.clearHeld ()
+                hide ()
             launch
 
 let private updateOptions () =

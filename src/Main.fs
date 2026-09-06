@@ -139,10 +139,19 @@ let private statRow winner pos (s: Ship) =
             String.concat "" [ for k in 1 .. Cfg.stocks -> if k <= s.Stocks then "<i></i>" else "<i class=\"gone\"></i>" ]
     let medalsHtml =
         let m = ResizeArray()
-        if s.FirstBloodMedal > 0 then m.Add("<span class=\"medal fb\" title=\"First Blood!\">🩸 FB</span>")
-        if s.DoubleKillMedals > 0 then m.Add(sprintf "<span class=\"medal dk\" title=\"Double Kills\">⚔️ DK x%d</span>" s.DoubleKillMedals)
-        if s.TripleKillMedals > 0 then m.Add(sprintf "<span class=\"medal tk\" title=\"Triple Kills\">⚡ TK x%d</span>" s.TripleKillMedals)
-        if s.RailKillMedals > 0 then m.Add(sprintf "<span class=\"medal rk\" title=\"Railed Down!\">🎯 RD x%d</span>" s.RailKillMedals)
+        if s.FirstBloodMedal > 0 then m.Add(sprintf "<span class=\"medal fb\" title=\"%s\">%s FB x%d</span>" Strings.t.FirstBlood (RenderHud.medalIcon 0) s.FirstBloodMedal)
+        if s.DoubleKillMedals > 0 then m.Add(sprintf "<span class=\"medal dk\" title=\"%s\">%s DK x%d</span>" Strings.t.DoubleKill (RenderHud.medalIcon 1) s.DoubleKillMedals)
+        if s.TripleKillMedals > 0 then m.Add(sprintf "<span class=\"medal tk\" title=\"%s\">%s TK x%d</span>" Strings.t.TripleKill (RenderHud.medalIcon 2) s.TripleKillMedals)
+        if s.RailKillMedals > 0 then m.Add(sprintf "<span class=\"medal rk\" title=\"%s\">%s RD x%d</span>" Strings.t.RailKillMedal (RenderHud.medalIcon 3) s.RailKillMedals)
+        if s.RamKillMedals > 0 then m.Add(sprintf "<span class=\"medal rm\" title=\"%s\">%s RM x%d</span>" Strings.t.RamKillMedal (RenderHud.medalIcon 4) s.RamKillMedals)
+        if s.OnFireMedals > 0 then m.Add(sprintf "<span class=\"medal of\" title=\"%s\">%s OF x%d</span>" Strings.t.OnFireMedal (RenderHud.medalIcon 5) s.OnFireMedals)
+        if s.VoidMedals > 0 then m.Add(sprintf "<span class=\"medal vd\" title=\"%s\">%s VD x%d</span>" Strings.t.VoidMedal (RenderHud.medalIcon 6) s.VoidMedals)
+        if s.HoleMedals > 0 then m.Add(sprintf "<span class=\"medal eh\" title=\"%s\">%s EH x%d</span>" Strings.t.HoleMedal (RenderHud.medalIcon 7) s.HoleMedals)
+        if s.AbductMedals > 0 then m.Add(sprintf "<span class=\"medal ab\" title=\"%s\">%s AB x%d</span>" Strings.t.AbductMedal (RenderHud.medalIcon 8) s.AbductMedals)
+        if s.GraveMedals > 0 then m.Add(sprintf "<span class=\"medal gr\" title=\"%s\">%s GR x%d</span>" Strings.t.GraveMedal (RenderHud.medalIcon 9) s.GraveMedals)
+        if s.Shots >= 10 && accuracy s >= 60 then m.Add(sprintf "<span class=\"medal de\" title=\"%s\">%s DE</span>" Strings.t.Deadeye (RenderHud.medalIcon 10))
+        if s.Id = winner && s.Stocks = Cfg.stocks then m.Add(sprintf "<span class=\"medal fl\" title=\"%s\">%s FL</span>" Strings.t.Flawless (RenderHud.medalIcon 11))
+        if s.Grabs >= 5 then m.Add(sprintf "<span class=\"medal sc\" title=\"%s\">%s SC</span>" Strings.t.Scavenger (RenderHud.medalIcon 12))
         if m.Count > 0 then sprintf "<div class=\"medals\">%s</div>" (String.concat "" m) else ""
     sprintf
         "<div class=\"line%s\" style=\"color:#%06x\"><div class=\"pos\">%d</div><div class=\"who\"><svg viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linejoin=\"round\"><path d=\"M24 4 41 40 24 32 7 40Z\"/></svg><b>%s</b>%s</div><div class=\"num big\">%d</div><div class=\"acc\"><div class=\"bar\"><i style=\"width:%d%%\"></i></div><span>%d%%</span></div><div class=\"num\">%d</div><div class=\"num\">%d</div><div class=\"stocks\">%s</div></div>"
@@ -215,6 +224,11 @@ let private announce (w: World) (events: Event list) =
         | Medal(i, "doublekill") -> say (sprintf "%s: DOUBLE KILL!" (name i))
         | Medal(i, "triplekill") -> say (sprintf "%s: TRIPLE KILL, ACE!" (name i))
         | Medal(i, "railkill") -> say (sprintf "%s: RAILED DOWN!" (name i))
+        | Medal(i, "ramkill") -> say (sprintf "%s: %s" (name i) Strings.t.RamKill)
+        | Medal(i, "voidkill") -> say (sprintf "%s: %s" (name i) Strings.t.VoidKill)
+        | Medal(i, "holekill") -> say (sprintf "%s: %s" (name i) Strings.t.HoleKill)
+        | Medal(i, "abductkill") -> say (sprintf "%s: %s" (name i) Strings.t.AbductKill)
+        | Medal(i, "gravekill") -> say (sprintf "%s: %s" (name i) Strings.t.GraveKill)
         | _ -> ()
     if Sim.sudden w && not suddenSaid then
         suddenSaid <- true

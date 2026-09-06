@@ -65,6 +65,12 @@ let main _ =
 
     let w5 = w0 |> place 0 (v (arenaHalf + killMargin + 1.) 0.) 0. |> step dt (all present)
     check "out of bounds kills and costs a stock" (not w5.Ships.[0].Alive && w5.Ships.[0].Stocks = stocks - 1)
+    let w5b =
+        w0 |> edit 0 (fun s -> { s with LastHit = 1; LastWeapon = Blaster })
+        |> place 0 (v (arenaHalf + killMargin + 1.) 0.) 0. |> step dt (all present)
+    check "knocking a ship out of the arena awards the void medal"
+        (w5b.Ships.[1].VoidMedals = 1
+         && w5b.Events |> List.exists (function Medal(1, "voidkill") -> true | _ -> false))
     check "explosion event emitted" (w5.Events |> List.exists (function Explode _ -> true | _ -> false))
     let w6 = run (int (respawnDelay / dt) + 2) (all present) w5
     check "respawns at a spawn point" (w6.Ships.[0].Alive && [ 0..3 ] |> List.exists (fun i -> w6.Ships.[0].Pos = spawnPos i))
@@ -73,6 +79,15 @@ let main _ =
         w0 |> place 0 zero 0. |> place 1 (v 30. 0.) 0. |> edit 1 (fun s -> { s with Vel = v (-150.) 0. })
         |> step dt (all present)
     check "ram exchanges momentum" (w7.Ships.[0].Vel.X < -50. && w7.Ships.[1].Vel.X > -50.)
+
+    let w7b =
+        w0 |> place 0 zero 0. |> place 1 (v 30. 0.) 0.
+        |> edit 0 (fun s -> { s with Invuln = 0. })
+        |> edit 1 (fun s -> { s with Invuln = 0.; Hp = 1.; Vel = v (-150.) 0. })
+        |> step dt (all present)
+    check "a ram kill awards the rammer medal"
+        (w7b.Ships.[1].Hp <= 0. && w7b.Ships.[0].RamKillMedals = 1
+         && w7b.Events |> List.exists (function Medal(0, "ramkill") -> true | _ -> false))
 
     let two = Array.init 4 (fun i -> if i < 2 then present else noInput)
     let w8 = step dt two initial |> edit 1 (fun s -> { s with Hp = 0.; Stocks = 1 }) |> step dt two

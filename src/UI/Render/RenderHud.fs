@@ -30,9 +30,14 @@ let icon (w: Weapon) ring =
             | Bubble -> "M32 32 m-22 0 a22 22 0 1 0 44 0 a22 22 0 1 0 -44 0 M32 18 L32 32 L42 38 M32 4 L32 10 M32 54 L32 60"
     sprintf "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"%s\"/></svg>" path
 
+let medalIcon (i: int) =
+    sprintf "<i class=\"mi\" style=\"background-position:%.4f%% %.4f%%\"></i>" (float (i % 4) * 100. / 3.) (float (i / 4) * 100. / 3.)
+
 let feedLine (vw: View) (w: World) victim by wpn ring =
     let tag i cls = sprintf "<b class=\"%s\" style=\"color:#%06x\">%s</b>" cls (shipColor w.Ships.[i]) vw.Names.[i]
-    let wep i r = sprintf "<span style=\"color:#%06x\">%s</span>" (shipColor w.Ships.[i]) (icon wpn r)
+    let wep i r =
+        let label = if r then Strings.t.RingOut else Strings.weaponName wpn
+        sprintf "<span style=\"color:#%06x\">%s<em>%s</em></span>" (shipColor w.Ships.[i]) (icon wpn r) label
     let line = document.createElement "div"
     line.innerHTML <-
         if by >= 0 && by <> victim then tag by "" + wep by ring + tag victim "dead"
@@ -47,16 +52,21 @@ let feedLine (vw: View) (w: World) victim by wpn ring =
         vw.Feed?lastElementChild?remove ()
     window.setTimeout ((fun () -> line.remove ()), 5000) |> ignore
 
+let private wname (w: Weapon) =
+    sprintf "<span class=\"wname\">%s</span>" (Strings.weaponName w)
+
 let private weaponHtml (s: Ship) =
     if Sim.launcher s then
-        sprintf "<span class=\"%s\">%s</span><span class=\"ammo\">%s</span>"
+        let w = if s.Ghosting then Mines else Rock
+        sprintf "<span class=\"%s\">%s</span>%s<span class=\"ammo\">%s</span>"
             (if s.LaunchCd <= 0. then "ready" else "wait")
-            (icon (if s.Ghosting then Mines else Rock) false)
+            (icon w false)
+            (wname w)
             (Strings.t.SwapMode(Strings.bindKeys Binds.Swap))
     elif State.race && s.Weapon = Blaster then ""
     else
         let n = if weaponAmmo s.Weapon > 0 then s.Ammo else 0
-        icon s.Weapon false + sprintf "<span class=\"ammo\">%s</span>" (String.replicate n "●")
+        icon s.Weapon false + wname s.Weapon + sprintf "<span class=\"ammo\">%s</span>" (String.replicate n "●")
 
 let drawHud (vw: View) (w: World) dt =
     w.Ships
@@ -107,10 +117,16 @@ let drawHud (vw: View) (w: World) dt =
         let medals = el.querySelector ".medals" :?> HTMLElement
         let mHtml =
             let m = ResizeArray()
-            if s.FirstBloodMedal > 0 then m.Add("<span class=\"medal fb\" title=\"First Blood! 🩸\">🩸</span>")
-            if s.DoubleKillMedals > 0 then m.Add("<span class=\"medal dk\" title=\"Double Kill! ⚔️\">⚔️</span>")
-            if s.TripleKillMedals > 0 then m.Add("<span class=\"medal tk\" title=\"Triple Kill, ACE! ⚡\">⚡</span>")
-            if s.RailKillMedals > 0 then m.Add("<span class=\"medal rk\" title=\"Railed Down! 🎯\">🎯</span>")
+            if s.FirstBloodMedal > 0 then m.Add(sprintf "<span class=\"medal fb\" title=\"%s\">%s</span>" Strings.t.FirstBlood (medalIcon 0))
+            if s.DoubleKillMedals > 0 then m.Add(sprintf "<span class=\"medal dk\" title=\"%s\">%s</span>" Strings.t.DoubleKill (medalIcon 1))
+            if s.TripleKillMedals > 0 then m.Add(sprintf "<span class=\"medal tk\" title=\"%s\">%s</span>" Strings.t.TripleKill (medalIcon 2))
+            if s.RailKillMedals > 0 then m.Add(sprintf "<span class=\"medal rk\" title=\"%s\">%s</span>" Strings.t.RailKillMedal (medalIcon 3))
+            if s.RamKillMedals > 0 then m.Add(sprintf "<span class=\"medal rm\" title=\"%s\">%s</span>" Strings.t.RamKillMedal (medalIcon 4))
+            if s.OnFireMedals > 0 then m.Add(sprintf "<span class=\"medal of\" title=\"%s\">%s</span>" Strings.t.OnFireMedal (medalIcon 5))
+            if s.VoidMedals > 0 then m.Add(sprintf "<span class=\"medal vd\" title=\"%s\">%s</span>" Strings.t.VoidMedal (medalIcon 6))
+            if s.HoleMedals > 0 then m.Add(sprintf "<span class=\"medal eh\" title=\"%s\">%s</span>" Strings.t.HoleMedal (medalIcon 7))
+            if s.AbductMedals > 0 then m.Add(sprintf "<span class=\"medal ab\" title=\"%s\">%s</span>" Strings.t.AbductMedal (medalIcon 8))
+            if s.GraveMedals > 0 then m.Add(sprintf "<span class=\"medal gr\" title=\"%s\">%s</span>" Strings.t.GraveMedal (medalIcon 9))
             String.concat "" m
         if medals?dataset?html <> mHtml then
             medals?dataset?html <- mHtml

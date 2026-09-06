@@ -84,11 +84,33 @@ type Locale =
       WSwarm: string
       WPulse: string
       WScatter: string
+      WBarrier: string
+      WSentry: string
+      WBubble: string
       WTractor: string
+      WCollision: string
+      WRock: string
+      WSingularity: string
       Loaded: string -> int -> string
       Go: string
       FirstBlood: string
       DoubleKill: string
+      TripleKill: string
+      RailKillMedal: string
+      RamKill: string
+      RamKillMedal: string
+      VoidKill: string
+      VoidMedal: string
+      HoleKill: string
+      HoleMedal: string
+      AbductKill: string
+      AbductMedal: string
+      GraveKill: string
+      GraveMedal: string
+      OnFireMedal: string
+      Deadeye: string
+      Flawless: string
+      Scavenger: string
       RingOut: string
       LastStock: string -> string
       OnFire: string -> string
@@ -266,12 +288,34 @@ let en =
       WMissile = "MISSILE"
       WSwarm = "SEEKERS"
       WPulse = "REPULSOR"
-      WScatter = "SCATTER GUN"
+      WScatter = "ZAPPER"
+      WBarrier = "BARRIER"
+      WSentry = "SENTRY"
+      WBubble = "TIME BUBBLE"
       WTractor = "TRACTOR"
+      WCollision = "RAMMER"
+      WRock = "BOULDER"
+      WSingularity = "SINGULARITY"
       Loaded = fun n a -> sprintf "%s x%d" n a
       Go = "GO"
       FirstBlood = "FIRST BLOOD"
       DoubleKill = "DOUBLE KILL"
+      TripleKill = "TRIPLE KILL"
+      RailKillMedal = "RAILED DOWN"
+      RamKill = "RAMMED!"
+      RamKillMedal = "RAMMER"
+      VoidKill = "VOIDED!"
+      VoidMedal = "VOID"
+      HoleKill = "EVENT HORIZON!"
+      HoleMedal = "EVENT HORIZON"
+      AbductKill = "ABDUCTED!"
+      AbductMedal = "ABDUCTOR"
+      GraveKill = "FROM THE GRAVE!"
+      GraveMedal = "FROM THE GRAVE"
+      OnFireMedal = "ON FIRE"
+      Deadeye = "DEADEYE"
+      Flawless = "FLAWLESS"
+      Scavenger = "SCAVENGER"
       RingOut = "RING OUT"
       LastStock = sprintf "%s ON LAST STOCK"
       OnFire = sprintf "%s IS ON FIRE"
@@ -356,6 +400,22 @@ let en =
 let t = en
 
 module Bind = Domain.Binds
+
+let weaponName (w: Domain.Weapon) =
+    match w with
+    | Domain.Blaster -> t.WBlaster
+    | Domain.Rail -> t.WRail
+    | Domain.Mines -> t.WMines
+    | Domain.Swarm -> t.WSwarm
+    | Domain.Pulse -> t.WPulse
+    | Domain.Scatter -> t.WScatter
+    | Domain.Tractor -> t.WTractor
+    | Domain.Collision -> t.WCollision
+    | Domain.Rock -> t.WRock
+    | Domain.Singularity -> t.WSingularity
+    | Domain.Barrier -> t.WBarrier
+    | Domain.Sentry -> t.WSentry
+    | Domain.Bubble -> t.WBubble
 
 /// Physical `KeyboardEvent.code` -> the cap printed on the player's keyboard.
 /// The AZERTY branch lives here and nowhere else, so no legend needs a second

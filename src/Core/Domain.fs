@@ -433,6 +433,12 @@ type Ship =
       DoubleKillMedals: int
       TripleKillMedals: int
       RailKillMedals: int
+      RamKillMedals: int
+      OnFireMedals: int
+      VoidMedals: int
+      HoleMedals: int
+      AbductMedals: int
+      GraveMedals: int
       LastKillTime: float
       MultiKillCount: int }
 

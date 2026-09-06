@@ -46,12 +46,16 @@
   .panel.cooked .heat i{color:#fff45c;box-shadow:0 0 12px #fff45c}
   @keyframes sos{0%,100%{opacity:1}50%{opacity:.35}}
   .p-footer{display:flex;flex-direction:column;gap:8px;border-top:1px dashed rgba(255,255,255,0.1);padding-top:6px;margin-top:2px}
-  .wep{display:flex;align-items:center;gap:8px;height:26px}
-  .wep svg{width:24px;height:26px;color:#cfe;filter:drop-shadow(0 0 6px #cfe)}
+  .wep{display:flex;align-items:center;gap:8px;height:52px}
+  .wep .wname{font-size:13px;letter-spacing:.12em;color:#cfe;text-shadow:0 0 6px #cfe}
+  .wep svg{width:48px;height:52px;color:#cfe;filter:drop-shadow(0 0 6px #cfe)}
   .wep .ammo{font-size:12px;letter-spacing:.15em;color:#fff45c;text-shadow:0 0 6px #fff45c}
   .wep .wait svg{opacity:.3;filter:none}
   .wep .ready svg{color:#ff9955;filter:drop-shadow(0 0 8px #ff9955);animation:sos .5s steps(2,end) infinite}
   .panel .medals{display:flex;gap:6px;flex-wrap:wrap}
+  .mi{display:inline-block;background:url(/medals.png) no-repeat;background-size:400% 400%;vertical-align:middle}
+  .panel .medal .mi{width:22px;height:22px}
+  #menu .stats .medal .mi{width:26px;height:26px}
   .panel .medal{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:2px;font-size:11px;font-weight:700;
     letter-spacing:.05em;text-transform:uppercase;border:1px solid rgba(255,255,255,0.15);white-space:nowrap;
     text-shadow:0 0 4px currentColor;box-shadow:0 0 8px -3px currentColor}
@@ -59,6 +63,15 @@
   .panel .medal.dk{color:#00f6ff;background:rgba(0,246,255,0.1);border-color:rgba(0,246,255,0.4)}
   .panel .medal.tk{color:#ffd54f;background:rgba(255,213,79,0.1);border-color:rgba(255,213,79,0.4)}
   .panel .medal.rk{color:#7cff3a;background:rgba(124,255,58,0.1);border-color:rgba(124,255,58,0.4)}
+  .panel .medal.rm{color:#ff9955;background:rgba(255,153,85,0.12);border-color:rgba(255,153,85,0.45)}
+  .panel .medal.of{color:#ff6a00;background:rgba(255,106,0,0.12);border-color:rgba(255,106,0,0.45)}
+  .panel .medal.vd{color:#a06cff;background:rgba(160,108,255,0.12);border-color:rgba(160,108,255,0.45)}
+  .panel .medal.eh{color:#c8a0ff;background:rgba(200,160,255,0.12);border-color:rgba(200,160,255,0.45)}
+  .panel .medal.ab{color:#00e5b4;background:rgba(0,229,180,0.12);border-color:rgba(0,229,180,0.45)}
+  .panel .medal.gr{color:#c8dcff;background:rgba(200,220,255,0.12);border-color:rgba(200,220,255,0.45)}
+  .panel .medal.de{color:#ffeb78;background:rgba(255,235,120,0.12);border-color:rgba(255,235,120,0.45)}
+  .panel .medal.fl{color:#78c8ff;background:rgba(120,200,255,0.12);border-color:rgba(120,200,255,0.45)}
+  .panel .medal.sc{color:#ffaa5a;background:rgba(255,170,90,0.12);border-color:rgba(255,170,90,0.45)}
   #clock{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-size:15px;letter-spacing:.3em;opacity:.8;text-shadow:0 0 10px currentColor}
   #clock.sudden{color:#ff3b5c;animation:sos .7s steps(2,end) infinite}
   .tag{position:absolute;transform:translateX(-50%);font-size:15px;font-weight:700;letter-spacing:.25em;text-shadow:0 0 10px currentColor,0 0 2px #000}
@@ -70,6 +83,8 @@
   #feed b{text-shadow:0 0 10px currentColor}
   #feed b.dead{text-decoration:line-through;opacity:.6}
   #feed svg{width:30px;height:30px;filter:drop-shadow(0 0 6px currentColor)}
+  #feed span{display:inline-flex;align-items:center;gap:6px}
+  #feed em{font-style:normal;font-size:12px;letter-spacing:.18em;text-shadow:0 0 8px currentColor}
   @keyframes slam{0%{transform:skewX(-10deg) scale(2.2);filter:brightness(3)}100%{transform:skewX(-10deg) scale(1)}}
   @keyframes feed{0%,70%{opacity:1}100%{opacity:0}}
   #vignette{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .06s linear}
@@ -106,6 +121,15 @@
   #menu .stats .medal.dk{color:#00f6ff;background:rgba(0,246,255,0.1);border-color:rgba(0,246,255,0.3)}
   #menu .stats .medal.tk{color:#ffd54f;background:rgba(255,213,79,0.1);border-color:rgba(255,213,79,0.3)}
   #menu .stats .medal.rk{color:#7cff3a;background:rgba(124,255,58,0.1);border-color:rgba(124,255,58,0.3)}
+  #menu .stats .medal.rm{color:#ff9955;background:rgba(255,153,85,0.12);border-color:rgba(255,153,85,0.35)}
+  #menu .stats .medal.of{color:#ff6a00;background:rgba(255,106,0,0.12);border-color:rgba(255,106,0,0.35)}
+  #menu .stats .medal.vd{color:#a06cff;background:rgba(160,108,255,0.12);border-color:rgba(160,108,255,0.35)}
+  #menu .stats .medal.eh{color:#c8a0ff;background:rgba(200,160,255,0.12);border-color:rgba(200,160,255,0.35)}
+  #menu .stats .medal.ab{color:#00e5b4;background:rgba(0,229,180,0.12);border-color:rgba(0,229,180,0.35)}
+  #menu .stats .medal.gr{color:#c8dcff;background:rgba(200,220,255,0.12);border-color:rgba(200,220,255,0.35)}
+  #menu .stats .medal.de{color:#ffeb78;background:rgba(255,235,120,0.12);border-color:rgba(255,235,120,0.35)}
+  #menu .stats .medal.fl{color:#78c8ff;background:rgba(120,200,255,0.12);border-color:rgba(120,200,255,0.35)}
+  #menu .stats .medal.sc{color:#ffaa5a;background:rgba(255,170,90,0.12);border-color:rgba(255,170,90,0.35)}
   #banner{position:fixed;left:0;right:0;top:40%;text-align:center;font-size:22px;letter-spacing:.35em;text-shadow:0 0 18px #fff;white-space:pre-line;line-height:2}
   #banner.hidden{display:none}
   #banner.count{font-size:min(30vh,240px);font-weight:700;letter-spacing:.1em;line-height:1;color:#fff;text-shadow:0 0 30px #00f6ff,0 0 80px #00f6ff;
