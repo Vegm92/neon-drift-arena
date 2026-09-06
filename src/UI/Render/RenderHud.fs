@@ -83,9 +83,14 @@ let drawHud (vw: View) (w: World) dt =
         el.querySelector(".boost i")?style?width <- sprintf "%.0f%%" (s.Boost / boostMax * 100.)
         el.querySelector(".heat i")?style?width <- sprintf "%.0f%%" (s.Heat / heatMax * 100.)
         let stocks = el.querySelector ".stocks" :?> HTMLElement
-        stocks.textContent <-
-            if State.race then Strings.t.Lap Strings.t.Places.[Sim.place w.Ships i - 1] (min (int laps) (s.Laps + 1)) (int laps)
-            else String.replicate (max 0 s.Stocks) "◆"
+        let stocksHtml =
+            if State.race then sprintf "<span>%s</span>" (Strings.t.Lap Strings.t.Places.[Sim.place w.Ships i - 1] (min (int laps) (s.Laps + 1)) (int laps))
+            else
+                let shipIcon = "<svg class=\"stock-icon\" viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"4.5\" stroke-linejoin=\"round\"><path d=\"M24 4 L41 40 L24 32 L7 40 Z\"/></svg>"
+                String.concat "" [ for _ in 1 .. max 0 s.Stocks -> shipIcon ]
+        if stocks?dataset?html <> stocksHtml then
+            stocks?dataset?html <- stocksHtml
+            stocks.innerHTML <- stocksHtml
         stocks?style?color <- sprintf "#%06x" (shipColor s)
         let wep = el.querySelector ".wep" :?> HTMLElement
         let html = weaponHtml s

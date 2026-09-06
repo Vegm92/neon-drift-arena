@@ -15,25 +15,33 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   canvas{display:block}
   #hud{position:fixed;inset:0;pointer-events:none}
-  .panel{position:absolute;width:120px;opacity:.9}
+  .panel{position:absolute;width:144px;opacity:.95;border:1.5px solid currentColor;border-radius:0;
+    padding:10px 12px;background:linear-gradient(rgba(10,14,10,0.95),rgba(4,6,4,0.92));
+    background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.2) 2px,rgba(0,0,0,0.2) 4px);
+    box-shadow:0 0 15px rgba(0,0,0,0.7);font-family:"JetBrains Mono","Space Mono",monospace;box-sizing:border-box}
   .panel.p0{left:18px;top:14px}.panel.p1{right:18px;top:14px}.panel.p2{left:18px;bottom:14px}.panel.p3{right:18px;bottom:14px}
   .panel.off{opacity:.18}
-  .name{font-size:12px;letter-spacing:.25em;margin-bottom:6px;text-shadow:0 0 8px currentColor}
-  .bar{height:3px;background:rgba(255,255,255,.07);margin-bottom:5px;border-radius:2px}
-  .bar i{display:block;height:100%;width:100%;border-radius:2px;transition:width .08s linear}
-  .hp i{background:#ff3b5c;box-shadow:0 0 8px #ff3b5c}
-  .shield i{background:#3b8cff;box-shadow:0 0 8px #3b8cff}
-  .boost i{background:#00f6ff;box-shadow:0 0 8px #00f6ff}
-  .heat i{background:#ff7b2b;box-shadow:0 0 8px #ff7b2b}
+  .p-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:4px;margin-bottom:8px}
+  .name{font-size:14px;font-weight:700;letter-spacing:.05em;text-shadow:0 0 8px currentColor;margin-bottom:0}
+  .status-tag{font-size:9px;font-weight:700;opacity:.7;letter-spacing:0.05em}
+  .bar{height:6px;background:rgba(255,255,255,.07);margin-bottom:6px;border-radius:0;overflow:hidden}
+  .bar i{display:block;height:100%;width:100%;border-radius:0;transition:width .08s linear;
+    background:currentColor;box-shadow:0 0 10px currentColor;
+    background-image:repeating-linear-gradient(90deg,rgba(255,255,255,0.7) 0px,rgba(255,255,255,0.7) 3px,transparent 3px,transparent 5px)}
+  .hp i{color:#ff3b5c}
+  .shield i{color:#3b8cff}
+  .boost i{color:#00f6ff}
+  .heat i{color:#ff7b2b}
   .panel.hurt .name{animation:sos .7s steps(2,end) infinite}
-  .panel.cooked .heat i{background:#fff45c;box-shadow:0 0 12px #fff45c}
+  .panel.cooked .heat i{color:#fff45c;box-shadow:0 0 12px #fff45c}
   @keyframes sos{0%,100%{opacity:1}50%{opacity:.35}}
-  .stocks{font-size:11px;letter-spacing:.3em;text-shadow:0 0 6px currentColor}
-  .wep{display:flex;align-items:center;gap:6px;margin-top:4px;height:20px}
-  .wep svg{width:20px;height:20px;color:#cfe;filter:drop-shadow(0 0 4px #cfe)}
-  .wep .ammo{font-size:8px;letter-spacing:.25em;color:#fff45c;text-shadow:0 0 6px #fff45c}
+  .stocks{display:flex;gap:5px;align-items:center;margin-top:6px;height:16px}
+  .stock-icon{width:14px;height:14px;color:inherit;filter:drop-shadow(0 0 4px currentColor)}
+  .wep{display:flex;align-items:center;gap:8px;margin-top:8px;height:24px}
+  .wep svg{width:24px;height:24px;color:#cfe;filter:drop-shadow(0 0 6px #cfe)}
+  .wep .ammo{font-size:11px;letter-spacing:.15em;color:#fff45c;text-shadow:0 0 6px #fff45c}
   .wep .wait svg{opacity:.3;filter:none}
-  .wep .ready svg{color:#ff9955;filter:drop-shadow(0 0 6px #ff9955);animation:sos .5s steps(2,end) infinite}
+  .wep .ready svg{color:#ff9955;filter:drop-shadow(0 0 8px #ff9955);animation:sos .5s steps(2,end) infinite}
   .panel .medals{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
   .panel .medal{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font-size:10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);box-shadow:0 0 4px rgba(255,255,255,.1)}
   .panel .medal.fb{background:rgba(255,60,92,.25);border-color:#ff3c5c}

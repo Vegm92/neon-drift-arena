@@ -324,7 +324,7 @@ let mkPanel (hud: HTMLElement) i =
     el.className <- sprintf "panel p%d off" i
     el.innerHTML <-
         sprintf
-            "<div class=\"name\" style=\"color:#%06x\">%s</div><div class=\"bar hp\"><i></i></div><div class=\"bar shield\"><i></i></div><div class=\"bar boost\"><i></i></div><div class=\"bar heat\"><i></i></div><div class=\"stocks\"></div><div class=\"wep\"></div><div class=\"medals\"></div>"
+            "<div class=\"p-header\"><span class=\"name\" style=\"color:#%06x\">%s</span><span class=\"status-tag\">[ OK ]</span></div><div class=\"bar hp\"><i></i></div><div class=\"bar shield\"><i></i></div><div class=\"bar boost\"><i></i></div><div class=\"bar heat\"><i></i></div><div class=\"stocks\"></div><div class=\"wep\"></div><div class=\"medals\"></div>"
             colors.[i]
             (Strings.t.Player i)
     hud.appendChild el |> ignore
