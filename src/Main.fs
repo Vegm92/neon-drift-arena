@@ -158,8 +158,8 @@ let private statRow winner pos (s: Ship) =
         s.Rings
         pips
 
-let private awardRow slot label text =
-    sprintf "<div class=\"award\" style=\"color:#%06x\"><b>%s</b><span>%s</span></div>" RenderTypes.colors.[slot] label text
+let private awardRow (s: Ship) label text =
+    sprintf "<div class=\"award\" style=\"color:#%06x\"><b>%s</b><span>%s</span></div>" (RenderTypes.shipColor s) label text
 
 let private stats (w: World) =
     let act = w.Ships |> Array.filter (fun s -> s.Active)
@@ -173,17 +173,17 @@ let private stats (w: World) =
         |> String.concat ""
     let awards = ResizeArray()
     match act |> Array.sortByDescending (fun s -> s.Kills) |> Array.tryHead with
-    | Some s when s.Kills > 0 -> awards.Add(awardRow 0 Strings.t.AwardKills (Strings.t.MostKills (name s.Id) s.Kills))
+    | Some s when s.Kills > 0 -> awards.Add(awardRow s Strings.t.AwardKills (Strings.t.MostKills (name s.Id) s.Kills))
     | _ -> ()
     let aim = act |> Array.filter (fun s -> s.Shots >= 5) |> Array.sortByDescending accuracy |> Array.tryHead
     match aim with
-    | Some s -> awards.Add(awardRow 1 Strings.t.AwardAim (Strings.t.BestAim (name s.Id) (accuracy s)))
+    | Some s -> awards.Add(awardRow s Strings.t.AwardAim (Strings.t.BestAim (name s.Id) (accuracy s)))
     | None -> ()
     match act |> Array.sortByDescending (fun s -> s.Rings) |> Array.tryHead with
-    | Some s when s.Rings > 0 -> awards.Add(awardRow 2 Strings.t.AwardRings (Strings.t.MostRings (name s.Id) s.Rings))
+    | Some s when s.Rings > 0 -> awards.Add(awardRow s Strings.t.AwardRings (Strings.t.MostRings (name s.Id) s.Rings))
     | _ -> ()
     match act |> Array.tryFind (fun s -> s.Grabs = 0) with
-    | Some s -> awards.Add(awardRow 3 Strings.t.AwardCrates (Strings.t.NoCrates(name s.Id)))
+    | Some s -> awards.Add(awardRow s Strings.t.AwardCrates (Strings.t.NoCrates(name s.Id)))
     | None -> ()
     let head =
         sprintf
