@@ -22,11 +22,9 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 const MODELS = [
-  ["phantom plain", "/models/phantom-plain.glb"], ["phantom tex", "/models/phantom-tex.glb"],
-  ["shadow plain", "/models/shadow-plain.glb"], ["shadow tex", "/models/shadow-tex.glb"],
-  ["star-a plain", "/models/star-a-plain.glb"], ["star-a tex", "/models/star-a-tex.glb"],
-  ["star-b plain", "/models/star-b-plain.glb"], ["star-b tex", "/models/star-b-tex.glb"],
-  ["star-c tex", "/models/star-c-tex.glb"],
+  ["phantom", "/models/phantom.glb"], ["shadow", "/models/shadow.glb"],
+  ["star-a", "/models/star-a.glb"], ["star-b", "/models/star-b.glb"],
+  ["star-c", "/models/star-c.glb"],
 ];
 const ACTS = ["idle", "thrust", "bank", "shoot", "damaged", "explode"];
 const TEAM = [0x00f6ff, 0xff2bd6, 0x7cff3a, 0xffb300, 0xff6a00];
@@ -79,7 +77,7 @@ function tint() {
 
 function load(url) {
   ship.clear();
-  plain = url.includes("-plain");
+  plain = false;
   loader.load(url, g => {
     const box = new THREE.Box3().setFromObject(g.scene);
     const size = box.getSize(new THREE.Vector3());
