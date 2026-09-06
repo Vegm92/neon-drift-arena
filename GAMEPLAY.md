@@ -75,6 +75,28 @@ Four weapon crates sit in the arena at all times, one per quadrant. Grabbing one
 | ZAPPER | Two shots of electrical discharge: a forward cone reaching half a blaster shot that knocks out every enemy in it for 1 s and chips 12 HP. |
 | TRACTOR | Two charges. Hold RB to charge like the railgun; a faint bubble shows the reach (half a blaster shot). On full charge it latches the thing you are facing, enemy ships first, then asteroids. A ship gets dragged toward you for 1.4 s so you can ram it; a rock reels you in instead. |
 
+## Medals
+
+Medals appear as an icon on your HUD panel during the match and as an icon, code and count on the results screen. The first five are shouted by the announcer as you earn them.
+
+| Icon | Medal | Earned by |
+|------|-------|-----------|
+| 💥 | RAMMER (`RM`) | Killing an enemy by colliding with them. |
+| 🌀 | VOID (`VD`) | Knocking an enemy out of the arena. |
+| 🕳️ | EVENT HORIZON (`EH`) | An enemy you last hit dies in a black hole. |
+| 🛸 | ABDUCTOR (`AB`) | Killing an enemy you had latched with the tractor. |
+| 👻 | FROM THE GRAVE (`GR`) | Killing an enemy with a boulder after you are eliminated. |
+| 🩸 | FIRST BLOOD (`FB`) | The first kill of the match. |
+| ⚔️ | DOUBLE KILL (`DK`) | Two kills inside 4 s. |
+| ⚡ | TRIPLE KILL (`TK`) | Three or more kills inside 4 s. |
+| 🎯 | RAILED DOWN (`RD`) | A railgun kill. |
+| 🔥 | ON FIRE (`OF`) | A third kill without dying. |
+| 👁️ | DEADEYE (`DE`) | Finishing at 60% accuracy or better over at least 10 shots. |
+| 🛡️ | FLAWLESS (`FL`) | Winning without losing a stock. |
+| 📦 | SCAVENGER (`SC`) | Grabbing five crates in a match. |
+
+DEADEYE, FLAWLESS and SCAVENGER are awarded on the results screen only.
+
 ## Race mode
 
 MODE → RACE turns the ARENA row into a track picker - GRAND PRIX (a full-width circuit with a dozen corners), HAIRPIN (two tight right-handers and an S between two long straights) and INFINITY (a figure of eight that crosses itself in the middle) - and RANDOM rolls among tracks. The intro fly-by follows the road instead of the spawn rings. Tracks sit in a bigger arena than the battles (1800 half-width against 1350) and the road is smoothed through every corner, drawn as a ribbon of two neon edges with a yellow start line; every few bends a violet portal ring sits on the road as a checkpoint, the finish ring is yellow. You must fly through the portals in order, so cutting the infield gains nothing; the rings you have to take next glow, and when nothing is threatening you the arc around your ship turns violet and points at your next portal. The panel shows `LAP n/3` instead of stocks and the clock counts up. The blaster is off - RACE is about piloting, not shooting - and crates only hand out ZAPPER, CONTACT MINES (a race-only variant: the mine sits still where you drop it and blasts the first enemy that touches it) and a single MISSILE (the race-only seeker: it flies straight, no homing); any hit that would hurt stuns for a second instead, so hulls never drop and the only way to wreck is to leave the arena. Nobody loses stocks: a wreck respawns after 3 s at the last checkpoint you crossed, facing the next one. No match clock, no sudden death, no wormholes or black holes. Crossing the start line after the last lap parks the ship, shouts its place and starts a 20 s grace period; the race ends when everyone is in or the grace runs out, and the first across the line wins. `laps`, `gateRadius` and `raceGrace` live in SETTINGS > TUNING (`?dev=1`).

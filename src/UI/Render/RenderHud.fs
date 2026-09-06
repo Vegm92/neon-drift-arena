@@ -111,6 +111,11 @@ let drawHud (vw: View) (w: World) dt =
             if s.TripleKillMedals > 0 then m.Add("<span class=\"medal tk\" title=\"Triple Kill, ACE! ⚡\">⚡</span>")
             if s.RailKillMedals > 0 then m.Add("<span class=\"medal rk\" title=\"Railed Down! 🎯\">🎯</span>")
             if s.RamKillMedals > 0 then m.Add(sprintf "<span class=\"medal rm\" title=\"%s 💥\">💥</span>" Strings.t.RamKillMedal)
+            if s.OnFireMedals > 0 then m.Add(sprintf "<span class=\"medal of\" title=\"%s 🔥\">🔥</span>" Strings.t.OnFireMedal)
+            if s.VoidMedals > 0 then m.Add(sprintf "<span class=\"medal vd\" title=\"%s 🌀\">🌀</span>" Strings.t.VoidMedal)
+            if s.HoleMedals > 0 then m.Add(sprintf "<span class=\"medal eh\" title=\"%s 🕳️\">🕳️</span>" Strings.t.HoleMedal)
+            if s.AbductMedals > 0 then m.Add(sprintf "<span class=\"medal ab\" title=\"%s 🛸\">🛸</span>" Strings.t.AbductMedal)
+            if s.GraveMedals > 0 then m.Add(sprintf "<span class=\"medal gr\" title=\"%s 👻\">👻</span>" Strings.t.GraveMedal)
             String.concat "" m
         if medals?dataset?html <> mHtml then
             medals?dataset?html <- mHtml

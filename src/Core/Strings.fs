@@ -94,6 +94,18 @@ type Locale =
       DoubleKill: string
       RamKill: string
       RamKillMedal: string
+      VoidKill: string
+      VoidMedal: string
+      HoleKill: string
+      HoleMedal: string
+      AbductKill: string
+      AbductMedal: string
+      GraveKill: string
+      GraveMedal: string
+      OnFireMedal: string
+      Deadeye: string
+      Flawless: string
+      Scavenger: string
       RingOut: string
       LastStock: string -> string
       OnFire: string -> string
@@ -280,6 +292,18 @@ let en =
       DoubleKill = "DOUBLE KILL"
       RamKill = "RAMMED!"
       RamKillMedal = "RAMMER"
+      VoidKill = "VOIDED!"
+      VoidMedal = "VOID"
+      HoleKill = "EVENT HORIZON!"
+      HoleMedal = "EVENT HORIZON"
+      AbductKill = "ABDUCTED!"
+      AbductMedal = "ABDUCTOR"
+      GraveKill = "FROM THE GRAVE!"
+      GraveMedal = "FROM THE GRAVE"
+      OnFireMedal = "ON FIRE"
+      Deadeye = "DEADEYE"
+      Flawless = "FLAWLESS"
+      Scavenger = "SCAVENGER"
       RingOut = "RING OUT"
       LastStock = sprintf "%s ON LAST STOCK"
       OnFire = sprintf "%s IS ON FIRE"

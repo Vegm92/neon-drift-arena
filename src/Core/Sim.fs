@@ -143,7 +143,7 @@ let step dt (inputs: Input[]) (w: World) =
         let kills = deaths |> Array.toList |> List.choose id
         let mutable medalEvents = []
         let mutable hasFirstBlood = ships |> Array.exists (fun s -> s.FirstBloodMedal > 0)
-        for (_, victim, _, by, wpn) in kills do
+        for (_, victim, ring, by, wpn) in kills do
             if by >= 0 && by <> victim then
                 let s = ships.[by]
                 let isRail = (wpn = Rail)
@@ -177,6 +177,21 @@ let step dt (inputs: Input[]) (w: World) =
 
                 let rmIncrement = if isRam then 1 else 0
                 if rmIncrement > 0 then medalEvents <- Medal(by, "ramkill") :: medalEvents
+
+                let vdIncrement = if ring then 1 else 0
+                if vdIncrement > 0 then medalEvents <- Medal(by, "voidkill") :: medalEvents
+
+                let ehIncrement = if wpn = Singularity then 1 else 0
+                if ehIncrement > 0 then medalEvents <- Medal(by, "holekill") :: medalEvents
+
+                let abIncrement = if wpn = Tractor then 1 else 0
+                if abIncrement > 0 then medalEvents <- Medal(by, "abductkill") :: medalEvents
+
+                let grIncrement = if wpn = Rock then 1 else 0
+                if grIncrement > 0 then medalEvents <- Medal(by, "gravekill") :: medalEvents
+
+                let ofIncrement = if s.Streak + 1 = 3 then 1 else 0
+                if ofIncrement > 0 then medalEvents <- Medal(by, "onfire") :: medalEvents
                 
                 ships.[by] <-
                     { s with
@@ -187,6 +202,11 @@ let step dt (inputs: Input[]) (w: World) =
                         TripleKillMedals = s.TripleKillMedals + tkIncrement
                         RailKillMedals = s.RailKillMedals + rkIncrement
                         RamKillMedals = s.RamKillMedals + rmIncrement
+                        OnFireMedals = s.OnFireMedals + ofIncrement
+                        VoidMedals = s.VoidMedals + vdIncrement
+                        HoleMedals = s.HoleMedals + ehIncrement
+                        AbductMedals = s.AbductMedals + abIncrement
+                        GraveMedals = s.GraveMedals + grIncrement
                         LastKillTime = w.Time
                         MultiKillCount = nextMulti }
         { Ships = ships
