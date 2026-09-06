@@ -76,6 +76,7 @@ let drawHud (vw: View) (w: World) dt =
                 (if s.Active then "" else " off")
                 (if Sim.hurting s then " hurt" else "")
                 (if s.Locked > 0. then " cooked" else "")
+        el?style?color <- sprintf "#%06x" (shipColor s)
         el.querySelector(".name")?textContent <- vw.Names.[i]
         el.querySelector(".name")?style?color <- sprintf "#%06x" (shipColor s)
         el.querySelector(".hp i")?style?width <- sprintf "%.0f%%" (max 0. s.Hp / hpMax * 100.)
