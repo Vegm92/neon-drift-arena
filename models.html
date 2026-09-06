@@ -15,16 +15,17 @@ button.on{background:#0f3;color:#000}
 <div id="ui"></div>
 <div id="acts"></div>
 <div id="cols"></div>
-<div id="info">drag = orbit · wheel = zoom</div>
+<div id="info"><button id="top">TOP VIEW</button><br>drag = orbit · wheel = zoom</div>
 <script type="module">
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 const MODELS = [
-  ["phantom", "/models/phantom.glb"], ["shadow", "/models/shadow.glb"],
-  ["star-a", "/models/star-a.glb"], ["star-b", "/models/star-b.glb"],
-  ["star-c", "/models/star-c.glb"],
+  ["phantom", "/models/phantom.glb", 0],
+  ["shadow", "/models/shadow.glb", -Math.PI / 2],
+  ["star-a", "/models/star-a.glb", -Math.PI / 2],
+  ["star-b", "/models/star-b.glb", -Math.PI / 2],
 ];
 const ACTS = ["idle", "thrust", "bank", "shoot", "damaged", "explode"];
 const TEAM = [0x00f6ff, 0xff2bd6, 0x7cff3a, 0xffb300, 0xff6a00];
@@ -48,8 +49,10 @@ const ship = new THREE.Group(); rig.add(ship);
 let radius = 1;
 
 const glow = (c, o) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, blending: THREE.AdditiveBlending, depthWrite: false });
-const thruster = new THREE.Mesh(new THREE.ConeGeometry(0.18, 1, 12), glow(0x00f6ff, 0.9));
-thruster.rotation.x = Math.PI / 2; rig.add(thruster);
+const jets = [0, 1].map(() => {
+  const m = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.9, 12), glow(0x00f6ff, 0.9));
+  m.rotation.x = -Math.PI / 2; rig.add(m); return m;
+});
 const bullets = [];
 const bulletGeo = new THREE.SphereGeometry(0.06, 8, 8);
 const bulletMat = glow(0xffe066, 1);
@@ -75,19 +78,21 @@ function tint() {
   });
 }
 
-function load(url) {
+function load(url, yaw) {
   ship.clear();
   plain = false;
   loader.load(url, g => {
+    g.scene.rotation.y = yaw;
     const box = new THREE.Box3().setFromObject(g.scene);
     const size = box.getSize(new THREE.Vector3());
-    const s = 2 / Math.max(size.x, size.y, size.z);
-    g.scene.scale.setScalar(s);
-    const c = box.getCenter(new THREE.Vector3()).multiplyScalar(-s);
-    g.scene.position.copy(c);
-    ship.add(g.scene);
-    radius = Math.max(size.x, size.y, size.z) * s * 0.5;
-    thruster.position.set(0, 0, radius + 0.5);
+    const s = 2 / size.z;
+    const holder = new THREE.Group();
+    holder.scale.setScalar(s);
+    holder.position.copy(box.getCenter(new THREE.Vector3()).multiplyScalar(-s));
+    holder.add(g.scene);
+    ship.add(holder);
+    radius = size.x * s * 0.5;
+    jets.forEach((j, i) => j.position.set((i ? 1 : -1) * radius * 0.3, 0, 1.22));
     tint();
   }, undefined, e => console.error(e));
 }
@@ -102,10 +107,10 @@ function burst() {
 }
 
 const ui = document.getElementById("ui"), acts = document.getElementById("acts");
-MODELS.forEach(([name, url], i) => {
+MODELS.forEach(([name, url, yaw], i) => {
   const b = document.createElement("button");
   b.textContent = name; b.onclick = () => {
-    [...ui.children].forEach(x => x.classList.remove("on")); b.classList.add("on"); load(url);
+    [...ui.children].forEach(x => x.classList.remove("on")); b.classList.add("on"); load(url, yaw);
   };
   if (i === 0) b.classList.add("on");
   ui.append(b);
@@ -126,25 +131,31 @@ TEAM.forEach((c, i) => {
   b.style.background = "#" + c.toString(16).padStart(6, "0");
   b.onclick = () => {
     [...cols.children].forEach(x => x.classList.remove("on")); b.classList.add("on");
-    team = c; thruster.material.color.setHex(c); tint();
+    team = c; jets.forEach(j => j.material.color.setHex(c)); tint();
   };
   if (i === 0) b.classList.add("on");
   cols.append(b);
 });
-load(MODELS[0][1]);
+load(MODELS[0][1], MODELS[0][2]);
+document.getElementById("top").onclick = () => {
+  cam.position.set(0, 5, 0.001); ctl.target.set(0, 0, 0); ctl.update();
+};
+window.V = { THREE, cam, ctl, rig, ship, load, MODELS };
 
 const clock = new THREE.Clock();
 function frame() {
   const dt = Math.min(clock.getDelta(), 0.05); t += dt;
   rig.rotation.set(0, 0, 0); rig.position.set(0, 0, 0);
-  thruster.visible = false; ship.traverse(o => { if (o.material) o.material.opacity ??= 1; });
+  jets.forEach(j => j.visible = false); ship.traverse(o => { if (o.material) o.material.opacity ??= 1; });
 
   if (act === "idle") rig.rotation.y = t * 0.5;
   if (act === "thrust") {
     rig.rotation.y = t * 0.5;
-    thruster.visible = true;
-    thruster.scale.set(1, 1 + Math.sin(t * 30) * 0.25, 1);
-    thruster.material.opacity = 0.7 + Math.random() * 0.3;
+    jets.forEach(j => {
+      j.visible = true;
+      j.scale.set(1, 1 + Math.sin(t * 30) * 0.25, 1);
+      j.material.opacity = 0.7 + Math.random() * 0.3;
+    });
   }
   if (act === "bank") { rig.rotation.y = t * 0.8; rig.rotation.z = Math.sin(t * 1.2) * 0.9; }
   if (act === "shoot") {
