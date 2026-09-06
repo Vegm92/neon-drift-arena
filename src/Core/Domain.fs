@@ -100,6 +100,10 @@ module Cfg =
     let introTime = 5.
     let victoryTime = 5.
     let victoryCamH = 220.
+    // Ships still in the match at or below which the camera may frame tighter.
+    let duelShips = 2
+    // Fraction of the normal minimum camera height used once duelShips remain.
+    let duelCamFactor = 0.6
     let seriesTo = 5
     let mutable rockSpeed = 300.
     let mutable rockRadius = 20.
