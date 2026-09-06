@@ -189,13 +189,22 @@ let main _ =
          && cratePositions |> Array.contains grab.Crates.[0].Pos
          && (grab.Crates |> Array.distinctBy (fun c -> c.Pos)).Length = 4)
 
-    let railed =
+    let charging =
         w0 |> place 0 zero 0. |> place 1 (v 1000. 0.) 0.
         |> edit 0 (fun s -> { s with Weapon = Rail; Ammo = 2 })
         |> run (int (railCharge / dt) + 2) using
+    check "rail holds at full charge instead of firing itself"
+        (charging.Ships.[0].Charge = railCharge && charging.Ships.[0].Ammo = 2 && charging.Ships.[1].Hp = hpMax)
+    let holdingOn = charging |> run (int (railCharge / dt)) using
+    check "a held charge never overflows" (holdingOn.Ships.[0].Charge = railCharge && holdingOn.Ships.[1].Hp = hpMax)
+    let railed = charging |> run 2 (all present)
     check "rail is a one hit kill" (not railed.Ships.[1].Alive && railed.Ships.[1].Stocks = stocks - 1)
     check "rail spends a charge" (railed.Ships.[0].Ammo = 1)
     check "rail kicks the shooter back" (railed.Ships.[0].Vel.X < -railRecoil * 0.5)
+    let died =
+        charging |> edit 0 (fun s -> { s with Alive = false; RespawnIn = respawnDelay })
+        |> run 2 (all present)
+    check "dying at full charge fires nothing" (died.Ships.[0].Charge = 0. && died.Ships.[0].Ammo = 2)
     let early =
         w0 |> place 0 zero 0. |> place 1 (v 1000. 0.) 0.
         |> edit 0 (fun s -> { s with Weapon = Rail; Ammo = 2 })
