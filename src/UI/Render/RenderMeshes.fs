@@ -72,6 +72,10 @@ let mkShip (scene: Object3D) i =
     let shield = three.Mesh(three.RingGeometry(shipRadius + 5., shipRadius + 9., 6) |> flat, glowMat 0x3b8cff 0.9)
     shield.visible <- false
     root.add shield
+    let vent = three.Mesh(three.RingGeometry(shipRadius + 3., shipRadius + 6., ventSegments) |> flat, glowMat 0xffffff 0.9)
+    vent.position.y <- 3.
+    vent.visible <- false
+    scene.add vent
     let warn = three.Mesh(three.Arc(shipRadius + 15., shipRadius + 19., 20, -0.65, 1.3) |> flat, glowMat 0xff3b5c 0.8)
     warn.position.y <- 3.
     warn.visible <- false
@@ -87,6 +91,7 @@ let mkShip (scene: Object3D) i =
     scene.add root
     scene.add trail
     { Shield = shield
+      Vent = vent
       Root = root
       Body = body
       Flame = flame

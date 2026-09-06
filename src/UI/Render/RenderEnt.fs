@@ -32,6 +32,17 @@ let drawShip t (vw: View) (sv: ShipView) (s: Ship) =
     let launcher = Sim.launcher s
     sv.Root.visible <- s.Alive
     sv.Mark.visible <- launcher
+    sv.Vent.visible <- s.Alive && s.Heat > 0.001
+    if sv.Vent.visible then
+        let h = min 1. (s.Heat / heatMax)
+        let c = 43 + int (212. * h)
+        sv.Vent.position.set (s.Pos.X, 3., s.Pos.Y)
+        sv.Vent.geometry.setDrawRange (0, int (float ventSegments * h) * 6)
+        sv.Vent.material.color.setHex (0xff0000 ||| (c <<< 8) ||| c)
+        sv.Vent.material.opacity <- (if s.Locked > 0. then 0.7 + 0.3 * sin (t * 16.) else 0.3)
+        if s.Locked > 0. && rnd.NextDouble() < 0.35 then
+            let n = ofAngle (s.Angle + (if rnd.NextDouble() < 0.5 then 1. else -1.) * Math.PI / 2.)
+            spawnCone vw (s.Pos + n * (shipRadius + 2.)) 0xffc0a0 1 70. (atan2 n.Y n.X) 0.35 6.
     if launcher then
         let k = 2.5 * vw.CamH / maxCamH ()
         sv.Mark.position.set (s.Pos.X, 3., s.Pos.Y)
