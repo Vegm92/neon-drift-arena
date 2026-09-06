@@ -5,6 +5,7 @@ bin/
 obj/
 .fable/
 CONTEXT.md
+CLAUDE.md
 REFERENCES.md
 PRD.md
 .claude/
@@ -13,4 +14,3 @@ PRD.md
 
 qa/screenshots/
 qa/sweep.json
-
