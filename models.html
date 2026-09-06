@@ -21,7 +21,7 @@ button.on{background:#0f3;color:#000}
 <div id="acts"></div>
 <div id="cols"></div>
 <div id="tune"></div>
-<div id="info"><button id="top">TOP VIEW</button><br>drag = orbit · wheel = zoom</div>
+<div id="info"><button id="top">TOP VIEW</button> <button id="spin" class="on">SPIN</button><br>drag = orbit · wheel = zoom</div>
 <script type="module">
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -148,6 +148,9 @@ TEAM.forEach((c, i) => {
   cols.append(b);
 });
 load(MODELS[0][1], MODELS[0][2]);
+let spin = true;
+const spinBtn = document.getElementById("spin");
+spinBtn.onclick = () => { spin = !spin; spinBtn.classList.toggle("on", spin); };
 document.getElementById("top").onclick = () => {
   cam.position.set(0, 5, 0.001); ctl.target.set(0, 0, 0); ctl.update();
 };
@@ -187,6 +190,9 @@ function frame() {
   if (act === "bank") { rig.rotation.y = t * 0.8; rig.rotation.z = Math.sin(t * 1.2) * 0.9; }
   if (act === "shoot") {
     rig.rotation.y = Math.sin(t * 0.4) * 0.6;
+  }
+  if (!spin) rig.rotation.y = 0;
+  if (act === "shoot") {
     if (t - shotAt > P.fireRate) {
       shotAt = t;
       for (const s of [-radius * P.muzzleX, radius * P.muzzleX]) {
