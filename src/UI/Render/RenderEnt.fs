@@ -26,6 +26,7 @@ let drawTether t (w: World) (sv: ShipView) (s: Ship) =
         sv.Tether.rotation.y <- -(atan2 d.Y d.X)
         sv.Tether.scale.set (len d, 1., 1.)
         sv.Tether.material.opacity <- 0.5 + 0.3 * sin (t * 25.)
+        sv.Tether.material.color.setHex (shipColor s)
     | None -> ()
 
 let drawShip t (vw: View) (sv: ShipView) (s: Ship) =
@@ -60,6 +61,9 @@ let drawShip t (vw: View) (sv: ShipView) (s: Ship) =
         sv.Retro.visible <- s.Reversing
         let r = 0.8 + 0.3 * sin (t * 50.)
         sv.Retro.scale.set (r, 1., r)
+        if s.Reversing then
+            for c in sv.Retro.children do
+                c?material?color?setHex (shipColor s)
         let railing = s.Weapon = Rail && s.Charge > 0.
         sv.Coil.visible <- railing
         sv.Laser.visible <- railing
@@ -67,6 +71,7 @@ let drawShip t (vw: View) (sv: ShipView) (s: Ship) =
         if sv.Bubble.visible then
             sv.Bubble.scale.set (tractorRange, 1., tractorRange)
             sv.Bubble.material.opacity <- 0.06 + 0.14 * min 1. (s.Charge / railCharge)
+            sv.Bubble.material.color.setHex (shipColor s)
         if railing then
             let c = min 1. (s.Charge / railCharge)
             sv.Laser.material.color.setHex (shipColor s)
@@ -85,6 +90,7 @@ let drawShip t (vw: View) (sv: ShipView) (s: Ship) =
         sv.Body.material?map?offset?set (cx / fst sheet, 1. - (cy + snd cell) / snd sheet)
         sv.Flame.material.color.setHex (shipColor s)
         sv.Trail.material.opacity <- min 1. (0.55 + 0.18 * float s.Streak)
+        sv.Trail.material.color.setHex (shipColor s)
         sv.History.Insert(0, s.Pos)
         if sv.History.Count > trailLen then sv.History.RemoveAt(sv.History.Count - 1)
     else

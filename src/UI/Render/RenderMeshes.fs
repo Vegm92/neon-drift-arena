@@ -18,22 +18,13 @@ let private shipSheet =
 
 let private shipGeometry = lazy (three.PlaneGeometry(64., 54.).rotateZ (-Math.PI / 2.) |> flat)
 
-let private rgb hex =
-    float ((hex >>> 16) &&& 0xff) / 255., float ((hex >>> 8) &&& 0xff) / 255., float (hex &&& 0xff) / 255.
-
-let mkTrail hex =
+let mkTrail () =
     let g = three.BufferGeometry()
     g.setAttribute ("position", three.Float32BufferAttribute(Array.zeroCreate (trailLen * 3), 3))
-    let r, gr, b = rgb hex
     let cols =
         Array.init (trailLen * 3) (fun i ->
             let f = 1. - float (i / 3) / float (trailLen - 1)
-            (match i % 3 with
-             | 0 -> r
-             | 1 -> gr
-             | _ -> b)
-            * f
-            * f)
+            f * f)
     g.setAttribute ("color", three.Float32BufferAttribute(cols, 3))
     g.setDrawRange (0, 0)
     three.Line(
@@ -84,7 +75,7 @@ let mkShip (scene: Object3D) i =
     mark.position.y <- 3.
     mark.visible <- false
     scene.add mark
-    let trail = mkTrail hex
+    let trail = mkTrail ()
     let tether = three.Mesh(three.PlaneGeometry(1., 4.) |> flat, glowMat hex 0.7)
     tether.visible <- false
     scene.add tether
@@ -236,7 +227,7 @@ let mkFrame (scene: Object3D) =
     let spawns =
         Array.init 4 (fun i ->
             let p = Sim.spawnPos i
-            let m = three.Mesh(three.RingGeometry(120., 124., 8) |> flat, glowMat colors.[i] 0.5)
+            let m = three.Mesh(three.RingGeometry(120., 124., 8) |> flat, glowMat colors.[playerColor.[i]] 0.5)
             m.position.set (p.X, -0.5, p.Y)
             m.rotation.z <- Math.PI / 8.
             frame.add m
@@ -325,7 +316,7 @@ let mkPanel (hud: HTMLElement) i =
     el.innerHTML <-
         sprintf
             "<div class=\"p-header\"><span class=\"name\" style=\"color:#%06x\">P%d</span><div class=\"stocks\"></div></div><div class=\"p-body\"><div class=\"col\"><div class=\"bar-label\">HP</div><div class=\"bar hp\"><i></i></div><div class=\"bar-label\">BOOST</div><div class=\"bar boost\"><i></i></div></div><div class=\"col\"><div class=\"bar-label\">SHIELD</div><div class=\"bar shield\"><i></i></div><div class=\"bar-label\">HEAT</div><div class=\"bar heat\"><i></i></div></div></div><div class=\"p-footer\"><div class=\"wep\"></div><div class=\"medals\"></div></div>"
-            colors.[i]
+            colors.[playerColor.[i]]
             (i + 1)
     hud.appendChild el |> ignore
     el
