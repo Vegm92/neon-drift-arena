@@ -338,7 +338,8 @@ let play (events: Event list) =
                 if shots < 2 then
                     shots <- shots + 1
                     shot p
-            | Hit(p, _, _) -> hit p
+            | Hit(p, _, _, _) -> hit p
+            | Medal _ -> ()
             | Ram p -> ram p
             | Bump p ->
                 if bumps < 2 then

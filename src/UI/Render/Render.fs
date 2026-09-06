@@ -88,7 +88,8 @@ let syncArena = RenderMeshes.syncArena
 let draw (vw: View) (w: World) (events: Event list) dt =
     for e in events do
         match e with
-        | Hit(p, _, _) -> spawnBurst vw p 0xffffff 10 160.
+        | Hit(p, _, _, _) -> spawnBurst vw p 0xffffff 10 160.
+        | Medal _ -> ()
         | Ram p -> spawnBurst vw p 0xffffff 16 200.
         | Bump p -> spawnBurst vw p 0xff9955 8 130.
         | Pickup(p, big) -> spawnBurst vw p 0x33ffcc (if big then 26 else 14) 150.

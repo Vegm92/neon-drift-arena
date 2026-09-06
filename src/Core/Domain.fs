@@ -428,7 +428,13 @@ type Ship =
       Hits: int
       Grabs: int
       Rings: int
-      Kills: int }
+      Kills: int
+      FirstBloodMedal: int
+      DoubleKillMedals: int
+      TripleKillMedals: int
+      RailKillMedals: int
+      LastKillTime: float
+      MultiKillCount: int }
 
 type Bullet =
     { Owner: int
@@ -470,9 +476,10 @@ type Phase =
     | Over of winner: int option
 
 type Event =
-    | Hit of V2 * string * float
+    | Hit of V2 * string * float * int
     | Explode of V2 * int * bool
     | Downed of int * int * Weapon * bool
+    | Medal of int * string
     | Shot of V2
     | Ram of V2
     | Bump of V2

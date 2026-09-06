@@ -155,7 +155,7 @@ let resolveBeams (ships: Ship[]) beams =
         let dir = norm (b - a)
         for i in 0 .. s.Length - 1 do
             if s.[i].Alive && side s.[i] <> side s.[owner] && segDist a b s.[i].Pos < shipRadius + 6. then
-                events.Add(Hit(s.[i].Pos, "Rail", railDamage))
+                events.Add(Hit(s.[i].Pos, "Rail", railDamage, i))
                 if s.[i].Invuln <= 0. then
                     s.[owner] <- { s.[owner] with Hits = s.[owner].Hits + 1 }
                 s.[i] <- { s.[i] with Vel = s.[i].Vel + dir * bulletKnockback } |> tag owner Rail |> damage railDamage
@@ -187,7 +187,7 @@ let resolveZaps (ships: Ship[]) zaps =
         for i in 0 .. s.Length - 1 do
             match inCone s p a scatterRange scatterCone owner i with
             | Some _ ->
-                events.Add(Hit(s.[i].Pos, "Scatter", scatterDamage))
+                events.Add(Hit(s.[i].Pos, "Scatter", scatterDamage, i))
                 if s.[i].Invuln <= 0. then
                     s.[owner] <- { s.[owner] with Hits = s.[owner].Hits + 1 }
                 s.[i] <- { s.[i] with Stun = max s.[i].Stun scatterStun; Thrusting = 0. } |> tag owner Scatter |> damage scatterDamage
@@ -276,6 +276,6 @@ let resolveBlasts (ships: Ship[]) blasts =
                 let f = 1. - dist / mineBlast
                 let dmg = mineDamage * f
                 if dmg > 0. then
-                    events.Add(Hit(s.[i].Pos, "Mines", dmg))
+                    events.Add(Hit(s.[i].Pos, "Mines", dmg, i))
                 s.[i] <- { s.[i] with Vel = s.[i].Vel + norm d * (pulseForce * f) } |> tag owner Mines |> damage dmg
     s, List.ofSeq events
