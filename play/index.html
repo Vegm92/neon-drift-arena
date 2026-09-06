@@ -15,7 +15,7 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   canvas{display:block}
   #hud{position:fixed;inset:0;pointer-events:none}
-  .panel{position:absolute;width:320px;opacity:.95;border:1.5px solid currentColor;border-radius:0;
+  .panel{position:absolute;width:180px;opacity:.95;border:1.5px solid currentColor;border-radius:0;
     padding:11px 16px;background:linear-gradient(rgba(10,14,10,0.95),rgba(4,6,4,0.92));
     background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.2) 2px,rgba(0,0,0,0.2) 4px);
     box-shadow:0 0 20px rgba(0,0,0,0.8);font-family:"JetBrains Mono","Space Mono",monospace;box-sizing:border-box;
@@ -26,8 +26,7 @@
   .name{font-size:17px;font-weight:700;letter-spacing:.05em;text-shadow:0 0 8px currentColor;margin-bottom:0}
   .stocks{display:flex;gap:5px;align-items:center;height:18px;color:inherit}
   .stock-icon{width:15px;height:15px;color:inherit;filter:drop-shadow(0 0 4px currentColor)}
-  .p-body{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:2px}
-  .p-body .col{display:flex;flex-direction:column;gap:4px}
+  .p-body{display:flex;flex-direction:column;gap:4px;margin-bottom:2px}
   .bar-label{font-size:11px;font-weight:700;letter-spacing:0.05em;color:#8fa0b5;text-transform:uppercase}
   .bar{height:8px;background:rgba(255,255,255,.07);border-radius:0;overflow:hidden;border:1px solid rgba(255,255,255,0.05)}
   .bar i{display:block;height:100%;width:100%;border-radius:0;transition:width .08s linear;
@@ -40,7 +39,7 @@
   .panel.hurt .name{animation:sos .7s steps(2,end) infinite}
   .panel.cooked .heat i{color:#fff45c;box-shadow:0 0 12px #fff45c}
   @keyframes sos{0%,100%{opacity:1}50%{opacity:.35}}
-  .p-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px dashed rgba(255,255,255,0.1);padding-top:6px;margin-top:2px}
+  .p-footer{display:flex;flex-direction:column;gap:8px;border-top:1px dashed rgba(255,255,255,0.1);padding-top:6px;margin-top:2px}
   .wep{display:flex;align-items:center;gap:8px;height:26px}
   .wep svg{width:24px;height:26px;color:#cfe;filter:drop-shadow(0 0 6px #cfe)}
   .wep .ammo{font-size:12px;letter-spacing:.15em;color:#fff45c;text-shadow:0 0 6px #fff45c}
