@@ -137,12 +137,20 @@ let private statRow winner pos (s: Ship) =
             sprintf "<b>%s</b>" (if s.Finish > 0. then sprintf "%d:%02d.%d" (int s.Finish / 60) (int s.Finish % 60) (int (s.Finish * 10.) % 10) else Strings.t.Dnf)
         else
             String.concat "" [ for k in 1 .. Cfg.stocks -> if k <= s.Stocks then "<i></i>" else "<i class=\"gone\"></i>" ]
+    let medalsHtml =
+        let m = ResizeArray()
+        if s.FirstBloodMedal > 0 then m.Add("<span class=\"medal fb\" title=\"First Blood!\">🩸 FB</span>")
+        if s.DoubleKillMedals > 0 then m.Add(sprintf "<span class=\"medal dk\" title=\"Double Kills\">⚔️ DK x%d</span>" s.DoubleKillMedals)
+        if s.TripleKillMedals > 0 then m.Add(sprintf "<span class=\"medal tk\" title=\"Triple Kills\">⚡ TK x%d</span>" s.TripleKillMedals)
+        if s.RailKillMedals > 0 then m.Add(sprintf "<span class=\"medal rk\" title=\"Railed Down!\">🎯 RD x%d</span>" s.RailKillMedals)
+        if m.Count > 0 then sprintf "<div class=\"medals\">%s</div>" (String.concat "" m) else ""
     sprintf
-        "<div class=\"line%s\" style=\"color:#%06x\"><div class=\"pos\">%d</div><div class=\"who\"><svg viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linejoin=\"round\"><path d=\"M24 4 41 40 24 32 7 40Z\"/></svg><b>%s</b></div><div class=\"num big\">%d</div><div class=\"acc\"><div class=\"bar\"><i style=\"width:%d%%\"></i></div><span>%d%%</span></div><div class=\"num\">%d</div><div class=\"num\">%d</div><div class=\"stocks\">%s</div></div>"
+        "<div class=\"line%s\" style=\"color:#%06x\"><div class=\"pos\">%d</div><div class=\"who\"><svg viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linejoin=\"round\"><path d=\"M24 4 41 40 24 32 7 40Z\"/></svg><b>%s</b>%s</div><div class=\"num big\">%d</div><div class=\"acc\"><div class=\"bar\"><i style=\"width:%d%%\"></i></div><span>%d%%</span></div><div class=\"num\">%d</div><div class=\"num\">%d</div><div class=\"stocks\">%s</div></div>"
         (if s.Id = winner then " lead" elif s.Stocks = 0 then " out" else "")
         (RenderTypes.shipColor s)
         pos
         (name s.Id)
+        medalsHtml
         s.Kills
         (accuracy s)
         (accuracy s)
@@ -150,8 +158,8 @@ let private statRow winner pos (s: Ship) =
         s.Rings
         pips
 
-let private awardRow slot label text =
-    sprintf "<div class=\"award\" style=\"color:#%06x\"><b>%s</b><span>%s</span></div>" RenderTypes.colors.[slot] label text
+let private awardRow (s: Ship) label text =
+    sprintf "<div class=\"award\" style=\"color:#%06x\"><b>%s</b><span>%s</span></div>" (RenderTypes.shipColor s) label text
 
 let private stats (w: World) =
     let act = w.Ships |> Array.filter (fun s -> s.Active)
@@ -165,17 +173,17 @@ let private stats (w: World) =
         |> String.concat ""
     let awards = ResizeArray()
     match act |> Array.sortByDescending (fun s -> s.Kills) |> Array.tryHead with
-    | Some s when s.Kills > 0 -> awards.Add(awardRow 0 Strings.t.AwardKills (Strings.t.MostKills (name s.Id) s.Kills))
+    | Some s when s.Kills > 0 -> awards.Add(awardRow s Strings.t.AwardKills (Strings.t.MostKills (name s.Id) s.Kills))
     | _ -> ()
     let aim = act |> Array.filter (fun s -> s.Shots >= 5) |> Array.sortByDescending accuracy |> Array.tryHead
     match aim with
-    | Some s -> awards.Add(awardRow 1 Strings.t.AwardAim (Strings.t.BestAim (name s.Id) (accuracy s)))
+    | Some s -> awards.Add(awardRow s Strings.t.AwardAim (Strings.t.BestAim (name s.Id) (accuracy s)))
     | None -> ()
     match act |> Array.sortByDescending (fun s -> s.Rings) |> Array.tryHead with
-    | Some s when s.Rings > 0 -> awards.Add(awardRow 2 Strings.t.AwardRings (Strings.t.MostRings (name s.Id) s.Rings))
+    | Some s when s.Rings > 0 -> awards.Add(awardRow s Strings.t.AwardRings (Strings.t.MostRings (name s.Id) s.Rings))
     | _ -> ()
     match act |> Array.tryFind (fun s -> s.Grabs = 0) with
-    | Some s -> awards.Add(awardRow 3 Strings.t.AwardCrates (Strings.t.NoCrates(name s.Id)))
+    | Some s -> awards.Add(awardRow s Strings.t.AwardCrates (Strings.t.NoCrates(name s.Id)))
     | None -> ()
     let head =
         sprintf
@@ -201,19 +209,22 @@ let private say text =
 let private announce (w: World) (events: Event list) =
     let deaths = events |> List.choose (function Explode(_, i, ring) -> Some(i, ring) | _ -> None)
     let finishes = events |> List.choose (function Finished(i, place) -> Some(i, place) | _ -> None)
+    for e in events do
+        match e with
+        | Medal(i, "firstblood") -> say (sprintf "%s: FIRST BLOOD!" (name i))
+        | Medal(i, "doublekill") -> say (sprintf "%s: DOUBLE KILL!" (name i))
+        | Medal(i, "triplekill") -> say (sprintf "%s: TRIPLE KILL, ACE!" (name i))
+        | Medal(i, "railkill") -> say (sprintf "%s: RAILED DOWN!" (name i))
+        | _ -> ()
     if Sim.sudden w && not suddenSaid then
         suddenSaid <- true
         say Strings.t.SuddenDeath
     elif not finishes.IsEmpty then
         let i, place = finishes.Head
         say (Strings.t.Finish (name i) Strings.t.Places.[place - 1])
-    elif deaths.Length >= 2 then say Strings.t.DoubleKill
     elif not deaths.IsEmpty then
         let i, ring = deaths.Head
-        if not bled then
-            bled <- true
-            say Strings.t.FirstBlood
-        elif ring then
+        if ring then
             say Strings.t.RingOut
     w.Ships
     |> Array.iter (fun s ->
@@ -269,6 +280,7 @@ let private eventOf (e: obj) : Event =
     | "Hit" -> Hit(a 1, a 2, a 3, a 4)
     | "Explode" -> Explode(a 1, a 2, a 3)
     | "Downed" -> Downed(a 1, a 2, weaponOf (a 3), a 4)
+    | "Medal" -> Medal(a 1, a 2)
     | "Shot" -> Shot(a 1)
     | "Ram" -> Ram(a 1)
     | "Bump" -> Bump(a 1)

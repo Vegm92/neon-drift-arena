@@ -76,6 +76,7 @@ let drawHud (vw: View) (w: World) dt =
                 (if s.Active then "" else " off")
                 (if Sim.hurting s then " hurt" else "")
                 (if s.Locked > 0. then " cooked" else "")
+        el?style?color <- sprintf "#%06x" (shipColor s)
         el.querySelector(".name")?textContent <- vw.Names.[i]
         el.querySelector(".name")?style?color <- sprintf "#%06x" (shipColor s)
         el.querySelector(".hp i")?style?width <- sprintf "%.0f%%" (max 0. s.Hp / hpMax * 100.)
@@ -83,15 +84,31 @@ let drawHud (vw: View) (w: World) dt =
         el.querySelector(".boost i")?style?width <- sprintf "%.0f%%" (s.Boost / boostMax * 100.)
         el.querySelector(".heat i")?style?width <- sprintf "%.0f%%" (s.Heat / heatMax * 100.)
         let stocks = el.querySelector ".stocks" :?> HTMLElement
-        stocks.textContent <-
-            if State.race then Strings.t.Lap Strings.t.Places.[Sim.place w.Ships i - 1] (min (int laps) (s.Laps + 1)) (int laps)
-            else String.replicate (max 0 s.Stocks) "◆"
+        let stocksHtml =
+            if State.race then sprintf "<span>%s</span>" (Strings.t.Lap Strings.t.Places.[Sim.place w.Ships i - 1] (min (int laps) (s.Laps + 1)) (int laps))
+            else
+                let shipIcon = "<svg class=\"stock-icon\" viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"4.5\" stroke-linejoin=\"round\"><path d=\"M24 4 L41 40 L24 32 L7 40 Z\"/></svg>"
+                String.concat "" [ for _ in 1 .. max 0 s.Stocks -> shipIcon ]
+        if stocks?dataset?html <> stocksHtml then
+            stocks?dataset?html <- stocksHtml
+            stocks.innerHTML <- stocksHtml
         stocks?style?color <- sprintf "#%06x" (shipColor s)
         let wep = el.querySelector ".wep" :?> HTMLElement
         let html = weaponHtml s
         if wep?dataset?html <> html then
             wep?dataset?html <- html
-            wep.innerHTML <- html)
+            wep.innerHTML <- html
+        let medals = el.querySelector ".medals" :?> HTMLElement
+        let mHtml =
+            let m = ResizeArray()
+            if s.FirstBloodMedal > 0 then m.Add("<span class=\"medal fb\" title=\"First Blood! 🩸\">🩸</span>")
+            if s.DoubleKillMedals > 0 then m.Add("<span class=\"medal dk\" title=\"Double Kill! ⚔️\">⚔️</span>")
+            if s.TripleKillMedals > 0 then m.Add("<span class=\"medal tk\" title=\"Triple Kill, ACE! ⚡\">⚡</span>")
+            if s.RailKillMedals > 0 then m.Add("<span class=\"medal rk\" title=\"Railed Down! 🎯\">🎯</span>")
+            String.concat "" m
+        if medals?dataset?html <> mHtml then
+            medals?dataset?html <- mHtml
+            medals.innerHTML <- mHtml)
 
 let drawTint (vw: View) dt =
     vw.KillCd <- max 0. (vw.KillCd - dt)

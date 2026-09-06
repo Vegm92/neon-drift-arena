@@ -15,25 +15,45 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   canvas{display:block}
   #hud{position:fixed;inset:0;pointer-events:none}
-  .panel{position:absolute;width:120px;opacity:.9}
-  .panel.p0{left:18px;top:14px}.panel.p1{right:18px;top:14px}.panel.p2{left:18px;bottom:14px}.panel.p3{right:18px;bottom:14px}
+  .panel{position:absolute;width:320px;opacity:.95;border:1.5px solid currentColor;border-radius:0;
+    padding:11px 16px;background:linear-gradient(rgba(10,14,10,0.95),rgba(4,6,4,0.92));
+    background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.2) 2px,rgba(0,0,0,0.2) 4px);
+    box-shadow:0 0 20px rgba(0,0,0,0.8);font-family:"JetBrains Mono","Space Mono",monospace;box-sizing:border-box;
+    display:flex;flex-direction:column;gap:10px}
+  .panel.p0{left:20px;top:16px}.panel.p1{right:20px;top:16px}.panel.p2{left:20px;bottom:16px}.panel.p3{right:20px;bottom:16px}
   .panel.off{opacity:.18}
-  .name{font-size:12px;letter-spacing:.25em;margin-bottom:6px;text-shadow:0 0 8px currentColor}
-  .bar{height:3px;background:rgba(255,255,255,.07);margin-bottom:5px;border-radius:2px}
-  .bar i{display:block;height:100%;width:100%;border-radius:2px;transition:width .08s linear}
-  .hp i{background:#ff3b5c;box-shadow:0 0 8px #ff3b5c}
-  .shield i{background:#3b8cff;box-shadow:0 0 8px #3b8cff}
-  .boost i{background:#00f6ff;box-shadow:0 0 8px #00f6ff}
-  .heat i{background:#ff7b2b;box-shadow:0 0 8px #ff7b2b}
+  .p-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid var(--p-color, currentColor);padding-bottom:4px;margin-bottom:4px}
+  .name{font-size:17px;font-weight:700;letter-spacing:.05em;text-shadow:0 0 8px currentColor;margin-bottom:0}
+  .stocks{display:flex;gap:5px;align-items:center;height:18px;color:inherit}
+  .stock-icon{width:15px;height:15px;color:inherit;filter:drop-shadow(0 0 4px currentColor)}
+  .p-body{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:2px}
+  .p-body .col{display:flex;flex-direction:column;gap:4px}
+  .bar-label{font-size:11px;font-weight:700;letter-spacing:0.05em;color:#8fa0b5;text-transform:uppercase}
+  .bar{height:8px;background:rgba(255,255,255,.07);border-radius:0;overflow:hidden;border:1px solid rgba(255,255,255,0.05)}
+  .bar i{display:block;height:100%;width:100%;border-radius:0;transition:width .08s linear;
+    background:currentColor;box-shadow:0 0 10px currentColor;
+    background-image:repeating-linear-gradient(90deg,rgba(255,255,255,0.7) 0px,rgba(255,255,255,0.7) 3px,transparent 3px,transparent 5px)}
+  .hp i{color:#ff3b5c}
+  .shield i{color:#3b8cff}
+  .boost i{color:#00f6ff}
+  .heat i{color:#ff7b2b}
   .panel.hurt .name{animation:sos .7s steps(2,end) infinite}
-  .panel.cooked .heat i{background:#fff45c;box-shadow:0 0 12px #fff45c}
+  .panel.cooked .heat i{color:#fff45c;box-shadow:0 0 12px #fff45c}
   @keyframes sos{0%,100%{opacity:1}50%{opacity:.35}}
-  .stocks{font-size:11px;letter-spacing:.3em;text-shadow:0 0 6px currentColor}
-  .wep{display:flex;align-items:center;gap:6px;margin-top:4px;height:20px}
-  .wep svg{width:20px;height:20px;color:#cfe;filter:drop-shadow(0 0 4px #cfe)}
-  .wep .ammo{font-size:8px;letter-spacing:.25em;color:#fff45c;text-shadow:0 0 6px #fff45c}
+  .p-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px dashed rgba(255,255,255,0.1);padding-top:6px;margin-top:2px}
+  .wep{display:flex;align-items:center;gap:8px;height:26px}
+  .wep svg{width:24px;height:26px;color:#cfe;filter:drop-shadow(0 0 6px #cfe)}
+  .wep .ammo{font-size:12px;letter-spacing:.15em;color:#fff45c;text-shadow:0 0 6px #fff45c}
   .wep .wait svg{opacity:.3;filter:none}
-  .wep .ready svg{color:#ff9955;filter:drop-shadow(0 0 6px #ff9955);animation:sos .5s steps(2,end) infinite}
+  .wep .ready svg{color:#ff9955;filter:drop-shadow(0 0 8px #ff9955);animation:sos .5s steps(2,end) infinite}
+  .panel .medals{display:flex;gap:6px;flex-wrap:wrap}
+  .panel .medal{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:2px;font-size:11px;font-weight:700;
+    letter-spacing:.05em;text-transform:uppercase;border:1px solid rgba(255,255,255,0.15);white-space:nowrap;
+    text-shadow:0 0 4px currentColor;box-shadow:0 0 8px -3px currentColor}
+  .panel .medal.fb{color:#ff3c5c;background:rgba(255,60,92,0.15);border-color:rgba(255,60,92,0.45)}
+  .panel .medal.dk{color:#00f6ff;background:rgba(0,246,255,0.1);border-color:rgba(0,246,255,0.4)}
+  .panel .medal.tk{color:#ffd54f;background:rgba(255,213,79,0.1);border-color:rgba(255,213,79,0.4)}
+  .panel .medal.rk{color:#7cff3a;background:rgba(124,255,58,0.1);border-color:rgba(124,255,58,0.4)}
   #clock{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-size:15px;letter-spacing:.3em;opacity:.8;text-shadow:0 0 10px currentColor}
   #clock.sudden{color:#ff3b5c;animation:sos .7s steps(2,end) infinite}
   .tag{position:absolute;transform:translateX(-50%);font-size:15px;font-weight:700;letter-spacing:.25em;text-shadow:0 0 10px currentColor,0 0 2px #000}
@@ -75,6 +95,12 @@
   #menu .stats .award{display:flex;align-items:center;gap:12px;font-size:12px;letter-spacing:.18em}
   #menu .stats .award b{min-width:128px;font-size:9px;font-weight:400;letter-spacing:.3em;text-shadow:0 0 12px currentColor}
   #menu .stats .award span{color:#cfe;opacity:.8}
+  #menu .stats .medals{display:flex;align-items:center;gap:8px;margin-left:12px;flex-wrap:wrap}
+  #menu .stats .medal{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border:1px solid rgba(255, 255, 255, 0.15);white-space:nowrap;background:rgba(8, 14, 26, 0.6);text-shadow:0 0 6px currentColor;box-shadow:0 0 10px -4px currentColor}
+  #menu .stats .medal.fb{color:#ff3c5c;background:rgba(255,60,92,0.15);border-color:rgba(255,60,92,0.4)}
+  #menu .stats .medal.dk{color:#00f6ff;background:rgba(0,246,255,0.1);border-color:rgba(0,246,255,0.3)}
+  #menu .stats .medal.tk{color:#ffd54f;background:rgba(255,213,79,0.1);border-color:rgba(255,213,79,0.3)}
+  #menu .stats .medal.rk{color:#7cff3a;background:rgba(124,255,58,0.1);border-color:rgba(124,255,58,0.3)}
   #banner{position:fixed;left:0;right:0;top:40%;text-align:center;font-size:22px;letter-spacing:.35em;text-shadow:0 0 18px #fff;white-space:pre-line;line-height:2}
   #banner.hidden{display:none}
   #banner.count{font-size:min(30vh,240px);font-weight:700;letter-spacing:.1em;line-height:1;color:#fff;text-shadow:0 0 30px #00f6ff,0 0 80px #00f6ff;
