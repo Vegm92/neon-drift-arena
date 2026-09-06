@@ -74,6 +74,15 @@ let main _ =
         |> step dt (all present)
     check "ram exchanges momentum" (w7.Ships.[0].Vel.X < -50. && w7.Ships.[1].Vel.X > -50.)
 
+    let w7b =
+        w0 |> place 0 zero 0. |> place 1 (v 30. 0.) 0.
+        |> edit 0 (fun s -> { s with Invuln = 0. })
+        |> edit 1 (fun s -> { s with Invuln = 0.; Hp = 1.; Vel = v (-150.) 0. })
+        |> step dt (all present)
+    check "a ram kill awards the rammer medal"
+        (w7b.Ships.[1].Hp <= 0. && w7b.Ships.[0].RamKillMedals = 1
+         && w7b.Events |> List.exists (function Medal(0, "ramkill") -> true | _ -> false))
+
     let two = Array.init 4 (fun i -> if i < 2 then present else noInput)
     let w8 = step dt two initial |> edit 1 (fun s -> { s with Hp = 0.; Stocks = 1 }) |> step dt two
     check "last ship standing wins" (w8.Phase = Over(Some 0))

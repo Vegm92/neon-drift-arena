@@ -74,6 +74,7 @@ let freshShip i =
       DoubleKillMedals = 0
       TripleKillMedals = 0
       RailKillMedals = 0
+      RamKillMedals = 0
       LastKillTime = -999.
       MultiKillCount = 0 }
 
@@ -88,4 +89,5 @@ let respawn (s: Ship) =
         FirstBloodMedal = s.FirstBloodMedal
         DoubleKillMedals = s.DoubleKillMedals
         TripleKillMedals = s.TripleKillMedals
-        RailKillMedals = s.RailKillMedals }
+        RailKillMedals = s.RailKillMedals
+        RamKillMedals = s.RamKillMedals }

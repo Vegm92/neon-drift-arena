@@ -143,6 +143,7 @@ let private statRow winner pos (s: Ship) =
         if s.DoubleKillMedals > 0 then m.Add(sprintf "<span class=\"medal dk\" title=\"Double Kills\">⚔️ DK x%d</span>" s.DoubleKillMedals)
         if s.TripleKillMedals > 0 then m.Add(sprintf "<span class=\"medal tk\" title=\"Triple Kills\">⚡ TK x%d</span>" s.TripleKillMedals)
         if s.RailKillMedals > 0 then m.Add(sprintf "<span class=\"medal rk\" title=\"Railed Down!\">🎯 RD x%d</span>" s.RailKillMedals)
+        if s.RamKillMedals > 0 then m.Add(sprintf "<span class=\"medal rm\" title=\"%s\">💥 RM x%d</span>" Strings.t.RamKillMedal s.RamKillMedals)
         if m.Count > 0 then sprintf "<div class=\"medals\">%s</div>" (String.concat "" m) else ""
     sprintf
         "<div class=\"line%s\" style=\"color:#%06x\"><div class=\"pos\">%d</div><div class=\"who\"><svg viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linejoin=\"round\"><path d=\"M24 4 41 40 24 32 7 40Z\"/></svg><b>%s</b>%s</div><div class=\"num big\">%d</div><div class=\"acc\"><div class=\"bar\"><i style=\"width:%d%%\"></i></div><span>%d%%</span></div><div class=\"num\">%d</div><div class=\"num\">%d</div><div class=\"stocks\">%s</div></div>"
@@ -215,6 +216,7 @@ let private announce (w: World) (events: Event list) =
         | Medal(i, "doublekill") -> say (sprintf "%s: DOUBLE KILL!" (name i))
         | Medal(i, "triplekill") -> say (sprintf "%s: TRIPLE KILL, ACE!" (name i))
         | Medal(i, "railkill") -> say (sprintf "%s: RAILED DOWN!" (name i))
+        | Medal(i, "ramkill") -> say (sprintf "%s: %s" (name i) Strings.t.RamKill)
         | _ -> ()
     if Sim.sudden w && not suddenSaid then
         suddenSaid <- true

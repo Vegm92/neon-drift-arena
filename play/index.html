@@ -60,6 +60,7 @@
   .panel .medal.dk{color:#00f6ff;background:rgba(0,246,255,0.1);border-color:rgba(0,246,255,0.4)}
   .panel .medal.tk{color:#ffd54f;background:rgba(255,213,79,0.1);border-color:rgba(255,213,79,0.4)}
   .panel .medal.rk{color:#7cff3a;background:rgba(124,255,58,0.1);border-color:rgba(124,255,58,0.4)}
+  .panel .medal.rm{color:#ff9955;background:rgba(255,153,85,0.12);border-color:rgba(255,153,85,0.45)}
   #clock{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-size:15px;letter-spacing:.3em;opacity:.8;text-shadow:0 0 10px currentColor}
   #clock.sudden{color:#ff3b5c;animation:sos .7s steps(2,end) infinite}
   .tag{position:absolute;transform:translateX(-50%);font-size:15px;font-weight:700;letter-spacing:.25em;text-shadow:0 0 10px currentColor,0 0 2px #000}
@@ -71,6 +72,8 @@
   #feed b{text-shadow:0 0 10px currentColor}
   #feed b.dead{text-decoration:line-through;opacity:.6}
   #feed svg{width:30px;height:30px;filter:drop-shadow(0 0 6px currentColor)}
+  #feed span{display:inline-flex;align-items:center;gap:6px}
+  #feed em{font-style:normal;font-size:12px;letter-spacing:.18em;text-shadow:0 0 8px currentColor}
   @keyframes slam{0%{transform:skewX(-10deg) scale(2.2);filter:brightness(3)}100%{transform:skewX(-10deg) scale(1)}}
   @keyframes feed{0%,70%{opacity:1}100%{opacity:0}}
   #vignette{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .06s linear}
@@ -107,6 +110,7 @@
   #menu .stats .medal.dk{color:#00f6ff;background:rgba(0,246,255,0.1);border-color:rgba(0,246,255,0.3)}
   #menu .stats .medal.tk{color:#ffd54f;background:rgba(255,213,79,0.1);border-color:rgba(255,213,79,0.3)}
   #menu .stats .medal.rk{color:#7cff3a;background:rgba(124,255,58,0.1);border-color:rgba(124,255,58,0.3)}
+  #menu .stats .medal.rm{color:#ff9955;background:rgba(255,153,85,0.12);border-color:rgba(255,153,85,0.35)}
   #banner{position:fixed;left:0;right:0;top:40%;text-align:center;font-size:22px;letter-spacing:.35em;text-shadow:0 0 18px #fff;white-space:pre-line;line-height:2}
   #banner.hidden{display:none}
   #banner.count{font-size:min(30vh,240px);font-weight:700;letter-spacing:.1em;line-height:1;color:#fff;text-shadow:0 0 30px #00f6ff,0 0 80px #00f6ff;

@@ -388,6 +388,7 @@ type Ship =
       DoubleKillMedals: int
       TripleKillMedals: int
       RailKillMedals: int
+      RamKillMedals: int
       LastKillTime: float
       MultiKillCount: int }
 

@@ -92,6 +92,8 @@ type Locale =
       Go: string
       FirstBlood: string
       DoubleKill: string
+      RamKill: string
+      RamKillMedal: string
       RingOut: string
       LastStock: string -> string
       OnFire: string -> string
@@ -276,6 +278,8 @@ let en =
       Go = "GO"
       FirstBlood = "FIRST BLOOD"
       DoubleKill = "DOUBLE KILL"
+      RamKill = "RAMMED!"
+      RamKillMedal = "RAMMER"
       RingOut = "RING OUT"
       LastStock = sprintf "%s ON LAST STOCK"
       OnFire = sprintf "%s IS ON FIRE"

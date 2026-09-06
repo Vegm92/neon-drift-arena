@@ -1,4 +1,4 @@
-﻿module Sim
+module Sim
 
 open System
 open Vec
@@ -147,6 +147,7 @@ let step dt (inputs: Input[]) (w: World) =
             if by >= 0 && by <> victim then
                 let s = ships.[by]
                 let isRail = (wpn = Rail)
+                let isRam = (wpn = Collision)
                 
                 // First Blood check
                 let fbAwarded, newHasFB =
@@ -173,6 +174,9 @@ let step dt (inputs: Input[]) (w: World) =
                 // Rail kill tracking
                 let rkIncrement = if isRail then 1 else 0
                 if rkIncrement > 0 then medalEvents <- Medal(by, "railkill") :: medalEvents
+
+                let rmIncrement = if isRam then 1 else 0
+                if rmIncrement > 0 then medalEvents <- Medal(by, "ramkill") :: medalEvents
                 
                 ships.[by] <-
                     { s with
@@ -182,6 +186,7 @@ let step dt (inputs: Input[]) (w: World) =
                         DoubleKillMedals = s.DoubleKillMedals + dkIncrement
                         TripleKillMedals = s.TripleKillMedals + tkIncrement
                         RailKillMedals = s.RailKillMedals + rkIncrement
+                        RamKillMedals = s.RamKillMedals + rmIncrement
                         LastKillTime = w.Time
                         MultiKillCount = nextMulti }
         { Ships = ships

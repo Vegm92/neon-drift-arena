@@ -29,7 +29,9 @@ let icon (w: Weapon) ring =
 
 let feedLine (vw: View) (w: World) victim by wpn ring =
     let tag i cls = sprintf "<b class=\"%s\" style=\"color:#%06x\">%s</b>" cls (shipColor w.Ships.[i]) vw.Names.[i]
-    let wep i r = sprintf "<span style=\"color:#%06x\">%s</span>" (shipColor w.Ships.[i]) (icon wpn r)
+    let wep i r =
+        let label = if r then Strings.t.RingOut else Strings.weaponName wpn
+        sprintf "<span style=\"color:#%06x\">%s<em>%s</em></span>" (shipColor w.Ships.[i]) (icon wpn r) label
     let line = document.createElement "div"
     line.innerHTML <-
         if by >= 0 && by <> victim then tag by "" + wep by ring + tag victim "dead"
@@ -108,6 +110,7 @@ let drawHud (vw: View) (w: World) dt =
             if s.DoubleKillMedals > 0 then m.Add("<span class=\"medal dk\" title=\"Double Kill! ⚔️\">⚔️</span>")
             if s.TripleKillMedals > 0 then m.Add("<span class=\"medal tk\" title=\"Triple Kill, ACE! ⚡\">⚡</span>")
             if s.RailKillMedals > 0 then m.Add("<span class=\"medal rk\" title=\"Railed Down! 🎯\">🎯</span>")
+            if s.RamKillMedals > 0 then m.Add(sprintf "<span class=\"medal rm\" title=\"%s 💥\">💥</span>" Strings.t.RamKillMedal)
             String.concat "" m
         if medals?dataset?html <> mHtml then
             medals?dataset?html <- mHtml
