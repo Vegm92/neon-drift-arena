@@ -33,7 +33,9 @@ let drawShip t (vw: View) (sv: ShipView) (s: Ship) =
     sv.Root.visible <- s.Alive
     sv.Mark.visible <- launcher
     if launcher then
+        let k = 2.5 * vw.CamH / maxCamH ()
         sv.Mark.position.set (s.Pos.X, 3., s.Pos.Y)
+        sv.Mark.scale.set (k, 1., k)
         sv.Mark.rotation.y <- -s.Angle
         sv.Mark.material.color.setHex (shipColor s)
         sv.Mark.material.opacity <- if s.LaunchCd <= 0. then 0.6 + 0.4 * sin (t * 6.) else 0.25
