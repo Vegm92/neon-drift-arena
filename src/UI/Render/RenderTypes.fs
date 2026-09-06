@@ -31,9 +31,11 @@ let killGap = 0.7
 let killRepeat = 0.45
 let tintFade = 2.2
 let tintEdgeVmin = 5.
-/// Off kills every full-screen effect: the kill tint, the bloom surge,
-/// the camera jolt and the HUD panel shake. Localised particle flashes stay.
-let mutable screenFx = true
+/// On kills every flash: the takedown and GO screen washes, the white flash
+/// disc on a takedown and the bloom surge. Motion is left alone.
+let mutable reduceFlash = false
+/// Off kills the motion effects: the camera jolt and the HUD panel shake.
+let mutable screenShake = true
 let maxCamH () = (arenaHalf + 100.) / tan (20. * Math.PI / 180.)
 let minCamH () = maxCamH () * 0.75
 let rnd = Random()
