@@ -11,6 +11,13 @@ let private arenaKey = "nda-arena"
 let private catchKey = "nda-catchup"
 
 let private defaults = Cfg.tunables |> Array.map (fun (_, get, _) -> get ())
+
+/// TUNING is a developer tool: it only joins the settings list behind `?dev=1`,
+/// the same way `?desktop=1` overrides the mobile gate.
+let private devMode =
+    window.location.search.Split([| '?'; '&' |])
+    |> Array.exists (fun p -> p = "dev" || p.StartsWith "dev=")
+
 let mutable arenaPick = 0
 let mutable isGuest = true
 let mutable onSignInCompleted : string -> unit = fun _ -> ()
@@ -94,25 +101,26 @@ let rows () =
       yield Header Strings.t.Audio
       yield Level(Strings.t.Music, 1)
       yield Level(Strings.t.Sounds, 0)
-      yield Header Strings.t.Tuning
-      for k in 0 .. Cfg.tunables.Length - 1 do
-          yield Tune k
-      yield
-          Action(
-              Strings.t.Save,
-              fun () ->
-                  let o = obj ()
-                  for name, get, _ in Cfg.tunables do
-                      o?(name) <- get ()
-                  window?fetch ("/__tweaks", createObj [ "method" ==> "POST"; "body" ==> JS.JSON.stringify o ]) |> ignore
-          )
-      yield
-          Action(
-              Strings.t.Reset,
-              fun () ->
-                  window.localStorage.removeItem tweaksKey
-                  window.location.reload ()
-          )
+      if devMode then
+          yield Header Strings.t.Tuning
+          for k in 0 .. Cfg.tunables.Length - 1 do
+              yield Tune k
+          yield
+              Action(
+                  Strings.t.Save,
+                  fun () ->
+                      let o = obj ()
+                      for name, get, _ in Cfg.tunables do
+                          o?(name) <- get ()
+                      window?fetch ("/__tweaks", createObj [ "method" ==> "POST"; "body" ==> JS.JSON.stringify o ]) |> ignore
+              )
+          yield
+              Action(
+                  Strings.t.Reset,
+                  fun () ->
+                      window.localStorage.removeItem tweaksKey
+                      window.location.reload ()
+              )
       if isGuest then
           yield Header Strings.t.CrazyGames
           yield Action(Strings.t.SignIn, fun () ->
