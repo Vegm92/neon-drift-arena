@@ -6,6 +6,19 @@
   <ItemGroup>
     <Compile Include="../src/Core/Vec.fs" />
     <Compile Include="../src/Core/Domain.fs" />
+    <Compile Include="../src/Core/Maps.fs" />
+    <Compile Include="../src/Core/State.fs" />
+    <Compile Include="../src/Core/Track.fs" />
+    <Compile Include="../src/Core/Spawn.fs" />
+    <Compile Include="../src/Core/Arena.fs" />
+    <Compile Include="../src/Core/Combat.fs" />
+    <Compile Include="../src/Core/Kinematics.fs" />
+    <Compile Include="../src/Core/Weapons.fs" />
+    <Compile Include="../src/Core/Entities.fs" />
+    <Compile Include="../src/Core/Collisions.fs" />
+    <Compile Include="../src/Core/Rebirth.fs" />
+    <Compile Include="../src/Core/Race.fs" />
+    <Compile Include="../src/Core/Bot.fs" />
     <Compile Include="../src/Core/Sim.fs" />
     <Compile Include="Check.fs" />
   </ItemGroup>

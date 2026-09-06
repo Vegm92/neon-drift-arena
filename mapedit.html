@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>NDA map editor</title>
+    <style>
+      :root { color-scheme: dark; }
+      body { margin: 0; background: #06080f; color: #cfe; font: 12px/1.5 ui-monospace, monospace; display: flex; height: 100vh; }
+      #side { width: 210px; padding: 10px; border-right: 1px solid #1c2a3a; display: flex; flex-direction: column; gap: 8px; overflow: auto; }
+      #wrap { flex: 1; display: flex; align-items: center; justify-content: center; }
+      canvas { background: #0a0f1a; touch-action: none; }
+      button, select, input { background: #111a28; color: #cfe; border: 1px solid #2a3b52; padding: 4px 6px; font: inherit; width: 100%; }
+      button:hover { background: #1b2a3e; }
+      button.on { background: #0ff2; border-color: #0ff; color: #0ff; }
+      h3 { margin: 6px 0 0; font-size: 11px; letter-spacing: .1em; color: #6a8; text-transform: uppercase; }
+      .row { display: flex; gap: 6px; }
+      #msg { color: #8fa; min-height: 18px; }
+      small { color: #567; }
+      body.ffa .race { display: none; }
+    </style>
+  </head>
+  <body>
+    <div id="side">
+      <h3>map</h3>
+      <select id="pick"></select>
+      <input id="name" placeholder="name" />
+      <div class="row"><button id="newFfa">+ ffa</button><button id="newRace">+ race</button></div>
+      <button id="del">delete this map</button>
+      <h3>paint</h3>
+      <button data-tool="rock">rock</button>
+      <button data-tool="pad">pad (refill)</button>
+      <button data-tool="heal">pad (heal)</button>
+      <button data-tool="shield">pad (shield)</button>
+      <button data-tool="crate">crate</button>
+      <button data-tool="node" class="race">track node</button>
+      <div class="race">
+        <h3>track</h3>
+        <div class="row"><input id="tw" type="number" placeholder="width" /><input id="tl" type="number" placeholder="laps" /></div>
+      </div>
+      <h3>symmetry</h3>
+      <div class="row">
+        <button data-sym="off" class="on">off</button>
+        <button data-sym="x">⇄</button>
+        <button data-sym="y">⇅</button>
+        <button data-sym="quad">quad</button>
+        <button data-sym="spin">spin</button>
+      </div>
+      <h3>transform</h3>
+      <div class="row"><button id="mx">mirror ⇄</button><button id="my">mirror ⇅</button><button id="rot">rot 90</button></div>
+      <div class="row"><button id="fx">fold ⇄</button><button id="fy">fold ⇅</button><button id="s4">spin ×4</button></div>
+      <div class="row"><button id="jit">jitter</button><input id="jitn" type="number" value="40" /></div>
+      <h3>selected</h3>
+      <div id="sel"><small>none</small></div>
+      <h3>rules</h3>
+      <div id="rules"></div>
+      <h3>save</h3>
+      <button id="save">write to Maps.fs</button>
+      <button id="reset">reload from build</button>
+      <div id="msg"></div>
+      <small
+        >drag to move · wheel resizes a rock · Del removes · a track node is inserted after the nearest node</small
+      >
+    </div>
+    <div id="wrap"><canvas id="c" width="820" height="820"></canvas></div>
+
+    <script type="module">
+      import { layouts } from "./build/Core/Maps.js";
+      import { Cfg_maxSpeed, Cfg_arenaDefault, Cfg_raceHalf } from "./build/Core/Domain.js";
+      import { t } from "./build/Core/Strings.js";
+
+      const arr = (l) => Array.from(l);
+      const P = { 0: "pad", 1: "heal", 2: "shield" };
+      const COL = { rock: "#7a8798", pad: "#39f", heal: "#3f8", shield: "#fd4", crate: "#f83", node: "#0ff" };
+
+      const load = () =>
+        Array.from(layouts).map((L, i) => ({
+          name: t.Arenas[i] ?? `MAP ${i}`,
+          race: !!L.Track,
+          size: L.Size,
+          rocks: arr(L.Rocks).map(([p, r]) => ({ t: "rock", x: p.X, y: p.Y, r })),
+          pads: arr(L.Pads).map(([p, , k]) => ({ t: P[k], x: p.X, y: p.Y, k })),
+          crates: arr(L.Crates).map((p) => ({ t: "crate", x: p.X, y: p.Y })),
+          track: L.Track
+            ? { pts: arr(L.Track[0]).map((p) => ({ t: "node", x: p.X, y: p.Y })), w: L.Track[1], laps: L.Track[2] }
+            : { pts: [], w: 280, laps: 3 },
+        }));
+
+      let maps = load();
+      let mi = 0;
+      let tool = null;
+      let sel = null;
+      let drag = false;
+
+      const c = document.getElementById("c");
+      const g = c.getContext("2d");
+      const pick = document.getElementById("pick");
+      const msg = document.getElementById("msg");
+      const M = () => maps[mi];
+      const scale = () => c.width / (M().size * 2.1);
+      const toScreen = (p) => [c.width / 2 + p.x * scale(), c.height / 2 - p.y * scale()];
+      const items = () => [...(M().race ? M().track.pts : []), ...M().rocks, ...M().pads, ...M().crates];
+      const hitR = (o) => (o.t === "rock" ? o.r : o.t === "crate" ? 26 : o.t === "node" ? 22 : 34);
+
+      function relabel() {
+        pick.textContent = "";
+        maps.forEach((m, i) => pick.add(new Option(`${i}  ${m.race ? "RACE" : "FFA"} · ${m.name}`, i)));
+        pick.value = mi;
+        document.getElementById("name").value = M().name;
+        document.body.classList.toggle("ffa", !M().race);
+      }
+      relabel();
+
+      function draw() {
+        const s = scale();
+        const m = M();
+        g.clearRect(0, 0, c.width, c.height);
+        g.strokeStyle = "#1c2a3a";
+        g.lineWidth = 1;
+        for (let k = -m.size; k <= m.size; k += 300) {
+          const [x] = toScreen({ x: k, y: 0 });
+          const [, y] = toScreen({ x: 0, y: k });
+          g.beginPath(); g.moveTo(x, 0); g.lineTo(x, c.height); g.moveTo(0, y); g.lineTo(c.width, y); g.stroke();
+        }
+        g.strokeStyle = "#f0f6";
+        g.strokeRect(...toScreen({ x: -m.size, y: m.size }), m.size * 2 * s, m.size * 2 * s);
+
+        if (m.race) {
+          g.strokeStyle = "#0ff2";
+          g.lineWidth = m.track.w * 2 * s;
+          g.lineJoin = g.lineCap = "round";
+          g.beginPath();
+          roadOf(m).forEach((p, i) => g[i ? "lineTo" : "moveTo"](...toScreen(p)));
+          g.closePath();
+          g.stroke();
+          g.lineWidth = 1;
+        }
+
+        for (const o of items()) {
+          const [x, y] = toScreen(o);
+          g.beginPath();
+          g.arc(x, y, Math.max(4, hitR(o) * s), 0, 7);
+          g.fillStyle = COL[o.t] + "8";
+          g.fill();
+          g.strokeStyle = o === sel ? "#fff" : COL[o.t];
+          g.lineWidth = o === sel ? 2 : 1;
+          g.stroke();
+        }
+        document.getElementById("sel").innerHTML = sel
+          ? `${sel.t}<br>x ${sel.x.toFixed(0)} y ${sel.y.toFixed(0)}${sel.r ? `<br>r ${sel.r.toFixed(0)}` : ""}`
+          : "<small>none</small>";
+        g.strokeStyle = "#fff6";
+        for (const sp of spawns()) {
+          const [x, y] = toScreen(sp);
+          g.beginPath();
+          g.arc(x, y, Math.max(3, SHIP * s), 0, 7);
+          g.moveTo(x - 9, y); g.lineTo(x + 9, y); g.moveTo(x, y - 9); g.lineTo(x, y + 9);
+          g.stroke();
+        }
+        if (sym !== "off") {
+          const [cx, cy] = toScreen({ x: 0, y: 0 });
+          g.strokeStyle = SYM[sym].col;
+          g.lineWidth = 2;
+          g.beginPath();
+          if (SYM[sym].axes !== "h") { g.moveTo(cx, 0); g.lineTo(cx, c.height); }
+          if (SYM[sym].axes !== "v") { g.moveTo(0, cy); g.lineTo(c.width, cy); }
+          g.stroke();
+          g.lineWidth = 1;
+        }
+        overlay(s);
+        document.getElementById("tw").value = m.track.w.toFixed(0);
+        document.getElementById("tl").value = m.track.laps;
+        rules();
+      }
+
+      const SHIP = 18;
+      const PAD_R = 28;
+      const CRATE_R = 26;
+      const diagLimit = (m) => m.size * 1.62;
+
+      const segDist = (a, b, p) => {
+        const vx = b.x - a.x;
+        const vy = b.y - a.y;
+        const l2 = vx * vx + vy * vy;
+        const t = l2 < 1e-9 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * vx + (p.y - a.y) * vy) / l2));
+        return Math.hypot(p.x - (a.x + vx * t), p.y - (a.y + vy * t));
+      };
+
+      const smoothLoop = (pts) => {
+        const n = pts.length;
+        const out = [];
+        for (let i = 0; i < n; i++) {
+          const p0 = pts[(i + n - 1) % n];
+          const p1 = pts[i];
+          const p2 = pts[(i + 1) % n];
+          const p3 = pts[(i + 2) % n];
+          for (let j = 0; j < 4; j++) {
+            const t = j / 4;
+            const t2 = t * t;
+            const t3 = t2 * t;
+            const w0 = -t3 + 2 * t2 - t;
+            const w1 = 3 * t3 - 5 * t2 + 2;
+            const w2 = -3 * t3 + 4 * t2 + t;
+            const w3 = t3 - t2;
+            out.push({
+              x: (p0.x * w0 + p1.x * w1 + p2.x * w2 + p3.x * w3) * 0.5,
+              y: (p0.y * w0 + p1.y * w1 + p2.y * w2 + p3.y * w3) * 0.5,
+            });
+          }
+        }
+        return out;
+      };
+
+      const roadOf = (m) => (m.race && m.track.pts.length ? smoothLoop(m.track.pts) : []);
+      const roadDist = (road, p) => Math.min(...road.map((g, i) => segDist(g, road[(i + 1) % road.length], p)));
+      const clear = (m, p, margin) => m.rocks.every((a) => Math.hypot(a.x - p.x, a.y - p.y) > a.r + margin);
+
+      const spawns = (m = M()) => {
+        const road = roadOf(m);
+        if (m.race && road.length > 1) {
+          const a = road[0];
+          const b = road[1];
+          const d = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+          const ux = (b.x - a.x) / d;
+          const uy = (b.y - a.y) / d;
+          return [0, 1, 2, 3].map((i) => {
+            const f = 80 + 90 * Math.floor(i / 2);
+            const s = i % 2 === 0 ? -60 : 60;
+            return { x: a.x + ux * f - uy * s, y: a.y + uy * f + ux * s };
+          });
+        }
+        const a = (diagLimit(m) - 320) / 2;
+        return [
+          { x: -a, y: -a },
+          { x: a, y: -a },
+          { x: -a, y: a },
+          { x: a, y: a },
+        ];
+      };
+
+      function rules(m = M(), paint = true) {
+        const bad = [];
+        const warn = [];
+        const road = roadOf(m);
+        const lim = diagLimit(m);
+
+        const inArena = (p, r) =>
+          Math.abs(p.x) + r < m.size && Math.abs(p.y) + r < m.size && Math.abs(p.x) + Math.abs(p.y) + r < lim;
+        const outside = m.rocks.filter((r) => !inArena(r, r.r));
+        if (outside.length) bad.push(`${outside.length} rock(s) reach outside the arena or past the diagonal`);
+
+        const padHit = m.pads.filter((p) => !clear(m, p, PAD_R + SHIP));
+        if (padHit.length) bad.push(`${padHit.length} pad(s) sit too close to a rock`);
+        const crateHit = m.crates.filter((p) => !clear(m, p, CRATE_R + SHIP));
+        if (crateHit.length) bad.push(`${crateHit.length} crate spot(s) sit too close to a rock`);
+        const spawnHit = spawns(m).filter((p) => !clear(m, p, 3 * SHIP));
+        if (spawnHit.length) bad.push(`${spawnHit.length} of 4 spawn points blocked by a rock`);
+
+        for (let i = 0; i < m.rocks.length; i++)
+          for (let j = i + 1; j < m.rocks.length; j++) {
+            const a = m.rocks[i];
+            const b = m.rocks[j];
+            if (Math.hypot(a.x - b.x, a.y - b.y) <= a.r + b.r) { bad.push("two rocks overlap"); i = j = 1e9; }
+          }
+
+        if (m.race) {
+          const tr = m.track;
+          if (tr.pts.length < 3) bad.push("a race map needs at least 3 track nodes");
+          if (tr.laps < 1) bad.push("laps must be at least 1");
+          if (m.size !== Cfg_raceHalf) bad.push(`a race map must be ${Cfg_raceHalf} half-size, not ${m.size}`);
+          const spill = road.filter((g) => !inArena(g, tr.w / 2));
+          if (spill.length) bad.push(`the road runs outside the arena at ${spill.length} point(s) — narrow it or pull the nodes in`);
+          const near = [];
+          for (let i = 0; i < tr.pts.length; i++)
+            for (let j = i + 1; j < tr.pts.length; j++) {
+              const gap = Math.min(j - i, tr.pts.length - (j - i));
+              if (gap > 1 && Math.hypot(tr.pts[i].x - tr.pts[j].x, tr.pts[i].y - tr.pts[j].y) <= tr.w * 0.9) near.push(1);
+            }
+          if (near.length) bad.push(`the road doubles back on itself at ${near.length} spot(s) — the lap counter needs separated nodes`);
+          if (tr.w < 120) warn.push(`track width ${tr.w.toFixed(0)} is narrower than 120 — hard to stay on`);
+          const off = [...m.pads, ...m.crates].filter((o) => road.length > 1 && roadDist(road, o) > tr.w / 2);
+          if (off.length) warn.push(`${off.length} pad/crate sits off the road`);
+        } else {
+          if (m.size !== Cfg_arenaDefault) warn.push(`arenas are normally ${Cfg_arenaDefault} half-size, this is ${m.size}`);
+          const cores = m.pads.filter((p) => p.k === 2).length;
+          if (cores !== 1) bad.push(`${cores} shield cores — an arena needs exactly 1`);
+          const heals = m.pads.filter((p) => p.k === 1).length;
+          if (heals !== 4) bad.push(`${heals} heal pads — an arena needs exactly 4`);
+          if (m.crates.length !== 8) bad.push(`${m.crates.length} crate spots — an arena needs exactly 8`);
+          const open = [0, 45, 90, 135, 180, 225, 270, 315].some((d) => {
+            const a = (d * Math.PI) / 180;
+            for (let t = 180; t <= 900; t += 40)
+              if (!clear(m, { x: Math.cos(a) * t, y: Math.sin(a) * t }, SHIP)) return false;
+            return true;
+          });
+          if (!open) bad.push("the shield core has no open approach — leave one clear lane from the centre");
+          const cross = (m.size * 2) / Cfg_maxSpeed();
+          if (cross < 8 || cross > 10) warn.push(`crossing takes ${cross.toFixed(1)} s at max speed — the target is 8–10 s`);
+        }
+        if (!m.crates.length) bad.push("no crates — the sim indexes crate 0/2/4/6 and will divide by zero");
+
+        const tag = (a, cls) => a.map((x) => `<div style="color:${cls}">${x}</div>`).join("");
+        if (paint)
+          document.getElementById("rules").innerHTML =
+            tag(bad, "#f66") +
+            tag(warn, "#fd4") +
+            (bad.length || warn.length ? "" : `<div style="color:#8fa">all good</div>`) +
+            `<small>${m.rocks.length} rocks · ${m.pads.length} pads · ${m.crates.length} crates${m.race ? ` · ${m.track.pts.length} nodes` : ""}<br>npm run check is the real gate</small>`;
+        return bad;
+      }
+      const rot90 = (o) => ({ ...o, x: -o.y, y: o.x });
+      const rotN = (o, q) => { let p = o; for (let k = 0; k < q; k++) p = rot90(p); return p; };
+
+      const parts = (m) => [m.rocks, m.pads, m.crates, m.race ? m.track.pts : []];
+      const each = (f) => (m) => parts(m).map((a) => a.map(f));
+      const fold = (ax) => (m) =>
+        parts(m).map((a) => {
+          const keep = a.filter((o) => o[ax] >= 0);
+          return [...keep, ...keep.filter((o) => o[ax] > 1).map((o) => ({ ...o, [ax]: -o[ax] }))];
+        });
+      const spin4 = (m) =>
+        parts(m).map((a) =>
+          a
+            .filter((o) => { const th = Math.atan2(o.y, o.x); return th >= -1e-6 && th < Math.PI / 2 - 1e-6; })
+            .flatMap((o) => (Math.hypot(o.x, o.y) < 1 ? [o] : [0, 1, 2, 3].map((q) => rotN(o, q)))),
+        );
+
+      const TF = {
+        mx: { col: "#f6f", axis: "v", fn: each((o) => ({ ...o, x: -o.x })) },
+        my: { col: "#fb4", axis: "h", fn: each((o) => ({ ...o, y: -o.y })) },
+        rot: { col: "#6cf", axis: "c", fn: each((o) => rot90(o)) },
+        fx: { col: "#f6f", axis: "v", half: "x", fn: fold("x") },
+        fy: { col: "#fb4", axis: "h", half: "y", fn: fold("y") },
+        s4: { col: "#5f9", axis: "q", fn: spin4 },
+        jit: { col: "#aaa", axis: "", fn: null },
+      };
+
+      let hint = null;
+      for (const [id, tf] of Object.entries(TF)) {
+        const b = document.getElementById(id);
+        b.style.color = tf.col;
+        b.style.borderColor = tf.col + "7";
+        b.onmouseenter = b.onfocus = () => { hint = id; draw(); };
+        b.onmouseleave = b.onblur = () => { hint = null; draw(); };
+        b.onclick = () => {
+          const m = M();
+          const jitter = +document.getElementById("jitn").value || 0;
+          const r = () => (Math.random() * 2 - 1) * jitter;
+          const fn = tf.fn ?? each((o) => ({ ...o, x: o.x + r(), y: o.y + r() }));
+          const [rocks, pads, crates, nodes] = fn(m);
+          m.rocks = rocks;
+          m.pads = pads;
+          m.crates = crates;
+          if (m.race) m.track.pts = nodes;
+          sel = null;
+          draw();
+        };
+      }
+
+      function overlay(s) {
+        const tf = TF[hint];
+        if (!tf) return;
+        const m = M();
+        const [cx, cy] = toScreen({ x: 0, y: 0 });
+
+        if (tf.half) {
+          const drop = toScreen(tf.half === "x" ? { x: -m.size, y: m.size } : { x: -m.size, y: 0 });
+          g.fillStyle = "#f004";
+          g.fillRect(...drop, m.size * (tf.half === "x" ? 1 : 2) * s, m.size * (tf.half === "x" ? 2 : 1) * s);
+        }
+
+        g.save();
+        g.strokeStyle = tf.col;
+        g.lineWidth = 2;
+        g.setLineDash([7, 5]);
+        g.beginPath();
+        if (tf.axis === "v" || tf.axis === "q") { g.moveTo(cx, 0); g.lineTo(cx, c.height); }
+        if (tf.axis === "h" || tf.axis === "q") { g.moveTo(0, cy); g.lineTo(c.width, cy); }
+        g.stroke();
+        g.setLineDash([]);
+        if (tf.axis === "c" || tf.axis === "q") { g.beginPath(); g.arc(cx, cy, 9, 0, 7); g.stroke(); }
+
+        const jitter = +document.getElementById("jitn").value || 0;
+        const fn = tf.fn ?? each((o) => ({ ...o, x: o.x + jitter, y: o.y + jitter }));
+        g.lineWidth = 1.5;
+        for (const a of fn(m))
+          for (const o of a) {
+            const [x, y] = toScreen(o);
+            g.beginPath();
+            g.arc(x, y, Math.max(4, hitR(o) * s), 0, 7);
+            g.stroke();
+          }
+        g.restore();
+      }
+
+      const SYM = {
+        off: { col: "#567", axes: "", T: [(p) => ({ x: p.x, y: p.y })] },
+        x: { col: "#f6f", axes: "v", T: [(p) => ({ x: p.x, y: p.y }), (p) => ({ x: -p.x, y: p.y })] },
+        y: { col: "#fb4", axes: "h", T: [(p) => ({ x: p.x, y: p.y }), (p) => ({ x: p.x, y: -p.y })] },
+        quad: {
+          col: "#f96",
+          axes: "q",
+          T: [(p) => ({ x: p.x, y: p.y }), (p) => ({ x: -p.x, y: p.y }), (p) => ({ x: p.x, y: -p.y }), (p) => ({ x: -p.x, y: -p.y })],
+        },
+        spin: { col: "#5f9", axes: "q", T: [0, 1, 2, 3].map((q) => (p) => rotN(p, q)) },
+      };
+      let sym = "off";
+      let link = [];
+
+      const bucket = (o) => {
+        const m = M();
+        return o.t === "rock" ? m.rocks : o.t === "crate" ? m.crates : o.t === "node" ? m.track.pts : m.pads;
+      };
+
+      const partners = (o) => {
+        if (sym === "off") return [];
+        const pool = bucket(o).filter((q) => q !== o && q.t === o.t);
+        const taken = [];
+        return SYM[sym].T.slice(1)
+          .map((T) => {
+            const w = T(o);
+            let best = null;
+            let bd = Math.max(24, hitR(o) * 0.8);
+            for (const q of pool)
+              if (!taken.includes(q)) {
+                const d = Math.hypot(q.x - w.x, q.y - w.y);
+                if (d < bd) { bd = d; best = q; }
+              }
+            if (best) taken.push(best);
+            return best && { obj: best, T };
+          })
+          .filter(Boolean);
+      };
+
+      const spawnMirrors = (o) => {
+        if (sym === "off") return;
+        const a = bucket(o);
+        for (const T of SYM[sym].T.slice(1)) {
+          const w = T(o);
+          if (Math.hypot(w.x - o.x, w.y - o.y) < 1) continue;
+          const twin = { ...o, x: w.x, y: w.y };
+          if (o.t === "node") a.splice(a.indexOf(o) + 1, 0, twin);
+          else a.push(twin);
+        }
+      };
+
+      const at = (e) => {
+        const b = c.getBoundingClientRect();
+        const s = scale();
+        return { x: (e.clientX - b.left - c.width / 2) / s, y: (c.height / 2 - (e.clientY - b.top)) / s };
+      };
+
+      c.onpointerdown = (e) => {
+        const p = at(e);
+        const hit = items().find((o) => Math.hypot(o.x - p.x, o.y - p.y) < hitR(o));
+        if (hit && !tool) {
+          sel = hit;
+          link = partners(hit);
+          drag = true;
+          c.setPointerCapture(e.pointerId);
+        } else if (tool) {
+          const m = M();
+          if (tool === "rock") m.rocks.push((sel = { t: "rock", x: p.x, y: p.y, r: 46 }));
+          else if (tool === "crate") m.crates.push((sel = { t: "crate", x: p.x, y: p.y }));
+          else if (tool === "node") {
+            if (!m.race) return;
+            const pts = m.track.pts;
+            const n = { t: "node", x: p.x, y: p.y };
+            let bi = pts.length;
+            let bd = Infinity;
+            pts.forEach((q, i) => {
+              const d = Math.hypot(q.x - p.x, q.y - p.y);
+              if (d < bd) { bd = d; bi = i + 1; }
+            });
+            pts.splice(bi, 0, n);
+            sel = n;
+          } else {
+            const k = tool === "pad" ? 0 : tool === "heal" ? 1 : 2;
+            m.pads.push((sel = { t: tool, x: p.x, y: p.y, k }));
+          }
+          spawnMirrors(sel);
+        } else sel = null;
+        draw();
+      };
+      c.onpointermove = (e) => {
+        if (!drag || !sel) return;
+        const p = at(e);
+        sel.x = e.shiftKey ? Math.round(p.x / 50) * 50 : p.x;
+        sel.y = e.shiftKey ? Math.round(p.y / 50) * 50 : p.y;
+        for (const l of link) Object.assign(l.obj, l.T(sel));
+        draw();
+      };
+      c.onpointerup = () => ((drag = false), (link = []));
+      c.onwheel = (e) => {
+        if (sel?.t !== "rock") return;
+        e.preventDefault();
+        sel.r = Math.max(8, sel.r - Math.sign(e.deltaY) * 2);
+        for (const l of partners(sel)) l.obj.r = sel.r;
+        draw();
+      };
+
+      addEventListener("keydown", (e) => {
+        if (e.key === "Escape") { tool = null; sel = null; }
+        else if (e.key === "Delete" || e.key === "Backspace") {
+          if (!sel) return;
+          const doomed = [sel, ...partners(sel).map((l) => l.obj)];
+          const m = M();
+          for (const a of [m.rocks, m.pads, m.crates, m.track.pts])
+            for (const d of doomed) {
+              const i = a.indexOf(d);
+              if (i >= 0) a.splice(i, 1);
+            }
+          sel = null;
+        } else return;
+        document.querySelectorAll("[data-tool]").forEach((b) => b.classList.remove("on"));
+        draw();
+      });
+
+      document.querySelectorAll("[data-sym]").forEach((b) => {
+        b.style.color = SYM[b.dataset.sym].col;
+        b.onclick = () => {
+          sym = b.dataset.sym;
+          document.querySelectorAll("[data-sym]").forEach((o) => o.classList.toggle("on", o.dataset.sym === sym));
+          draw();
+        };
+      });
+
+      document.querySelectorAll("[data-tool]").forEach((b) =>
+        (b.onclick = () => {
+          tool = tool === b.dataset.tool ? null : b.dataset.tool;
+          sel = null;
+          document.querySelectorAll("[data-tool]").forEach((o) => o.classList.toggle("on", o.dataset.tool === tool));
+          draw();
+        }),
+      );
+      const show = () => {
+        sel = null;
+        tool = null;
+        document.querySelectorAll("[data-tool]").forEach((b) => b.classList.remove("on"));
+        relabel();
+        draw();
+      };
+      pick.onchange = () => { mi = +pick.value; show(); };
+      document.getElementById("tw").oninput = (e) => ((M().track.w = +e.target.value || 1), draw());
+      document.getElementById("tl").oninput = (e) => (M().track.laps = +e.target.value || 1);
+      document.getElementById("name").oninput = (e) => {
+        M().name = e.target.value.toUpperCase();
+        pick.options[mi].text = `${mi}  ${M().race ? "RACE" : "FFA"} · ${M().name}`;
+      };
+      document.getElementById("reset").onclick = () => { maps = load(); mi = 0; show(); };
+
+      const ring = (n, r) => [...Array(n)].map((_, i) => ({ t: "node", x: Math.cos((i / n) * 2 * Math.PI) * r, y: Math.sin((i / n) * 2 * Math.PI) * r }));
+      const blank = (race) => {
+        const size = race ? Cfg_raceHalf : Cfg_arenaDefault;
+        const road = race ? smoothLoop(ring(12, size * 0.72)) : [];
+        const onRoad = (n, off) => [...Array(n)].map((_, i) => road[Math.round((i * road.length) / n + off) % road.length]);
+        return {
+          name: race ? "NEW RACE" : "NEW ARENA",
+          race,
+          size,
+          rocks: [],
+          pads: race
+            ? onRoad(8, 2).map((p, i) => ({ t: i < 6 ? "pad" : "heal", x: p.x, y: p.y, k: i < 6 ? 0 : 1 }))
+            : [
+                { t: "shield", x: 0, y: 0, k: 2 },
+                ...ring(4, size * 0.87).map((o) => ({ t: "heal", x: o.x, y: o.y, k: 1 })),
+                ...ring(4, size * 0.55).map((o) => ({ t: "pad", x: o.x, y: o.y, k: 0 })),
+              ],
+          crates: race
+            ? onRoad(8, 6).map((p) => ({ t: "crate", x: p.x, y: p.y }))
+            : ring(8, size * 0.45).map((o) => ({ t: "crate", x: o.x, y: o.y })),
+          track: { pts: race ? ring(12, size * 0.72) : [], w: 280, laps: 3 },
+        };
+      };
+      const add = (race) => { maps.push(blank(race)); mi = maps.length - 1; show(); };
+      document.getElementById("newFfa").onclick = () => add(false);
+      document.getElementById("newRace").onclick = () => add(true);
+      document.getElementById("del").onclick = () => {
+        if (maps.length < 2 || !confirm(`delete "${M().name}"? maps after it shift index.`)) return;
+        maps.splice(mi, 1);
+        mi = Math.min(mi, maps.length - 1);
+        show();
+      };
+
+      const n = (x) => `(${x.toFixed(1)})`;
+      const pt = (p) => `v ${n(p.x)} ${n(p.y)}`;
+      const AMT = ["padRefill", "healAmount", "shieldAmount"];
+      const fsharp = () =>
+        "    [| " +
+        maps
+          .map(
+            (m) =>
+              `{ Rocks = [ ${m.rocks.map((o) => `${pt(o)}, ${o.r.toFixed(1)}`).join("; ")} ]\n` +
+              `         Pads = [ ${m.pads.map((o) => `${pt(o)}, ${AMT[o.k]}, ${o.k}`).join("; ")} ]\n` +
+              `         Crates = [ ${m.crates.map(pt).join("; ")} ]\n` +
+              `         Track = ${m.race ? `Some([ ${m.track.pts.map(pt).join("; ")} ], ${m.track.w.toFixed(1)}, ${m.track.laps})` : "None"}\n` +
+              `         Size = ${m.size.toFixed(1)} }`,
+          )
+          .join("\n\n       ") +
+        " |]";
+
+      document.getElementById("save").onclick = async () => {
+        const blocking = maps.flatMap((m, i) => rules(m, false).map((b) => `${i} ${m.name}: ${b}`));
+        if (blocking.length && !confirm("these break the sim:\n\n" + blocking.join("\n") + "\n\nsave anyway?")) return;
+        msg.textContent = "saving...";
+        const r = await fetch("/__maps", {
+          method: "POST",
+          body: JSON.stringify({ custom: fsharp(), names: maps.map((m) => m.name) }),
+        });
+        msg.textContent = r.ok ? "written — Fable will recompile" : "failed";
+      };
+
+      const fit = () => {
+        const w = document.getElementById("wrap");
+        c.width = c.height = Math.max(320, Math.min(w.clientWidth, w.clientHeight) - 12);
+        draw();
+      };
+      addEventListener("resize", fit);
+      fit();
+    </script>
+  </body>
+</html>

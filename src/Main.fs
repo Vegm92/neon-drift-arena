@@ -82,7 +82,7 @@ let private masked () =
     |> Array.mapi (fun i x ->
         if Menu.isBot i then
             if Menu.visible () then noInput
-            elif i = Sim.target then { noInput with Present = true }
+            elif i = State.target then { noInput with Present = true }
             else Sim.bot world i
         elif Menu.joined.Contains i then x
         else noInput)
@@ -106,16 +106,16 @@ let private go intro =
     CrazyGames.gameplayStart ()
 
 let private launch (w: World) =
-    Sim.practice <- Menu.practice ()
-    Sim.race <- Menu.race ()
-    if Sim.practice then
-        if Sim.target < 0 || not (Menu.isBot Sim.target) then Sim.target <- Menu.addTarget ()
+    State.practice <- Menu.practice ()
+    State.race <- Menu.race ()
+    if State.practice then
+        if State.target < 0 || not (Menu.isBot State.target) then State.target <- Menu.addTarget ()
         world <- w
         go false
         world <- Sim.step Cfg.physicsDt (masked ()) world |> Sim.stage
         countdown <- 1.
     else
-        Sim.target <- -1
+        State.target <- -1
         world <- w
         go true
 
@@ -133,7 +133,7 @@ let private accuracy (s: Ship) =
 
 let private statRow winner pos (s: Ship) =
     let pips =
-        if Sim.race then
+        if State.race then
             sprintf "<b>%s</b>" (if s.Finish > 0. then sprintf "%d:%02d.%d" (int s.Finish / 60) (int s.Finish % 60) (int (s.Finish * 10.) % 10) else Strings.t.Dnf)
         else
             String.concat "" [ for k in 1 .. Cfg.stocks -> if k <= s.Stocks then "<i></i>" else "<i class=\"gone\"></i>" ]
@@ -160,7 +160,7 @@ let private stats (w: World) =
         | Over(Some i) -> i
         | _ -> -1
     let rows =
-        (if Sim.race then Sim.rank act |> Array.map (fun i -> w.Ships.[i]) else act |> Array.sortByDescending (fun s -> s.Id = winner, s.Stocks, s.Kills))
+        (if State.race then Sim.rank act |> Array.map (fun i -> w.Ships.[i]) else act |> Array.sortByDescending (fun s -> s.Id = winner, s.Stocks, s.Kills))
         |> Array.mapi (fun i s -> statRow winner (i + 1) s)
         |> String.concat ""
     let awards = ResizeArray()
@@ -184,7 +184,7 @@ let private stats (w: World) =
             Strings.t.ColAccuracy
             Strings.t.ColCrates
             Strings.t.ColRings
-            (if Sim.race then Strings.t.ColTime else Strings.t.ColStocks)
+            (if State.race then Strings.t.ColTime else Strings.t.ColStocks)
     sprintf "<div class=\"table\">%s%s</div><div class=\"awards\">%s</div>" head rows (String.concat "" awards)
 
 let private flash (cls: string) =
@@ -251,7 +251,7 @@ let private sendState () =
     let menu = if html = lastMenu && now - lastMenuAt < 1000. then null else html
     if not (isNull menu) then lastMenuAt <- now
     lastMenu <- html
-    Input.hotSend "nda:state" (createObj [ "world" ==> { world with Events = [] }; "events" ==> List.toArray frameEvents; "layout" ==> Sim.layout; "race" ==> Sim.race; "colors" ==> playerColor; "intro" ==> view.Intro; "banner" ==> banner.textContent; "bannerClass" ==> banner.className; "menuClass" ==> menuEl.className; "menu" ==> menu ])
+    Input.hotSend "nda:state" (createObj [ "world" ==> { world with Events = [] }; "events" ==> List.toArray frameEvents; "layout" ==> State.layout; "race" ==> State.race; "colors" ==> playerColor; "intro" ==> view.Intro; "banner" ==> banner.textContent; "bannerClass" ==> banner.className; "menuClass" ==> menuEl.className; "menu" ==> menu ])
 
 let private weaponOf (s: string) =
     match s with
@@ -311,8 +311,8 @@ let private clientFrame dt =
     Input.sendRemote ()
     let m = remote
     let layout: int = m?layout
-    Sim.race <- m?race
-    if Sim.layout <> layout then Sim.setLayout layout
+    State.race <- m?race
+    if State.layout <> layout then Sim.setLayout layout
     Array.blit (m?colors: int[]) 0 playerColor 0 4
     Render.syncArena view
     view.Intro <- m?intro
@@ -352,10 +352,10 @@ let private localFrame (t: float) dt =
         | Some Menu.Configure -> ()
         | Some Menu.Quit ->
             world <- Sim.initial
-            Sim.target <- -1
+            State.target <- -1
             Menu.show ()
         | None -> ()
-        if view.Layout <> Sim.layout then world <- Sim.initial
+        if view.Layout <> State.layout then world <- Sim.initial
         Render.syncArena view
         Render.draw view world [] dt
     elif countdown > 0. then
@@ -446,7 +446,7 @@ let rec frame (t: float) =
         if wasClient then
             wasClient <- false
             world <- Sim.initial
-            Sim.target <- -1
+            State.target <- -1
             Menu.show ()
         localFrame t dt
         sendState ()
@@ -464,15 +464,15 @@ window.requestAnimationFrame frame |> ignore
 window.addEventListener (
     "keydown",
     fun e ->
-        if Sim.practice && not (client ()) && not (Menu.visible ()) then
+        if State.practice && not (client ()) && not (Menu.visible ()) then
             match (e :?> Browser.Types.KeyboardEvent).code with
-            | "KeyK" -> world <- { world with Ships = world.Ships |> Array.map (fun s -> if s.Id = Sim.target then { s with Hp = 0.; Invuln = 0. } else s) }
+            | "KeyK" -> world <- { world with Ships = world.Ships |> Array.map (fun s -> if s.Id = State.target then { s with Hp = 0.; Invuln = 0. } else s) }
             | "KeyT" -> world <- { world with Time = Cfg.matchTime }
             | "KeyG" -> world <- { world with Ships = world.Ships |> Array.map (fun s -> if s.Id = Input.keyboardSlot then { s with Alive = false; Stocks = 0 } else s) }
             | "KeyR" -> world <- Sim.stage world
             | code when code.StartsWith "Digit" && Input.keyboardSlot >= 0 ->
                 let k = int (code.Substring 5) - 1
                 if k = -1 then world <- Sim.arm Input.keyboardSlot Blaster world
-                elif k >= 0 && k < Sim.arsenal.Length then world <- Sim.arm Input.keyboardSlot Sim.arsenal.[k] world
+                elif k >= 0 && k < State.arsenal.Length then world <- Sim.arm Input.keyboardSlot State.arsenal.[k] world
             | _ -> ()
 )

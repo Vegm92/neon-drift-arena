@@ -56,6 +56,22 @@ LAN mirror clients (`nda:state`, host-authoritative) ride the Vite dev socket on
 
 SETTINGS > TUNING is a developer tool and only appears with `?dev=1` in the URL, mirroring `?desktop=1`; without it players see CONTROLLERS, ARENA and AUDIO only. Behind the flag every tunable in `Cfg` is a row, adjusted with left/right in steps of a twentieth of the code default and clamped to three times it. Changes save to `localStorage` (`nda-tweaks`) immediately; RESET clears it and reloads with the code defaults. Reverse thrust is `reverseFactor` × thrust.
 
+## Map editor
+
+`npm run dev`, then open `/mapedit.html`. It reads the compiled `build/Core/Maps.js` and `build/Core/Strings.js`, so what you see and the names you edit are exactly what the game loads.
+
+Every map is either **FFA** or **RACE** — the same split `Settings.pool ()` uses, and it is simply whether `Layout.Track` is `Some`. The picker shows `index  MODE - NAME`, the name box renames the entry in `Strings.Arenas`, and `+ ffa` / `+ race` append a new map that already satisfies every rule, so you can save it straight away. On an FFA map the track panel and the track-node tool are hidden and the track rules are skipped; on a RACE map they appear.
+
+Drag anything to move it, wheel over a rock to resize, Del to delete, Shift-drag snaps to 50. The paint buttons place rocks, pads, crates and track nodes (a node is inserted after the nearest one). The road is drawn through the same Catmull-Rom `smoothLoop` the sim uses, so the ribbon is the real driveable surface, and the crosshairs are the four spawn points `Sim.spawnPos` will produce.
+
+SYMMETRY is a mode, not a one-shot: pick `⇄`, `⇅`, `quad` or `spin` and its axes stay drawn on the canvas in the toggle's own colour while every edit mirrors as you make it. Placing one rock places all its twins, dragging one drags them, the wheel resizes them together and Del removes the set. Partners are found by position at the moment you grab something, so it works on the maps already in the repo without any per-item bookkeeping - grab one of CORE RING's four corner rocks with `quad` on and the other three follow. An item sitting on an axis has no twin and stays single. `off` returns to editing one item at a time.
+
+TRANSFORM applies to the whole map, track nodes included. Hovering any transform button previews it on the canvas before you commit: its axis is drawn as a dashed line, the ghost outlines show where every item will land, and `fold` shades the half it is about to throw away in red. Each button is tinted with its own axis colour so the button and the line always match - magenta for the vertical axis (`mirror` and `fold` left/right), amber for the horizontal one (`mirror` and `fold` up/down), blue for the `rot 90` centre pivot, green for the two axes and centre that `spin x4` folds around. `mirror` and `rot` move everything, `fold` keeps the positive half and mirrors it back to make the map symmetric, `spin x4` keeps the first quadrant and repeats it four times (the `quad`/`spin` helpers in `Maps.fs`, applied by hand), and `jitter` nudges everything by a random amount up to the box value.
+
+RULES mirrors the per-arena invariants in `test/Check.fs` and re-checks on every edit: rock/pad/crate/spawn clearances at the sim's own margins, rocks overlapping or reaching past `arenaHalf` or `diagLimit ()`, and then per mode — FFA wants exactly one shield core, four heal pads, eight crate spots, an open lane out of the centre and an 8-10 s crossing; RACE wants at least three nodes, `raceHalf` size, a road that stays inside the arena and never doubles back within `trackWidth * 0.9`. Red breaks the sim, yellow is a smell. Saving with red findings asks first. `npm run check` stays the real gate.
+
+WRITE TO MAPS.FS posts to the dev-server-only `/__maps` hook, which replaces the `custom` binding in `src/Core/Maps.fs` with plain `Layout` literals and rewrites `Arenas` in `src/Core/Strings.fs` so names stay in i18n. `layouts` uses `custom` whenever it is non-empty, otherwise it falls back to the procedural `arenas`/`tracks`; pad amounts are emitted as `padRefill`/`healAmount`/`shieldAmount` so tuning still reaches them. Fable's watch picks the files up and recompiles. Clearing `custom` back to `[||]` restores the generated maps.
+
 ## Layout
 
 | File | Responsibility |

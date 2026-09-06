@@ -15,7 +15,7 @@ let drawTether t (w: World) (sv: ShipView) (s: Ship) =
     let target =
         match s.Tow with
         | TowShip j when s.Alive -> Some w.Ships.[j].Pos
-        | TowRock k when s.Alive -> Some Sim.asteroids.[k].Pos
+        | TowRock k when s.Alive -> Some State.asteroids.[k].Pos
         | _ -> None
     sv.Tether.visible <- target.IsSome
     match target with
@@ -130,7 +130,7 @@ let private threat (w: World) (me: Ship) =
         | Some h when len (h.Pos - me.Pos) < holeCore * 12. -> [ toward h.Pos (1. - len (h.Pos - me.Pos) / (holeCore * 12.)) ]
         | _ -> []
     match bullets @ rocks @ mines @ charging @ hole with
-    | [] when Sim.race -> Some(toward Sim.gates.[me.Next] 0.5, true)
+    | [] when State.race -> Some(toward State.gates.[me.Next] 0.5, true)
     | [] -> None
     | ts -> Some(List.maxBy snd ts, false)
 
@@ -161,7 +161,7 @@ let drawBorder (vw: View) (w: World) =
     vw.Border.scale.set (k, 1., k)
     let closing = Sim.sudden w && k > shrinkMin
     (vw.Border.children.[0] :?> Mesh).material.color.setHex (if closing then 0xff3b5c else 0x00f6ff)
-    let left = if Sim.race then w.Time else max 0. (matchTime - w.Time)
+    let left = if State.race then w.Time else max 0. (matchTime - w.Time)
     vw.Clock.className <- if Sim.sudden w then "sudden" else ""
     vw.Clock.textContent <-
         if Sim.sudden w then Strings.t.SuddenDeath

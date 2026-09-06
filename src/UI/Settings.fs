@@ -28,17 +28,17 @@ let mutable isGuest = true
 let mutable onSignInCompleted : string -> unit = fun _ -> ()
 
 let arenaName () =
-    if arenaPick = Sim.layouts.Length then Strings.t.Random else Strings.t.Arenas.[Sim.layout]
+    if arenaPick = Maps.layouts.Length then Strings.t.Random else Strings.t.Arenas.[State.layout]
 
-let private pool () = [| 0 .. Sim.layouts.Length - 1 |] |> Array.filter (fun i -> Sim.isTrack i = Sim.race)
+let private pool () = [| 0 .. Maps.layouts.Length - 1 |] |> Array.filter (fun i -> Maps.isTrack i = State.race)
 
 let rollArena () =
-    if arenaPick = Sim.layouts.Length then
+    if arenaPick = Maps.layouts.Length then
         let p = pool ()
         Sim.setLayout p.[System.Random().Next p.Length]
 
 let fixArena () =
-    if arenaPick < Sim.layouts.Length && Sim.isTrack arenaPick <> Sim.race then
+    if arenaPick < Maps.layouts.Length && Maps.isTrack arenaPick <> State.race then
         arenaPick <- (pool ()).[0]
         Sim.setLayout arenaPick
 
@@ -179,7 +179,7 @@ let rows () =
       yield Action(Strings.t.ResetKeys, resetBinds)
       yield Header Strings.t.Arena
       yield Arena
-      yield Swap(Strings.t.CatchUp, (fun () -> Sim.catchUp), (fun b -> Sim.catchUp <- b; window.localStorage.setItem (catchKey, string b)))
+      yield Swap(Strings.t.CatchUp, (fun () -> State.catchUp), (fun b -> State.catchUp <- b; window.localStorage.setItem (catchKey, string b)))
       yield
           Swap(
               Strings.t.ReduceFlash,
@@ -267,10 +267,10 @@ let adjust r dir =
     | Swap(_, get, set) -> set (not (get ()))
     | Level(_, k) -> Sfx.setLevel k (Sfx.level k + float dir * 0.1)
     | Arena ->
-        let ring = Array.append (pool ()) [| Sim.layouts.Length |]
+        let ring = Array.append (pool ()) [| Maps.layouts.Length |]
         let i = ring |> Array.tryFindIndex ((=) arenaPick) |> Option.defaultValue 0
         arenaPick <- ring.[(i + dir + ring.Length) % ring.Length]
-        if arenaPick < Sim.layouts.Length then Sim.setLayout arenaPick
+        if arenaPick < Maps.layouts.Length then Sim.setLayout arenaPick
         window.localStorage.setItem (arenaKey, string arenaPick)
     | Bind a -> if dir > 0 then grabbing <- Some(a, true) else dropBind a
     | Tune k ->
@@ -299,13 +299,13 @@ let init () =
     | null -> ()
     | v ->
         match System.Int32.TryParse v with
-        | true, i when i >= 0 && i < Sim.layouts.Length ->
+        | true, i when i >= 0 && i < Maps.layouts.Length ->
             arenaPick <- i
             Sim.setLayout i
-        | true, i when i = Sim.layouts.Length -> arenaPick <- i
+        | true, i when i = Maps.layouts.Length -> arenaPick <- i
         | _ -> ()
     fixArena ()
-    Sim.catchUp <- window.localStorage.getItem catchKey <> "false"
+    State.catchUp <- window.localStorage.getItem catchKey <> "false"
     let shakeOff = window.localStorage.getItem shakeKey = "false"
     RenderTypes.screenShake <- not shakeOff
     RenderTypes.reduceFlash <-

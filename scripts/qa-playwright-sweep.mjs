@@ -91,9 +91,9 @@ const gameBoot = async (page) => {
   await page.evaluate(async () => {
     const url = performance.getEntriesByType("resource").map((e) => e.name).find((u) => /\/build\/Main\.js/.test(u)) ?? "/build/Main.js";
     const at = (f) => url.replace(/Main\.js.*$/, f);
-    const [M, Menu, Sim, D] = await Promise.all([import(url), import(at("UI/Menu.js")), import(at("Core/Sim.js")), import(at("Core/Domain.js"))]);
+    const [M, Menu, Sim, State, D] = await Promise.all([import(url), import(at("UI/Menu.js")), import(at("Core/Sim.js")), import(at("Core/State.js")), import(at("Core/Domain.js"))]);
     const q = {
-      M, Menu, Sim, D, raf: window.requestAnimationFrame.bind(window), t: performance.now(), frozen: false,
+      M, Menu, Sim, State, D, raf: window.requestAnimationFrame.bind(window), t: performance.now(), frozen: false,
       clone: (o, f) => Object.assign(Object.create(Object.getPrototypeOf(o)), o, f),
       freeze() { if (q.frozen) return; q.frozen = true; window.requestAnimationFrame = () => 0; q.t = performance.now(); },
       step(k = 1, ms = 16) { for (let i = 0; i < k; i++) M.frame((q.t += ms)); },
@@ -139,7 +139,7 @@ const closeupAt = async (page, name, x, y, h = 700) => {
 const flashSeq = async (page, name, frames = 5, ms = 16, aim = null) => {
   const seq = [];
   for (let i = 0; i < frames; i++) {
-    if (i > 0) await q(page, ([ms, aim]) => { __qa.step(1, ms); if (aim) { const p = __qa.pos(aim.i === "target" ? __qa.Sim.target() : aim.i); __qa.tags(false); __qa.cam(p.x + aim.dx, p.y, aim.h); } }, [ms, aim]);
+    if (i > 0) await q(page, ([ms, aim]) => { __qa.step(1, ms); if (aim) { const p = __qa.pos(aim.i === "target" ? __qa.State.target() : aim.i); __qa.tags(false); __qa.cam(p.x + aim.dx, p.y, aim.h); } }, [ms, aim]);
     const stats = pngStats(await shotPng(page));
     if (i < 3) await shot(page, `${name}-f${i}`);
     seq.push(stats);
@@ -459,7 +459,7 @@ await wait(2500);
 await shot(page, "race-hud");
 note("race-hud", JSON.stringify(await q(page, () => ({ clock: document.getElementById("clock").textContent, panels: [...document.querySelectorAll("#hud .panel .stocks")].map((s) => s.textContent) }))));
 await freeze(page);
-const gates = await q(page, () => __qa.Sim.gates().map((g) => ({ x: g.X, y: g.Y })));
+const gates = await q(page, () => __qa.State.gates().map((g) => ({ x: g.X, y: g.Y })));
 note("race", `gates: ${gates.length}`);
 if (gates.length) { await closeupAt(page, "race-finish-line", gates[0].x, gates[0].y, 800); await closeupAt(page, "race-next-portal", gates[1 % gates.length].x, gates[1 % gates.length].y, 800); }
 await thaw(page);
@@ -514,7 +514,7 @@ await freeze(page);
 await page.keyboard.down("KeyK");
 await q(page, () => __qa.step(1));
 await page.keyboard.up("KeyK");
-await q(page, () => { const p = __qa.pos(__qa.Sim.target()); __qa.tags(false); __qa.cam(p.x, p.y, 520); });
+await q(page, () => { const p = __qa.pos(__qa.State.target()); __qa.tags(false); __qa.cam(p.x, p.y, 520); });
 await flashSeq(page, "target-kill-fx", 6, 16, { i: "target", dx: 0, h: 520 });
 await q(page, () => __qa.tags(true));
 await q(page, () => __qa.step(10));

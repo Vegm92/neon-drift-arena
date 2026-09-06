@@ -14,9 +14,9 @@ let private smooth x = x * x * (3. - 2. * x)
 let flyby (vw: View) (w: World) dt =
     vw.Intro <- vw.Intro - dt
     let stops =
-        if Sim.race && Sim.gates.Length > 0 then
-            let n = min 8 Sim.gates.Length
-            Array.init (n + 1) (fun i -> Sim.gates.[i * Sim.gates.Length / n % Sim.gates.Length])
+        if State.race && State.gates.Length > 0 then
+            let n = min 8 State.gates.Length
+            Array.init (n + 1) (fun i -> State.gates.[i * State.gates.Length / n % State.gates.Length])
         else
             w.Ships |> Array.filter (fun s -> s.Active) |> Array.map (fun s -> Sim.spawnPos s.Id)
     if stops.Length > 0 then
