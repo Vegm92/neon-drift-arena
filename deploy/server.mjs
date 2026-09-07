@@ -37,12 +37,13 @@ const send = (ws, msg) => ws?.readyState === 1 && ws.send(msg);
 new WebSocketServer({ server, path: "/relay" }).on("connection", (ws, req) => {
   const query = new URL(req.url, "http://x").searchParams;
   const code = (query.get("room") ?? "").slice(0, 8);
-  const isHost = query.get("role") === "host";
+  const wantsHost = query.get("role") === "host";
   if (!code) return ws.close();
 
   let room = rooms.get(code);
   if (!room) rooms.set(code, (room = { host: null, pads: new Set() }));
-  if (isHost) { room.host?.close(); room.host = ws; } else room.pads.add(ws);
+  const isHost = wantsHost && !room.host;
+  if (isHost) room.host = ws; else room.pads.add(ws);
 
   ws.on("message", (buf) => {
     const msg = buf.toString().slice(0, 4096);

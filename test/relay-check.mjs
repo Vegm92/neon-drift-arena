@@ -46,6 +46,14 @@ try {
   await settle();
   assert.deepEqual(pad.inbox, ["from-host"], "a closed pad receives nothing further");
 
+  const host1 = await open("CCCC", "host");
+  const host2 = await open("CCCC", "host");
+  host1.send("from-real-host");
+  host2.send("from-second-host");
+  await settle();
+  assert.deepEqual(host2.inbox, ["from-real-host"], "a second host is routed to the first as a peer");
+  assert.deepEqual(host1.inbox, ["from-second-host"], "the first host still receives messages, so it was not evicted");
+
   console.log("relay ok");
 } catch (err) {
   console.error(err.message);
