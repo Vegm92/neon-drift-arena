@@ -503,4 +503,26 @@ let main _ =
     race <- false
     setLayout 0
 
+    check "pilot levels start at 1 and climb on the XP curve" (Progress.level 0 = 1 && Progress.level 49 = 1 && Progress.level 50 = 2 && Progress.level 200 = 3)
+    check "XP to the next level closes to zero exactly at the boundary" (Progress.toNext 0 = 50 && Progress.toNext 49 = 1 && Progress.toNext 50 = 150)
+    let today = "2026-09-07"
+    check "the daily picks are stable for one date and distinct in kind" (Progress.daily today = Progress.daily today && (Progress.daily today |> Array.map Progress.task |> Array.distinct).Length = 3)
+    check "a different date picks a different set" (Seq.init 14 (fun d -> Progress.daily (sprintf "2026-09-%02d" (d + 1)) |> Array.toList) |> Seq.distinct |> Seq.length > 1)
+    let won = { Progress.Won = true; Progress.Kills = 4; Progress.Deaths = 0; Progress.RaceTime = 0.; Progress.Clean = true }
+    let winId = Progress.pool |> Array.findIndex (fun (t, g, _) -> t = Progress.WinMatches && g = 3)
+    check "a win advances a win-matches task and completes it on the third" (Progress.advance winId 0 won = 1 && Progress.complete winId (Progress.advance winId 2 won))
+    let bestId = Progress.pool |> Array.findIndex (fun (t, _, _) -> t = Progress.KillsInMatch)
+    check "kills-in-one-match keeps the best, never the sum" (Progress.advance bestId 7 won = 7 && Progress.advance bestId 1 won = 4)
+    let raceId = Progress.pool |> Array.findIndex (fun (t, _, _) -> t = Progress.RaceUnder)
+    check "a race task ignores a match that was never raced" (Progress.advance raceId 0 won = 0 && Progress.advance raceId 0 { won with Progress.RaceTime = 60. } = 1)
+    check "match XP pays the base, the win and every kill" (Progress.matchXp won = 23)
+    check "a task pays its reward once, on the crossing" (Progress.earned [| winId |] [| 2 |] [| 3 |] = Progress.reward winId && Progress.earned [| winId |] [| 3 |] [| 3 |] = 0)
+    let ids = Progress.daily today
+    let date', ids', prog' = Progress.decode today (Progress.encode today ids [| 1; 2; 3 |])
+    check "a saved daily round-trips" (date' = today && ids' = ids && prog' = [| 1; 2; 3 |])
+    let _, _, rolled = Progress.decode "2026-09-08" (Progress.encode today ids [| 1; 2; 3 |])
+    check "yesterday's daily resets when the date rolls over" (rolled = [| 0; 0; 0 |])
+    let _, junkIds, junkProg = Progress.decode today "not|a|record"
+    check "a corrupt daily falls back to a fresh set" (junkIds = Progress.daily today && junkProg = [| 0; 0; 0 |])
+
     0

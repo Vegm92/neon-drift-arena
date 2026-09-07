@@ -218,7 +218,20 @@
     border:1px solid currentColor;border-radius:3px;text-shadow:0 0 8px currentColor}
   #menu .lobby .slot.away{filter:brightness(.7)}
   #menu .lobby .slot.away .foot::after{content:" \25BC"}
-  #menu .lobby .note{font-size:10px;letter-spacing:.25em;color:#ff2bd6;min-height:1em}
+  #menu .lobby .note{font-size:10px;letter-spacing:.25em;color:#ff2bd6;white-space:nowrap}
+  #menu .lobby .notebar{display:flex;align-items:center;gap:clamp(10px,2vw,24px);width:100%;min-height:1em}
+  #menu .lobby .pilot{display:flex;align-items:center;gap:clamp(10px,2vw,28px);flex:1;min-width:0}
+  #menu .lobby .pilot .lv{display:flex;align-items:center;gap:10px;white-space:nowrap}
+  #menu .lobby .pilot .lv b{font-size:clamp(9px,1.05vw,12px);letter-spacing:.22em;color:#00f6ff;text-shadow:0 0 12px #00f6ff}
+  #menu .lobby .pilot .lv i{display:block;height:4px;min-width:2px;max-width:90px;flex:0 0 auto;
+    background:linear-gradient(90deg,#00f6ff,#ff2bd6);border-radius:2px;box-shadow:0 0 10px rgba(0,246,255,.5)}
+  #menu .lobby .pilot .lv span{font-size:9px;letter-spacing:.18em;opacity:.5}
+  #menu .lobby .pilot .daily{display:flex;align-items:center;gap:clamp(8px,1.4vw,18px);flex:1;justify-content:flex-end;flex-wrap:wrap}
+  #menu .lobby .pilot .daily em{font-style:normal;font-size:9px;letter-spacing:.25em;color:#ff2bd6;opacity:.8}
+  #menu .lobby .pilot .task{display:flex;align-items:center;gap:8px;font-size:9px;letter-spacing:.14em;opacity:.75}
+  #menu .lobby .pilot .task b{color:#00f6ff}
+  #menu .lobby .pilot .task.done{opacity:.4;text-decoration:line-through}
+  #menu .lobby .pilot .task.done b{color:#7CFC7C;text-decoration:none}
   #menu .lobby .legends{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:clamp(8px,1.4vw,22px);width:100%}
   #menu .lobby .legend{padding:6px 12px;text-align:left;border:1px solid #26405e;border-radius:6px;background:rgba(8,14,26,.5)}
   #menu .lobby .legend:first-child{color:#00f6ff}.lobby .legend:last-child{color:#ff2bd6}

@@ -21,6 +21,7 @@
     <Compile Include="Core\Rebirth.fs" />
     <Compile Include="Core\Race.fs" />
     <Compile Include="Core\Bot.fs" />
+    <Compile Include="Core\Progress.fs" />
     <Compile Include="Core\Strings.fs" />
     <Compile Include="Core\Sim.fs" />
     <!-- Platform: thin browser bindings -->

@@ -29,22 +29,39 @@ let names: string[] = Array.create 4 ""
 
 let mutable highScore = 0
 let mutable matchesPlayed = 0
+let mutable xp = 0
+let mutable dailyIds: int[] = Array.empty
+let mutable dailyProg: int[] = Array.create 3 0
+
+let private today () = System.DateTime.UtcNow.ToString "yyyy-MM-dd"
 
 let loadProgress () =
     try
         let w = CrazyGames.dataGetItem "nda-high-score"
         let m = CrazyGames.dataGetItem "nda-matches-played"
-        highScore <- if isNullOrUndefined w || w = "" then 0 else int w
-        matchesPlayed <- if isNullOrUndefined m || m = "" then 0 else int m
-        printfn "Loaded progress: high score %d, matches %d" highScore matchesPlayed
+        let x = CrazyGames.dataGetItem "nda-xp"
+        let d = CrazyGames.dataGetItem "nda-daily"
+        let num (v: string) = if isNullOrUndefined v || v = "" then 0 else int v
+        highScore <- num w
+        matchesPlayed <- num m
+        xp <- num x
+        let _, ids, prog = Progress.decode (today ()) (if isNullOrUndefined d then "" else d)
+        dailyIds <- ids
+        dailyProg <- prog
+        printfn "Loaded progress: high score %d, matches %d, xp %d" highScore matchesPlayed xp
     with e ->
+        let _, ids, prog = Progress.decode (today ()) ""
+        dailyIds <- ids
+        dailyProg <- prog
         printfn "Failed to load progress: %s" e.Message
 
 let saveProgress () =
     try
         CrazyGames.dataSetItem ("nda-high-score", string highScore)
         CrazyGames.dataSetItem ("nda-matches-played", string matchesPlayed)
-        printfn "Saved progress: high score %d, matches %d" highScore matchesPlayed
+        CrazyGames.dataSetItem ("nda-xp", string xp)
+        CrazyGames.dataSetItem ("nda-daily", Progress.encode (today ()) dailyIds dailyProg)
+        printfn "Saved progress: high score %d, matches %d, xp %d" highScore matchesPlayed xp
     with e ->
         printfn "Failed to save progress: %s" e.Message
 
@@ -161,6 +178,8 @@ let private cycleColor slot dir =
 
 let private botKey = "bot"
 let isBot slot = joined.Contains slot && owner.[slot] = botKey
+
+let clean () = not practiceMode && not (joined |> Seq.exists isBot)
 
 let private applyMode () =
     State.race <- raceMode
@@ -311,6 +330,25 @@ let private hint (keys: string) (label: string) =
     let caps = keys.Split([| " / " |], System.StringSplitOptions.None) |> Array.map (sprintf "<i>%s</i>") |> String.concat ""
     sprintf "<div class=\"key\"><div class=\"caps\">%s</div><span>%s</span></div>" caps label
 
+let private pilot () =
+    if dailyIds.Length <> 3 then ""
+    else
+        let lv = Progress.level xp
+        let span = Progress.levelFloor (lv + 1) - Progress.levelFloor lv
+        let into = xp - Progress.levelFloor lv
+        let tasks =
+            dailyIds
+            |> Array.mapi (fun k id ->
+                let g = Progress.goal id
+                let done' = Progress.complete id dailyProg.[k]
+                sprintf "<div class=\"task%s\"><span>%s</span><b>%s</b></div>"
+                    (if done' then " done" else "")
+                    (Strings.t.DailyTask (Progress.task id) g)
+                    (if done' then Strings.t.DailyDone else sprintf "%d/%d" (min dailyProg.[k] g) g))
+            |> String.concat ""
+        sprintf "<div class=\"pilot\"><div class=\"lv\"><b>%s</b><i style=\"width:%d%%\"></i><span>%s</span></div><div class=\"daily\"><em>%s</em>%s</div></div>"
+            (Strings.t.PilotLv lv) (100 * into / max 1 span) (Strings.t.PilotNext (Progress.toNext xp)) Strings.t.Daily tasks
+
 let private renderLobby (devices: Input.Device[]) =
     let slots =
         [ for i in 0..3 ->
@@ -376,8 +414,8 @@ let private renderLobby (devices: Input.Device[]) =
         else Strings.t.NeedReady
     el.innerHTML <-
         sprintf
-            "<div class=\"lobby\"><div class=\"title\"><h1>%s</h1><div class=\"sub\">%s</div></div><div class=\"modebar\">%s</div><div class=\"slots\">%s</div><div class=\"hints\">%s</div><div class=\"buttons\">%s</div><div class=\"note\">%s</div><div class=\"legends\">%s%s%s%s</div></div>"
-            Strings.t.TitleMain Strings.t.TitleSub mode slots hints picks note
+            "<div class=\"lobby\"><div class=\"title\"><h1>%s</h1><div class=\"sub\">%s</div></div><div class=\"modebar\">%s</div><div class=\"slots\">%s</div><div class=\"hints\">%s</div><div class=\"buttons\">%s</div><div class=\"notebar\"><span class=\"note\">%s</span>%s</div><div class=\"legends\">%s%s%s%s</div></div>"
+            Strings.t.TitleMain Strings.t.TitleSub mode slots hints picks note (pilot ())
             (legend Strings.t.Keyboard (Strings.kbLegend ()))
             (legend Strings.t.Gamepad Strings.t.PadLegend)
             (legend Strings.t.Phone Strings.t.PhoneLegend)
@@ -399,6 +437,16 @@ let recordWin (winner: int) (team: int) =
         matchesPlayed <- matchesPlayed + 1
         saveProgress ()
     series
+
+let recordMatch (won: bool) (kills: int) (deaths: int) (raceTime: float) =
+    if dailyIds.Length = 3 then
+        let o: Progress.Outcome =
+            { Won = won; Kills = kills; Deaths = deaths; RaceTime = raceTime; Clean = clean () }
+        let before = Array.copy dailyProg
+        dailyProg <- Array.init 3 (fun k -> Progress.advance dailyIds.[k] before.[k] o)
+        xp <- xp + Progress.matchXp o + Progress.earned dailyIds before dailyProg
+        if o.Clean && kills > highScore then highScore <- kills
+        saveProgress ()
 
 let private tally () =
     joined
