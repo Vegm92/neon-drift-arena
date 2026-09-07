@@ -62,6 +62,27 @@ try {
   assert.equal(host1.role, true, "the first connection to claim the room is told it is host");
   assert.equal(host2.role, false, "a later joiner is told it is a peer, not host");
 
+  const dHost = await open("DDDD", "host");
+  const dPeer1 = await open("DDDD", "host");
+  const dPeer2 = await open("DDDD", "host");
+  dHost.close();
+  await settle();
+  const promo = JSON.parse(dPeer1.inbox[0]);
+  assert.equal(promo.event, "nda:role", "the oldest remaining peer is told about its new role");
+  assert.equal(promo.data.host, true, "the oldest remaining peer is promoted to host");
+  assert.equal(dPeer2.inbox.length, 0, "the other peer gets no role message of its own");
+  dPeer1.send("from-promoted-host");
+  await settle();
+  assert.deepEqual(dPeer2.inbox, ["from-promoted-host"], "the remaining peer receives the new host's messages");
+
+  const eHost = await open("EEEE", "host");
+  const ePad = await open("EEEE", "pad");
+  const ePeer = await open("EEEE", "host");
+  eHost.close();
+  await settle();
+  assert.equal(JSON.parse(ePeer.inbox[0]).data.host, true, "a desktop peer is promoted over a phone pad");
+  assert.deepEqual(ePad.inbox, [], "a phone pad is never promoted");
+
   console.log("relay ok");
 } catch (err) {
   console.error(err.message);

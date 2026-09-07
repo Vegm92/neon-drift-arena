@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet tool install --global fable --version 5.16.0
+      - run: echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+      - run: npm ci
+      - run: npm run check
+      - run: npm run check:relay
+      - run: fable src -o build
