@@ -159,6 +159,7 @@ type Locale =
       AddBot: string
       ClearBots: string
       Tuning: string
+      Video: string
       Audio: string
       Music: string
       Sounds: string
@@ -383,6 +384,7 @@ let en =
       AddBot = "ADD BOT"
       ClearBots = "CLEAR BOTS"
       Tuning = "TUNING"
+      Video = "VIDEO"
       Audio = "AUDIO"
       Music = "MUSIC"
       Sounds = "SOUNDS"

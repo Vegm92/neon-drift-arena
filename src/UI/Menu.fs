@@ -88,7 +88,7 @@ let mutable note = ""
 let mutable private shown = true
 let mutable private cursor = 0
 let mutable private pending: Action option = None
-let mutable private lobbyPick = 5
+let private lobbyPick = Array.create 4 5
 let private ready = Array.create 4 false
 let private onRow = Array.create 4 false
 let private owner = Array.create 4 ""
@@ -397,9 +397,9 @@ let private renderLobby (devices: Input.Device[]) =
         |> String.concat ""
     let mode = modeTagline () |> List.map (sprintf "<span>%s</span>") |> String.concat ""
     let go = canStart ()
-    let who =
+    let whoOn i =
         joined
-        |> Seq.filter (fun s -> onRow.[s])
+        |> Seq.filter (fun s -> onRow.[s] && lobbyPick.[s] = i)
         |> Seq.sort
         |> Seq.map (fun s ->
             let c = cardColor s
@@ -413,7 +413,8 @@ let private renderLobby (devices: Input.Device[]) =
           "", Strings.t.Settings, true
           Strings.keysLaunch (), Strings.t.Start, go ]
         |> List.mapi (fun i (top, t, ok) ->
-            let sel = i = lobbyPick && who <> ""
+            let who = whoOn i
+            let sel = who <> ""
             let cls = (if sel then " sel" else "") + (if ok then "" else " dim") + (if i = 5 && go then " go" else "")
             sprintf "<div class=\"item%s\" data-pick=\"%d\"><em>%s</em><b>%s</b><div class=\"who\">%s</div></div>" cls i top t (if sel then who else ""))
         |> String.concat ""
@@ -515,12 +516,24 @@ let private renderOptions () =
             (if top + window' < n then Strings.t.More + "\n" else "")
             (Strings.optHint ())
 
-let private openOptions () =
+/// Settings a joined machine owns on its own — sound, video, its own controls.
+/// The panel is drawn locally, so the host's mirrored screen never carries it,
+/// and closing it returns to the mirror rather than to a lobby this machine
+/// does not run.
+let mutable private localOpts = false
+
+let localOptions () = localOpts
+
+let private openOptionsFor machine =
+    localOpts <- machine
     optBack <- screen
-    optRows <- Settings.rows ()
+    optRows <- Settings.rows machine
     optCursor <- optRows |> List.findIndex Settings.selectable
     optTop <- 0
     open' Options
+
+let private openOptions () = openOptionsFor false
+let openLocal () = openOptionsFor true
 
 let private dropMissing (devices: Input.Device[]) =
     for s in Seq.toArray joined do
@@ -555,12 +568,12 @@ let private updateLobby () =
                         else [ 0..3 ] |> List.tryFind (fun i -> not (joined.Contains i))
                     slot |> Option.iter (claim d.Key)
             elif onRow.[d.Slot] then
-                if left then lobbyPick <- (lobbyPick + 5) % 6
-                if right then lobbyPick <- (lobbyPick + 1) % 6
+                if left then lobbyPick.[d.Slot] <- (lobbyPick.[d.Slot] + 5) % 6
+                if right then lobbyPick.[d.Slot] <- (lobbyPick.[d.Slot] + 1) % 6
                 if up || back then onRow.[d.Slot] <- false
                 elif start && canStart () then launch <- true
                 elif fire || start then
-                    match lobbyPick with
+                    match lobbyPick.[d.Slot] with
                     | 0 ->
                         if raceMode then raceMode <- false
                         elif practiceMode then (practiceMode <- false; raceMode <- true)
@@ -630,8 +643,12 @@ let private updateOptions () =
             if esc || start then back <- true
     renderOptions ()
     if back then
-        if optBack = Lobby then dropMissing (Input.devices ())
-        open' optBack
+        if localOpts then
+            localOpts <- false
+            hide ()
+        else
+            if optBack = Lobby then dropMissing (Input.devices ())
+            open' optBack
 
 let private updateList (title: string) (inputs: Input[]) =
     let n = (items ()).Length
@@ -747,7 +764,7 @@ el.addEventListener (
     fun e ->
         match hit e "i", hit e "pick" with
         | Some i, _ -> pick i
-        | _, Some p when kbIn () && onRow.[kb ()] -> lobbyPick <- p
+        | _, Some p when kbIn () && onRow.[kb ()] -> lobbyPick.[kb ()] <- p
         | _ -> ()
 )
 
@@ -767,7 +784,7 @@ el.addEventListener (
             | _, Some s, _, _ when s = kb () -> if onRow.[s] then onRow.[s] <- false else Input.press "Space"
             | _, _, Some p, _ when kbIn () ->
                 onRow.[kb ()] <- true
-                lobbyPick <- p
+                lobbyPick.[kb ()] <- p
                 Input.press "Space"
             | _, _, _, Some i ->
                 pick i
