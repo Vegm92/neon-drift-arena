@@ -318,6 +318,22 @@ let private qr () =
             "<details class=\"legend qr\"%s onpointerdown=\"this.open=!this.open\"><summary><div class=\"lt\">%s</div><div class=\"big\">%s<div class=\"url\">%s</div></div></summary></details>"
             (if wasOpen then " open" else "") Strings.t.ScanToJoin (qrToSvg padUrl) padUrl
 
+let private inviteUrl () =
+    if Input.room = "" then ""
+    else window.location.href.Split('?').[0] + "?room=" + Input.room
+
+let private invite () =
+    let url = inviteUrl ()
+    if not Cfg.inviteButton || url = "" then ""
+    else
+        let at = window?__ndaCopied
+        let fresh = not (isNullOrUndefined at) && JS.Constructors.Date.now () - unbox<float> at < 1600.
+        sprintf
+            "<div class=\"legend invite%s\" onpointerdown=\"navigator.clipboard.writeText('%s');window.__ndaCopied=Date.now()\"><div class=\"lt\">%s</div></div>"
+            (if fresh then " copied" else "")
+            url
+            (if fresh then Strings.t.InviteCopied else Strings.t.InviteCopy)
+
 let private plus =
     "<svg viewBox=\"0 0 100 100\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linejoin=\"round\"><path d=\"M50 8 L86 29 L86 71 L50 92 L14 71 L14 29 Z\"/><path d=\"M50 34 L50 66 M34 50 L66 50\" stroke-width=\"4\"/></svg>"
 
@@ -418,12 +434,13 @@ let private renderLobby (devices: Input.Device[]) =
         else Strings.t.NeedReady
     el.innerHTML <-
         sprintf
-            "<div class=\"lobby\"><div class=\"title\"><h1>%s</h1><div class=\"sub\">%s</div></div><div class=\"modebar\">%s</div><div class=\"slots\">%s</div><div class=\"hints\">%s</div><div class=\"buttons\">%s</div><div class=\"notebar\"><span class=\"note\">%s</span>%s</div><div class=\"legends\">%s%s%s%s</div></div>"
+            "<div class=\"lobby\"><div class=\"title\"><h1>%s</h1><div class=\"sub\">%s</div></div><div class=\"modebar\">%s</div><div class=\"slots\">%s</div><div class=\"hints\">%s</div><div class=\"buttons\">%s</div><div class=\"notebar\"><span class=\"note\">%s</span>%s</div><div class=\"legends\">%s%s%s%s%s</div></div>"
             Strings.t.TitleMain Strings.t.TitleSub mode slots hints picks note (pilot ())
             (legend Strings.t.Keyboard (Strings.kbLegend ()))
             (legend Strings.t.Gamepad Strings.t.PadLegend)
             (legend Strings.t.Phone Strings.t.PhoneLegend)
             (qr ())
+            (invite ())
     if renaming >= 0 then
         match el.querySelector "input.rename" with
         | null -> ()

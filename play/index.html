@@ -232,7 +232,9 @@
   #menu .lobby .pilot .task b{color:#00f6ff}
   #menu .lobby .pilot .task.done{opacity:.4;text-decoration:line-through}
   #menu .lobby .pilot .task.done b{color:#7CFC7C;text-decoration:none}
-  #menu .lobby .legends{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:clamp(8px,1.4vw,22px);width:100%}
+  #menu .lobby .legends{display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:clamp(8px,1.4vw,22px);width:100%}
+  #menu .lobby .legend.invite{color:#b6ff3b;display:flex;align-items:center;justify-content:center;text-align:center;max-width:150px;cursor:pointer;user-select:none}
+  #menu .lobby .legend.invite.copied{color:#0a1220;background:#b6ff3b;border-color:#b6ff3b}
   #menu .lobby .legend{padding:6px 12px;text-align:left;border:1px solid #26405e;border-radius:6px;background:rgba(8,14,26,.5)}
   #menu .lobby .legend:first-child{color:#00f6ff}.lobby .legend:last-child{color:#ff2bd6}
   #menu .lobby .legend.qr{color:#00f6ff;display:flex;align-items:center;max-width:170px;cursor:pointer}

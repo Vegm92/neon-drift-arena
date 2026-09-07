@@ -16,6 +16,8 @@ type Locale =
       Phone: string
       Remote: string
       ScanToJoin: string
+      InviteCopy: string
+      InviteCopied: string
       PadConnecting: string
       PadFire: string
       PadBoost: string
@@ -225,6 +227,8 @@ let en =
       Phone = "PHONE"
       Remote = "LAN PC"
       ScanToJoin = "SCAN TO PLAY FROM YOUR PHONE"
+      InviteCopy = "COPY INVITE LINK"
+      InviteCopied = "LINK COPIED"
       PadConnecting = "CONNECTING"
       PadFire = "FIRE"
       PadBoost = "BOOST"
