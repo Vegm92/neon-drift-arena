@@ -1,6 +1,7 @@
 node_modules/
 build/
 dist/
+dist-game/
 bin/
 obj/
 .fable/

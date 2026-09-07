@@ -30,7 +30,7 @@ The game is desktop only for now. Both the landing page and `/play/` test `(any-
 
 ## Deploy
 
-`npm run build` emits the page, the game and the pad into `dist/`. The root `Dockerfile` builds it on Railway (a .NET 10 + Node stage runs Fable and Vite, a Node image serves `dist/`): the `site` service of the `neon-drift-arena` project deploys it from GitHub on every push (https://site-production-a98b.up.railway.app), and `npm run deploy` uploads the working tree for a one-off build. `deploy/server.mjs` serves those files gzipped and carries the phone-pad relay on `/relay`.
+`npm run build` emits the page, the game and the pad into `dist/`, then `scripts/prune-dist.mjs` drops `models/` (47 MB of `.glb` used only by the `models.html` sandbox, never by the game). `combat.html`, `models.html` and `mapedit.html` are dev pages and are not build inputs. The root `Dockerfile` builds it on Railway (a .NET 10 + Node stage runs Fable and Vite, a Node image serves `dist/`): the `site` service of the `neon-drift-arena` project deploys it from GitHub on every push (https://site-production-a98b.up.railway.app), and `npm run deploy` uploads the working tree for a one-off build. `deploy/server.mjs` serves those files gzipped and carries the phone-pad relay on `/relay`.
 
 ## CrazyGames
 
@@ -43,6 +43,8 @@ The SDK v2 script is loaded from `sdk.crazygames.com` in both `index.html` and `
 - **Audio.** `Sfx.isMuted ()` is the OR of three flags: the platform mute, the ad mute and the local `M` toggle. The platform mute can never be overridden from in-game.
 - **Ads.** The midgame ad runs between the match ending and the result screen; `adPlaying` freezes the sim to a render-only frame and mutes, and `gameplayStop`/`gameplayStart` bracket it. Banners live in `#cg-banner-1` and `#cg-banner-2` in `play/index.html`, are requested on every menu screen at most once per 31 s, and are cleared when the menu hides.
 - **Progress and identity.** `Menu.loadProgress` / `saveProgress` keep `nda-high-score` and `nda-matches-played` in the data module; `Menu.initUser` sets the player tag from `getUser` and updates it live through `addAuthListener`. SETTINGS shows a SIGN IN row only while `Settings.isGuest`.
+
+`npm run pack` builds and then writes `dist-game/` through `scripts/pack-crazygames.mjs`: it promotes `dist/play/index.html` to the root (rewriting `../` to `./`, which `assetRoot` in `Sfx.fs` and `RenderMeshes.fs` already expects outside `/play/`) and drops the landing page and its media (`og.jpg`, `trailer.*`, `still-*.jpg`). Zip that folder for the CrazyGames upload.
 
 `docs/CrazyGames-v1-plan.md` and `docs/CrazyGames-v2-plan.md` hold the publication plans and their accept/reject criteria.
 
