@@ -193,7 +193,7 @@ const ensureGo = async (page, screen) => {
 };
 const menuPick = async (page, idx) => { for (let i = 0; i < idx; i++) await key(page, "KeyS"); await key(page, "Space"); };
 const quitToLobby = async (page, viaPause) => {
-  if (viaPause) { await q(page, () => __qa.Menu.pause()); await wait(300); await menuPick(page, 3); }
+  if (viaPause) { await q(page, () => __qa.Menu.pause()); await wait(300); await menuPick(page, 3); await wait(300); await menuPick(page, 1); }
   else await menuPick(page, 1);
   await page.waitForFunction(() => document.querySelector("#menu .lobby .slots"), null, { timeout: 5000 });
   await wait(300);

@@ -370,6 +370,7 @@ let private clientFrame dt =
         let html: string = m?menu
         if not (isNull html) then
             menuEl.innerHTML <- html
+            Menu.dirty ()
             m?menu <- null
     let events = (m?events: obj[]) |> Array.map eventOf |> List.ofArray
     m?events <- [||]

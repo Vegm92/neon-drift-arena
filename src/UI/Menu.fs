@@ -109,6 +109,18 @@ let private colors = [| "#00f6ff"; "#ff2bd6"; "#b6ff3b"; "#ffb347" |]
 let private teamColors = [| ""; "#3b7bff"; "#ff3b5c" |]
 let private window' = 11
 let mutable private padUrl = ""
+let mutable private lastHtml = ""
+let mutable private qrOpen = false
+let mutable private copiedAt = 0.
+
+let private setHtml (html: string) =
+    if html = lastHtml then false
+    else
+        lastHtml <- html
+        el.innerHTML <- html
+        true
+
+let dirty () = lastHtml <- ""
 if padUrl = "" && Input.padUrl <> "" then padUrl <- Input.padUrl
 if padUrl = "" && not (isNullOrUndefined Input.hot) then
     window?fetch("/__pad-url")?``then``(fun r -> r?text())?``then``(fun (t: string) -> padUrl <- t) |> ignore
@@ -313,10 +325,9 @@ let private qr () =
     if padUrl = "" && Input.padUrl <> "" then padUrl <- Input.padUrl
     if padUrl = "" then ""
     else
-        let wasOpen = el.querySelector "details.qr[open]" |> isNull |> not
         sprintf
-            "<details class=\"legend qr\"%s onpointerdown=\"this.open=!this.open\"><summary><div class=\"lt\">%s</div><div class=\"big\">%s<div class=\"url\">%s</div></div></summary></details>"
-            (if wasOpen then " open" else "") Strings.t.ScanToJoin (qrToSvg padUrl) padUrl
+            "<details class=\"legend qr\"%s data-qr=\"0\"><summary><div class=\"lt\">%s</div><div class=\"big\">%s<div class=\"url\">%s</div></div></summary></details>"
+            (if qrOpen then " open" else "") Strings.t.ScanToJoin (qrToSvg padUrl) padUrl
 
 let private inviteUrl () =
     if Input.room = "" then ""
@@ -326,12 +337,10 @@ let private invite () =
     let url = inviteUrl ()
     if not Cfg.inviteButton || url = "" then ""
     else
-        let at = window?__ndaCopied
-        let fresh = not (isNullOrUndefined at) && JS.Constructors.Date.now () - unbox<float> at < 1600.
+        let fresh = JS.Constructors.Date.now () - copiedAt < 1600.
         sprintf
-            "<div class=\"legend invite%s\" onpointerdown=\"navigator.clipboard.writeText('%s');window.__ndaCopied=Date.now()\"><div class=\"lt\">%s</div></div>"
+            "<div class=\"legend invite%s\" data-copy=\"0\"><div class=\"lt\">%s</div></div>"
             (if fresh then " copied" else "")
-            url
             (if fresh then Strings.t.InviteCopied else Strings.t.InviteCopy)
 
 let private plus =
@@ -433,16 +442,17 @@ let private renderLobby (devices: Input.Device[]) =
         elif joined.Count < 2 && not practiceMode then Strings.t.NeedPlayers
         elif teamMode && not (opposed ()) then Strings.t.NeedTwo
         else Strings.t.NeedReady
-    el.innerHTML <-
-        sprintf
-            "<div class=\"lobby\"><div class=\"title\"><h1>%s</h1><div class=\"sub\">%s</div></div><div class=\"modebar\">%s</div><div class=\"slots\">%s</div><div class=\"hints\">%s</div><div class=\"buttons\">%s</div><div class=\"notebar\"><span class=\"note\">%s</span>%s</div><div class=\"legends\">%s%s%s%s%s</div></div>"
-            Strings.t.TitleMain Strings.t.TitleSub mode slots hints picks note (pilot ())
-            (legend Strings.t.Keyboard (Strings.kbLegend ()))
-            (legend Strings.t.Gamepad Strings.t.PadLegend)
-            (legend Strings.t.Phone Strings.t.PhoneLegend)
-            (qr ())
-            (invite ())
-    if renaming >= 0 then
+    let wrote =
+        setHtml (
+            sprintf
+                "<div class=\"lobby\"><div class=\"title\"><h1>%s</h1><div class=\"sub\">%s</div></div><div class=\"modebar\">%s</div><div class=\"slots\">%s</div><div class=\"hints\">%s</div><div class=\"buttons\">%s</div><div class=\"notebar\"><span class=\"note\">%s</span>%s</div><div class=\"legends\">%s%s%s%s%s</div></div>"
+                Strings.t.TitleMain Strings.t.TitleSub mode slots hints picks note (pilot ())
+                (legend Strings.t.Keyboard (Strings.kbLegend ()))
+                (legend Strings.t.Gamepad Strings.t.PadLegend)
+                (legend Strings.t.Phone Strings.t.PhoneLegend)
+                (qr ())
+                (invite ()))
+    if wrote && renaming >= 0 then
         match el.querySelector "input.rename" with
         | null -> ()
         | inp ->
@@ -487,9 +497,10 @@ let private renderList (title: string) =
          | _ -> Strings.navKeys () @ [ Strings.keysJoin (), Strings.t.Join; Strings.keysLeave (), Strings.t.Leave ])
         |> List.map (fun (k, l) -> hint k l)
         |> String.concat ""
-    el.innerHTML <-
+    setHtml (
         sprintf "<div class=\"lobby\"><div class=\"title\"><h1>%s</h1></div><div class=\"tally\">%s</div><div class=\"stats\">%s</div><div class=\"buttons col\">%s</div><div class=\"hints\">%s</div>%s</div>"
-            title (tally ()) note list hints (if screen = Pause then qr () else "")
+            title (tally ()) note list hints (if screen = Pause then qr () else ""))
+    |> ignore
 
 let private renderOptions () =
     let n = optRows.Length
@@ -508,13 +519,14 @@ let private renderOptions () =
                 | _ -> if i = optCursor then "row sel" else "row"
             sprintf "<div class=\"%s\" data-i=\"%d\"><span>%s</span><b data-dir=\"1\">%s</b></div>" cls i (Settings.label r) (Settings.value r))
         |> String.concat ""
-    el.innerHTML <-
+    setHtml (
         sprintf "<h1>%s</h1><div class=\"cue\">%s</div><div class=\"rows\">%s</div><div class=\"hint\">%s%s</div>"
             Strings.t.Settings
             (if top > 0 then Strings.t.MoreUp else "")
             rows
             (if top + window' < n then Strings.t.More + "\n" else "")
-            (Strings.optHint ())
+            (Strings.optHint ()))
+    |> ignore
 
 /// Settings a joined machine owns on its own — sound, video, its own controls.
 /// The panel is drawn locally, so the host's mirrored screen never carries it,
@@ -772,6 +784,10 @@ el.addEventListener (
     "pointerdown",
     fun e ->
         if (e :?> Browser.Types.MouseEvent).button = 2. then Input.press "Escape"
+        elif (hit e "qr").IsSome then qrOpen <- not qrOpen
+        elif (hit e "copy").IsSome then
+            window?navigator?clipboard?writeText (inviteUrl ()) |> ignore
+            copiedAt <- JS.Constructors.Date.now ()
         else
             match hit e "dir", hit e "slot", hit e "pick", hit e "i" with
             | Some d, Some s, _, _ -> if kbIn () && s = kb () then arrow d
