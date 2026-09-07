@@ -115,6 +115,7 @@ type Locale =
       Flawless: string
       Scavenger: string
       RingOut: string
+      HostLeft: string
       LastStock: string -> string
       OnFire: string -> string
       BestAim: string -> int -> string
@@ -329,6 +330,7 @@ let en =
       Flawless = "FLAWLESS"
       Scavenger = "SCAVENGER"
       RingOut = "RING OUT"
+      HostLeft = "HOST LEFT - BACK TO LOBBY"
       LastStock = sprintf "%s ON LAST STOCK"
       OnFire = sprintf "%s IS ON FIRE"
       BestAim = fun n p -> sprintf "%s LANDED %d%% OF SHOTS" n p
