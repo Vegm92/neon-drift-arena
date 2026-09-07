@@ -145,6 +145,12 @@ type Locale =
       LaunchReady: string
       LaunchWait: string
       Bot: string
+      PilotLv: int -> string
+      PilotNext: int -> string
+      Daily: string
+      DailyTask: Progress.Task -> int -> string
+      DailyDone: string
+      DailyXp: int -> string
       CrazyGames: string
       SignIn: string
       AddBot: string
@@ -353,6 +359,19 @@ let en =
       LaunchReady = "LAUNCHER · FIRE HURLS A ROCK"
       LaunchWait = "LAUNCHER · RELOADING"
       Bot = "BOT"
+      PilotLv = sprintf "PILOT LV %d"
+      PilotNext = sprintf "%d XP TO NEXT"
+      Daily = "DAILY"
+      DailyTask =
+          fun t n ->
+              match t with
+              | Progress.WinMatches -> sprintf "WIN %d MATCHES" n
+              | Progress.TotalKills -> sprintf "SCORE %d KILLS" n
+              | Progress.KillsInMatch -> sprintf "GET %d KILLS IN ONE MATCH" n
+              | Progress.RaceUnder -> sprintf "FINISH A RACE UNDER %ds" n
+              | Progress.FlawlessWins -> sprintf "WIN %d MATCH WITHOUT DYING" n
+      DailyDone = "DONE"
+      DailyXp = sprintf "+%d XP"
       CrazyGames = "CRAZYGAMES"
       SignIn = "SIGN IN"
       AddBot = "ADD BOT"

@@ -5,7 +5,8 @@ Fable 5 (F# → JS) + Vite + Three.js couch brawler. `README.md` is the commerci
 ## Commands
 
 - `npm run dev` — Fable watch + Vite dev server.
-- `npm run check` — headless simulation assertions (`dotnet run --project test`). Run after touching `Sim.fs` or `Domain.fs`.
+- `npm run check` — headless simulation assertions (`dotnet run --project test`) followed by `check:js`. Run after touching `Sim.fs`, `Domain.fs` or `Progress.fs`.
+- `npm run check:js` — runs `Progress.fs` through its compiled JS (`test/progress-check.mjs`). The .NET suite cannot see Fable's number model: `uint32` overflow arithmetic silently loses precision in JS and `Array.zeroCreate` yields nulls, so anything numeric in `Progress.fs` needs a compiled-output assertion too.
 - `dotnet fable src -o build` — one-shot compile; output is `build/*.js` (no `.fs.js` suffix).
 
 ## Constraints
@@ -22,3 +23,6 @@ Fable 5 (F# → JS) + Vite + Three.js couch brawler. `README.md` is the commerci
 - Everything CrazyGames goes through `src/Platform/CrazyGames.fs` → `src/Platform/CrazyGames.js` (SDK v2 loaded from `sdk.crazygames.com` in `index.html` and `play/index.html`): gameplay start/stop, mute, invite rooms, user, ads, banners, data, leaderboard. Never call `window.CrazyGames` from anywhere else, and keep every path relative — `base: "./"` in `vite.config.js` is what lets the build run from a CrazyGames subpath.
 - Ads and banners are menu-only: banners live in `#cg-banner-1` / `#cg-banner-2` (refreshed at most every 31 s, cleared on hide) and the midgame ad runs between the match ending and the result screen. `Sfx.isMuted ()` ORs the CrazyGames mute, the ad mute and the local `M` toggle.
 - The lobby opens pre-seeded: `Menu.fs` claims slot 0 for the keyboard and slot 1 for a bot at load, so a solo player can press Start straight away.
+- Pilot progress lives in `Core/Progress.fs` (pure, shared with `test/Check.fsproj`): XP/level curve, the daily-challenge pool and the date-seeded pick. `Menu.recordMatch` is the only writer, called from `Main.fs` when a match ends; it saves `nda-xp` and `nda-daily` alongside the existing `nda-high-score` and `nda-matches-played` through the CrazyGames `data` module.
+- `Menu.clean ()` tags a match as bot-free (no bot slot, not practice). Bots still earn XP and daily progress — that is the solo loop — but `nda-high-score` only moves on a clean match, so it stays leaderboard-grade. In practice that means two or more humans, since a lobby without bots cannot start solo.
+- Dailies are picked from the UTC date with no server: the same date gives everyone the same three tasks, and a new date resets progress. Keep the pool at five or more distinct `Task` kinds — the picker takes three of distinct kind.

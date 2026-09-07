@@ -457,10 +457,12 @@ let private localFrame (t: float) dt =
             if finish <= 0. then
                 banner.className <- "hidden"
                 Menu.note <- endNote
-                let kills0 = world.Ships.[0].Kills
-                if world.Ships.[0].Active && kills0 > Menu.highScore then
-                    Menu.highScore <- kills0
-                    Menu.saveProgress ()
+                let me = world.Ships.[0]
+                if me.Active then
+                    let won = match world.Phase with
+                              | Over(Some i) -> i = 0 || (me.Team > 0 && world.Ships.[i].Team = me.Team)
+                              | _ -> false
+                    Menu.recordMatch won me.Kills (Cfg.stocks - me.Stocks) me.Finish
                 requestMidgameAd (fun () -> Menu.result endTitle)
         | Playing when pause -> Menu.pause ()
         | Playing -> ()

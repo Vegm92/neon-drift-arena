@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "dotnet fable watch src -o build --run npx vite --host",
     "build": "dotnet fable src -o build && vite build",
-    "check": "dotnet run --project test",
+    "check": "dotnet run --project test && npm run check:js",
+    "check:js": "node test/progress-check.mjs",
     "check:relay": "node test/relay-check.mjs",
     "deploy": "railway up --ci --service site",
     "qa:sweep": "node scripts/qa-playwright-sweep.mjs"
