@@ -31,6 +31,7 @@ const server = createServer(async (req, res) => {
   gzip ? body.pipe(createGzip()).pipe(res) : body.pipe(res);
 });
 
+const maxMsg = 262144;
 const rooms = new Map();
 const send = (ws, msg) => ws?.readyState === 1 && ws.send(msg);
 
@@ -48,7 +49,8 @@ new WebSocketServer({ server, path: "/relay" }).on("connection", (ws, req) => {
   send(ws, JSON.stringify({ event: "nda:role", data: { host: isHost } }));
 
   ws.on("message", (buf) => {
-    const msg = buf.toString().slice(0, 4096);
+    const msg = buf.toString();
+    if (msg.length > maxMsg) return;
     if (room.host === ws) for (const pad of room.pads) send(pad, msg);
     else send(room.host, msg);
   });

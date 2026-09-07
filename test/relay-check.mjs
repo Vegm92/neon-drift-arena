@@ -83,6 +83,17 @@ try {
   assert.equal(JSON.parse(ePeer.inbox[0]).data.host, true, "a desktop peer is promoted over a phone pad");
   assert.deepEqual(ePad.inbox, [], "a phone pad is never promoted");
 
+  const fHost = await open("FFFF", "host");
+  const fPeer = await open("FFFF", "host");
+  const big = JSON.stringify({ event: "nda:state", data: "x".repeat(12000) });
+  fHost.send(big);
+  await settle();
+  assert.deepEqual(fPeer.inbox, [big], "a full-size nda:state payload crosses the relay intact");
+  fPeer.inbox.length = 0;
+  fHost.send("y".repeat(300000));
+  await settle();
+  assert.deepEqual(fPeer.inbox, [], "a message over the cap is dropped, never truncated into invalid JSON");
+
   console.log("relay ok");
 } catch (err) {
   console.error(err.message);
