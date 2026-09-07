@@ -22,6 +22,12 @@ let updateRoom (roomId: string, isJoinable: bool) : unit = jsNative
 [<Import("addJoinRoomListener", "./CrazyGames.js")>]
 let addJoinRoomListener (callback: string -> unit) : unit = jsNative
 
+[<Import("isInstantMultiplayer", "./CrazyGames.js")>]
+let isInstantMultiplayer () : bool = jsNative
+
+[<Import("leftRoom", "./CrazyGames.js")>]
+let leftRoom () : unit = jsNative
+
 [<Import("isUserAvailable", "./CrazyGames.js")>]
 let isUserAvailable () : bool = jsNative
 

@@ -9,32 +9,6 @@ Input.init ()
 Settings.init ()
 Sfx.init ()
 
-async {
-    do! CrazyGames.init(Sfx.setCrazyGamesMuted) |> Async.AwaitPromise
-    Input.initNetwork ()
-    Menu.initUser ()
-    CrazyGames.addJoinRoomListener(fun roomId ->
-        if roomId <> "" then
-            window.sessionStorage.setItem ("nda-room", roomId)
-            window.location.reload ()
-    )
-} |> Async.StartImmediate
-
-let view = Render.create ()
-let banner = document.getElementById "banner"
-document.getElementById("loader").className <- "done"
-
-let mutable private adPlaying = false
-
-let requestMidgameAd (onDone: unit -> unit) =
-    adPlaying <- true
-    CrazyGames.gameplayStop ()
-    let finish () =
-        adPlaying <- false
-        Sfx.setAdMuted false
-        onDone ()
-    CrazyGames.requestAd("midgame", (fun () -> Sfx.setAdMuted true), finish, ignore >> finish)
-
 let tutKey = "nda-tut"
 let tutEl = document.getElementById "tut"
 let mutable tutShown = false
@@ -57,11 +31,37 @@ let hideTutorial () =
         tutEl.className <- "hidden"
         tutShown <- false
 
-showTutorial ()
+async {
+    do! CrazyGames.init(Sfx.setCrazyGamesMuted) |> Async.AwaitPromise
+    Input.initNetwork ()
+    Menu.initUser ()
+    if not (CrazyGames.isInstantMultiplayer ()) then showTutorial ()
+    CrazyGames.addJoinRoomListener(fun roomId ->
+        if roomId <> "" then
+            window.sessionStorage.setItem ("nda-room", roomId)
+            window.location.reload ()
+    )
+} |> Async.StartImmediate
+
+let view = Render.create ()
+let banner = document.getElementById "banner"
+document.getElementById("loader").className <- "done"
+
+let mutable private adPlaying = false
+
+let requestMidgameAd (onDone: unit -> unit) =
+    adPlaying <- true
+    CrazyGames.gameplayStop ()
+    let finish () =
+        adPlaying <- false
+        Sfx.setAdMuted false
+        onDone ()
+    CrazyGames.requestAd("midgame", (fun () -> Sfx.setAdMuted true), finish, ignore >> finish)
 
 let mutable world = Sim.initial
 let mutable last = 0.
 let mutable lastHost = 0.
+let mutable lastSend = 0.
 let mutable acc = 0.
 let mutable countdown = 0.
 let mutable slowmo = 0.
@@ -481,8 +481,11 @@ let rec frame (t: float) =
             world <- Sim.initial
             State.target <- -1
             Menu.show ()
+            say Strings.t.HostLeft
         localFrame t dt
-        sendState ()
+        if t - lastSend > Cfg.netStateMs then
+            lastSend <- t
+            sendState ()
     window.requestAnimationFrame frame |> ignore
 window.addEventListener ("keydown", fun _ -> hideTutorial ())
 window.addEventListener ("pointerdown", fun _ -> hideTutorial ())
@@ -492,6 +495,7 @@ window.addEventListener (
         if document.hidden && not (client ()) && not (Menu.visible ()) && world.Phase = Playing then
             Menu.pause ()
 )
+window.addEventListener ("pagehide", fun _ -> if Input.padUrl <> "" then CrazyGames.leftRoom ())
 window.requestAnimationFrame frame |> ignore
 
 window.addEventListener (
