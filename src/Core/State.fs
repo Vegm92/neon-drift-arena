@@ -1,4 +1,4 @@
-module State
+﻿module State
 
 open Vec
 open Domain
@@ -14,7 +14,7 @@ let mutable layout = 0
 let mutable practice = false
 let mutable target = -1
 let arsenal = [| Rail; Mines; Swarm; Pulse; Scatter; Tractor; Barrier; Sentry; Bubble |]
-let raceArsenal = [| Scatter; Mines; Swarm |]
+let raceArsenal = [| Scatter; Mines; Swarm; Pulse; Tractor; Bubble |]
 let mutable mutator = 0
 let mutators = 4
 let mutable mapHole: (V2 * float * float) option = None
@@ -24,4 +24,7 @@ let mutable asteroids: Asteroid[] = [||]
 let mutable cratePositions: V2[] = [||]
 let mutable catchUp = true
 
-let nextRng r = abs (r * 1664525 + 1013904223) % 1000003
+let nextRng r = r * 1664525 + 1013904223
+/// Index in [0, n) drawn from the high bits of an LCG state. The low bits of an
+/// LCG cycle far too quickly to take a modulus of the state itself.
+let rngIndex n r = int ((uint32 r >>> 16) % uint32 n)

@@ -1,4 +1,4 @@
-module Weapons
+﻿module Weapons
 
 open Vec
 open Domain
@@ -93,7 +93,7 @@ let weaponRegistry =
                   Cooldown = (fun () -> 0.0) }
         Bubble, { Name = "Bubble"
                   Trigger = InstantSpecialPress
-                  Payload = DeployPayload(bubbleKind, (fun () -> 0.0), (fun () -> bubbleLife))
+                  Payload = DeployPayload(bubbleKind, (fun () -> 0.0), (fun () -> if race then raceBubbleLife else bubbleLife))
                   Recoil = (fun () -> 0.0)
                   Cost = ConsumesAmmo 1
                   Cooldown = (fun () -> 0.0) }
