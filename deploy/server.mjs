@@ -37,20 +37,32 @@ const send = (ws, msg) => ws?.readyState === 1 && ws.send(msg);
 new WebSocketServer({ server, path: "/relay" }).on("connection", (ws, req) => {
   const query = new URL(req.url, "http://x").searchParams;
   const code = (query.get("room") ?? "").slice(0, 8);
-  const isHost = query.get("role") === "host";
+  const wantsHost = query.get("role") === "host";
   if (!code) return ws.close();
 
   let room = rooms.get(code);
   if (!room) rooms.set(code, (room = { host: null, pads: new Set() }));
-  if (isHost) { room.host?.close(); room.host = ws; } else room.pads.add(ws);
+  const isHost = wantsHost && !room.host;
+  ws.wantsHost = wantsHost;
+  if (isHost) room.host = ws; else room.pads.add(ws);
+  send(ws, JSON.stringify({ event: "nda:role", data: { host: isHost } }));
 
   ws.on("message", (buf) => {
     const msg = buf.toString().slice(0, 4096);
-    if (isHost) for (const pad of room.pads) send(pad, msg);
+    if (room.host === ws) for (const pad of room.pads) send(pad, msg);
     else send(room.host, msg);
   });
   ws.on("close", () => {
-    if (isHost) { if (room.host === ws) room.host = null; } else room.pads.delete(ws);
+    if (room.host === ws) {
+      room.host = null;
+      for (const peer of room.pads) {
+        if (!peer.wantsHost) continue;
+        room.pads.delete(peer);
+        room.host = peer;
+        send(peer, JSON.stringify({ event: "nda:role", data: { host: true } }));
+        break;
+      }
+    } else room.pads.delete(ws);
     if (!room.host && room.pads.size === 0) rooms.delete(code);
   });
 });

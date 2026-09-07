@@ -21,7 +21,15 @@ host/peer role logic in `src/Platform/Input.fs` and the relay fan-out in
 
 ## Decision
 
-**Host leaves mid-match ends the match for everyone; no host migration.**
+**Host leaves mid-match ends the match for everyone; the room survives by
+handing the host seat to the oldest remaining desktop peer, but the match
+state is not migrated.**
+
+The relay picks the successor (`deploy/server.mjs`, the `close` handler) and
+tells it over the existing `nda:role` message; a phone pad is never promoted.
+The promoted machine restarts from the lobby like every other mirror. This
+keeps a room usable after the host closes their tab without any of the state
+transfer that true migration would need.
 
 When a mirror stops hearing `nda:state` for over a second, it already falls
 back to `Sim.initial` and `Menu.show ()` (back to the lobby) instead of

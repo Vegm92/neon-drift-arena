@@ -497,7 +497,8 @@ let rec frame (t: float) =
             hostLeftSaid <- true
             say Strings.t.HostLeft
         localFrame t dt
-        if t - lastSend > Cfg.netStateMs then
+        if Input.isPeer then frameEvents <- []
+        elif t - lastSend > Cfg.netStateMs then
             lastSend <- t
             sendState ()
     window.requestAnimationFrame frame |> ignore
