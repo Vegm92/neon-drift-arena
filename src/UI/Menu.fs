@@ -21,6 +21,7 @@ type Action =
     | Restart
     | Quit
     | Configure
+    | Cancel
 
 let joined = HashSet<int>()
 let teams: int[] = Array.zeroCreate 4
@@ -69,6 +70,7 @@ let mutable screen = Lobby
 let mutable note = ""
 let mutable private shown = true
 let mutable private cursor = 0
+let mutable private pending: Action option = None
 let mutable private lobbyPick = 5
 let private ready = Array.create 4 false
 let private onRow = Array.create 4 false
@@ -125,6 +127,7 @@ let private swallow () =
 let private open' s =
     screen <- s
     cursor <- 0
+    pending <- None
     shown <- true
     swallow ()
     el.className <- (match s with Lobby | Options -> "" | _ -> "play")
@@ -145,8 +148,9 @@ let private hide () =
     el.className <- "hidden"
 
 let private items () =
-    match screen with
-    | Pause -> [ Strings.t.Resume, Resume; Strings.t.Settings, Configure; Strings.t.Restart, Restart; Strings.t.Quit, Quit ]
+    match screen, pending with
+    | _, Some a -> [ Strings.t.No, Cancel; Strings.t.Yes, a ]
+    | Pause, _ -> [ Strings.t.Resume, Resume; Strings.t.Settings, Configure; Strings.t.Restart, Restart; Strings.t.Quit, Quit ]
     | _ -> [ Strings.t.Rematch, Rematch; Strings.t.Quit, Quit ]
 
 let private teamName t = [| ""; Strings.t.Blue; Strings.t.Red |].[t]
@@ -566,6 +570,8 @@ let private updateOptions () =
 
 let private updateList (title: string) (inputs: Input[]) =
     let n = (items ()).Length
+    let host = Input.keyboardSlot
+    let hostOnly = screen = Pause && host >= 0 && joined.Contains host && owner.[host] = "kb"
     let mutable action = None
     inputs
     |> Array.iteri (fun i inp ->
@@ -574,9 +580,13 @@ let private updateList (title: string) (inputs: Input[]) =
         if rising k "down" inp.Reverse then cursor <- (cursor + 1) % n
         let fire = rising k "fire" (inp.Fire || inp.Boost)
         let start = rising k "start" inp.Start
-        if fire || start then action <- Some(snd (items ()).[cursor])
+        if fire || start then
+            let a = snd (items ()).[cursor]
+            let locked = hostOnly && i <> host && (match a with Restart | Quit -> true | _ -> false)
+            if not locked then action <- Some a
         if rising k "back" inp.Back then
-            if screen = Pause then action <- Some Resume
+            if pending.IsSome then action <- Some Cancel
+            elif screen = Pause then action <- Some Resume
             else
                 leave i
                 if joined.Count < 2 then action <- Some Quit)
@@ -590,7 +600,16 @@ let private updateList (title: string) (inputs: Input[]) =
     | Some Configure ->
         openOptions ()
         None
+    | Some Cancel ->
+        pending <- None
+        cursor <- 0
+        None
+    | Some((Restart | Quit) as a) when pending.IsNone && screen = Pause ->
+        pending <- Some a
+        cursor <- 0
+        None
     | Some _ ->
+        pending <- None
         hide ()
         action
     | None -> None
@@ -601,7 +620,7 @@ let update (inputs: Input[]) =
     | Options ->
         updateOptions ()
         None
-    | Pause -> updateList Strings.t.Paused inputs
+    | Pause -> updateList (if pending.IsSome then Strings.t.Sure else Strings.t.Paused) inputs
     | Result title -> updateList title inputs
 
 let private hit (e: Browser.Types.Event) (attr: string) =
