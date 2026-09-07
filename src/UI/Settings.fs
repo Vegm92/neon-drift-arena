@@ -80,11 +80,10 @@ let private loadPads () =
     | null -> ()
     | json ->
         let o = JS.JSON.parse json
-        if not (isNullOrUndefined o?keyboard) then Input.keyboardSlot <- o?keyboard
         for i in 0..3 do
             let p = o?(string i)
             if not (isNullOrUndefined p) then
-                Input.prefs.[i] <- { Slot = p?Slot; Swap = p?Swap; Absolute = (p?Absolute: bool) <> false }
+                Input.prefs.[i] <- { Slot = Input.autoSlot; Swap = p?Swap; Absolute = (p?Absolute: bool) <> false }
 
 let private padPref i f =
     Input.prefs.[i] <- f (Input.pref i)
@@ -160,7 +159,7 @@ let private resetBinds () =
     Binds.reset ()
     window.localStorage.removeItem bindsKey
 
-let rows () =
+let rows (machine: bool) =
     let pads = Input.connected ()
     [ yield Header Strings.t.Controllers
       yield Slot(Strings.t.Keyboard, (fun () -> Input.keyboardSlot), (fun s -> Input.keyboardSlot <- s; savePads ()))
@@ -177,9 +176,11 @@ let rows () =
       for a in Binds.all do
           yield Bind a
       yield Action(Strings.t.ResetKeys, resetBinds)
-      yield Header Strings.t.Arena
-      yield Arena
-      yield Swap(Strings.t.CatchUp, (fun () -> State.catchUp), (fun b -> State.catchUp <- b; window.localStorage.setItem (catchKey, string b)))
+      if not machine then
+          yield Header Strings.t.Arena
+          yield Arena
+          yield Swap(Strings.t.CatchUp, (fun () -> State.catchUp), (fun b -> State.catchUp <- b; window.localStorage.setItem (catchKey, string b)))
+      yield Header Strings.t.Video
       yield
           Swap(
               Strings.t.ReduceFlash,
@@ -199,7 +200,7 @@ let rows () =
       yield Header Strings.t.Audio
       yield Level(Strings.t.Music, 1)
       yield Level(Strings.t.Sounds, 0)
-      if devMode then
+      if devMode && not machine then
           yield Header Strings.t.Tuning
           for k in 0 .. Cfg.tunables.Length - 1 do
               yield Tune k

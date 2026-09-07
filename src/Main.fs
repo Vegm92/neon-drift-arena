@@ -5,6 +5,7 @@ open Fable.Core
 open Fable.Core.JsInterop
 open Domain
 
+Log.init ()
 Input.init ()
 Settings.init ()
 Sfx.init ()
@@ -267,6 +268,7 @@ let mutable private lastMenuAt = 0.
 let mutable private remote: obj = null
 let mutable private remoteAt = 0.
 let mutable private wasClient = false
+let mutable private simMs = 0.
 let mutable private hostLeftSaid = false
 let mutable private lastJoinable = true
 Input.hotOn "nda:state" (fun m -> remote <- m; remoteAt <- JS.Constructors.Date.now ())
@@ -278,7 +280,11 @@ let private sendState () =
     let menu = if html = lastMenu && now - lastMenuAt < 1000. then null else html
     if not (isNull menu) then lastMenuAt <- now
     lastMenu <- html
-    Input.hotSend "nda:state" (createObj [ "world" ==> { world with Events = [] }; "events" ==> List.toArray frameEvents; "layout" ==> State.layout; "race" ==> State.race; "colors" ==> playerColor; "intro" ==> view.Intro; "banner" ==> banner.textContent; "bannerClass" ==> banner.className; "menuClass" ==> menuEl.className; "menu" ==> menu ])
+    let payload = createObj [ "world" ==> { world with Events = [] }; "events" ==> List.toArray frameEvents; "layout" ==> State.layout; "race" ==> State.race; "colors" ==> playerColor; "intro" ==> view.Intro; "banner" ==> banner.textContent; "bannerClass" ==> banner.className; "menuClass" ==> menuEl.className; "menu" ==> menu ]
+    let bytes = (JS.JSON.stringify payload).Length
+    if bytes > 60000 && Log.once "payload" 10000. then
+        Log.warn "the world snapshot is big enough to stall the relay" (createObj [ "bytes" ==> bytes; "menuHtml" ==> not (isNull menu) ])
+    Input.hotSend "nda:state" payload
     frameEvents <- []
 
 let private weaponOf (s: string) =
@@ -340,7 +346,14 @@ let private worldOf (w: obj) : World =
       Events = [] }
 
 let private clientFrame dt =
-    Input.sendRemote ()
+    let ownScreen = Menu.visible () && Menu.localOptions ()
+    if not ownScreen then Input.sendRemote ()
+    match Input.devices () |> Array.tryFind (fun d -> d.Key = "kb") with
+    | Some d when not ownScreen && Menu.rising "local" "back" d.Input.Back -> Menu.openLocal ()
+    | _ -> ()
+    let age = JS.Constructors.Date.now () - remoteAt
+    if age > 400. && Log.once "mirror" 5000. then
+        Log.warn "the mirrored world arrived late from the host" (createObj [ "ageMs" ==> JS.Math.round age; "expectedMs" ==> Cfg.netStateMs ])
     let m = remote
     let layout: int = m?layout
     State.race <- m?race
@@ -350,16 +363,19 @@ let private clientFrame dt =
     view.Intro <- m?intro
     banner.textContent <- m?banner
     banner.className <- m?bannerClass
-    menuEl.className <- m?menuClass
-    let html: string = m?menu
-    if not (isNull html) then
-        menuEl.innerHTML <- html
-        Menu.dirty ()
-        m?menu <- null
+    if ownScreen then
+        Menu.update [||] |> ignore
+    else
+        menuEl.className <- m?menuClass
+        let html: string = m?menu
+        if not (isNull html) then
+            menuEl.innerHTML <- html
+            Menu.dirty ()
+            m?menu <- null
     let events = (m?events: obj[]) |> Array.map eventOf |> List.ofArray
     m?events <- [||]
     world <- worldOf m?world
-    Sfx.track (menuEl.className <> "hidden")
+    Sfx.track (menuEl.className <> "hidden" || ownScreen)
     Sfx.play events
     Sfx.thrust world
     Render.draw view world events dt
@@ -424,12 +440,17 @@ let private localFrame (t: float) dt =
         let inputs = masked ()
         let mutable events = []
         let mutable steps = 0
+        let simAt = Log.now ()
         while acc >= Cfg.physicsDt && steps < 8 do
             world <- Sim.step Cfg.physicsDt inputs world
             events <- world.Events @ events
             acc <- acc - Cfg.physicsDt
             steps <- steps + 1
-        if steps = 8 then acc <- 0.
+        simMs <- Log.now () - simAt
+        if steps = 8 then
+            if Log.once "physics" 5000. then
+                Log.warn "physics fell behind and dropped time" (createObj [ "physicsMs" ==> JS.Math.round simMs; "backlogMs" ==> JS.Math.round (acc * 1000.); "ships" ==> world.Ships.Length ])
+            acc <- 0.
         frameEvents <- frameEvents @ events
         match Menu.dropIn () with
         | Some(slot, fromBot) ->
@@ -481,6 +502,8 @@ let private localFrame (t: float) dt =
         Render.draw view world events dt
 
 let rec frame (t: float) =
+    let started = Log.now ()
+    simMs <- 0.
     let dt = if last = 0. then 0. else (t - last) / 1000. |> max 0. |> min 0.1
     last <- t
     for i in 0..3 do view.Names.[i] <- name i
@@ -502,6 +525,9 @@ let rec frame (t: float) =
         elif t - lastSend > Cfg.netStateMs then
             lastSend <- t
             sendState ()
+    let ms = Log.now () - started
+    if ms > 33. && Log.once "frame" 5000. then
+        Log.warn "a frame took longer than 30 fps allows" (createObj [ "frameMs" ==> JS.Math.round ms; "physicsMs" ==> JS.Math.round simMs; "renderMs" ==> JS.Math.round (ms - simMs); "mirrored" ==> client (); "menu" ==> Menu.visible () ])
     window.requestAnimationFrame frame |> ignore
 window.addEventListener ("keydown", fun _ -> hideTutorial ())
 window.addEventListener ("pointerdown", fun _ -> hideTutorial ())

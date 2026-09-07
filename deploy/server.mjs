@@ -35,6 +35,17 @@ const maxMsg = 262144;
 const rooms = new Map();
 const send = (ws, msg) => ws?.readyState === 1 && ws.send(msg);
 
+const log = (level, message, fields) =>
+  console.log(JSON.stringify({ level, message, ...fields }));
+
+const seen = new Map();
+const every = (ms, key) => {
+  const now = Date.now();
+  if (now - (seen.get(key) ?? 0) < ms) return false;
+  seen.set(key, now);
+  return true;
+};
+
 new WebSocketServer({ server, path: "/relay" }).on("connection", (ws, req) => {
   const query = new URL(req.url, "http://x").searchParams;
   const code = (query.get("room") ?? "").slice(0, 8);
@@ -48,11 +59,35 @@ new WebSocketServer({ server, path: "/relay" }).on("connection", (ws, req) => {
   if (isHost) room.host = ws; else room.pads.add(ws);
   send(ws, JSON.stringify({ event: "nda:role", data: { host: isHost } }));
 
+  const role = isHost ? "host" : wantsHost ? "peer" : "pad";
+  const at = (level, message, fields) =>
+    log(level, message, { room: code, role, peers: room.pads.size + (room.host ? 1 : 0), ...fields });
+  ws.joinedAt = Date.now();
+  at("info", "joined");
+
   ws.on("message", (buf) => {
     const msg = buf.toString();
-    if (msg.length > maxMsg) return;
+    if (msg.length > maxMsg)
+      return every(5000, code + "big") && at("error", "dropped an oversize payload", { bytes: msg.length, limit: maxMsg });
+
+    if (msg.length < 8192 && msg.includes('"nda:log"')) {
+      try {
+        const { data } = JSON.parse(msg);
+        return at(data.level ?? "info", data.message, { source: "browser", ...data.fields });
+      } catch {}
+    }
+
+    const t0 = performance.now();
     if (room.host === ws) for (const pad of room.pads) send(pad, msg);
     else send(room.host, msg);
+    const ms = performance.now() - t0;
+    if (ms > 5 && every(5000, code + "slow"))
+      at("warn", "relaying one message took longer than a frame", { relayMs: +ms.toFixed(1), bytes: msg.length });
+
+    room.msgs = (room.msgs ?? 0) + 1;
+    room.bytes = (room.bytes ?? 0) + msg.length;
+    if (every(30000, code + "rate"))
+      at("debug", "relay throughput", { msgs: room.msgs, kb: Math.round(room.bytes / 1024) });
   });
   ws.on("close", () => {
     if (room.host === ws) {
@@ -66,7 +101,12 @@ new WebSocketServer({ server, path: "/relay" }).on("connection", (ws, req) => {
       }
     } else room.pads.delete(ws);
     if (!room.host && room.pads.size === 0) rooms.delete(code);
+    at("info", "left", { heldForSec: Math.round((Date.now() - ws.joinedAt) / 1000) });
   });
 });
 
-server.listen(process.env.PORT ?? 3000);
+process.on("uncaughtException", (err) => log("error", "uncaught exception", { stack: err.stack }));
+process.on("unhandledRejection", (err) => log("error", "unhandled rejection", { stack: String(err?.stack ?? err) }));
+
+const port = process.env.PORT ?? 3000;
+server.listen(port, () => log("info", "relay listening", { port: Number(port) }));
