@@ -18,6 +18,6 @@ jobs:
       - run: dotnet tool install --global fable --version 5.16.0
       - run: echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
       - run: npm ci
+      - run: fable src -o build
       - run: npm run check
       - run: npm run check:relay
-      - run: fable src -o build

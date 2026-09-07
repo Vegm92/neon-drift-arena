@@ -243,6 +243,8 @@ module Cfg =
     let mutable padAimOn = 0.15
     let mutable padThrustOn = 0.75
 
+    let netStateMs = 100.
+
     let tunables: (string * (unit -> float) * (float -> unit))[] =
         [| "turnRate", (fun () -> turnRate), (fun x -> turnRate <- x)
            "thrustAccel", (fun () -> thrustAccel), (fun x -> thrustAccel <- x)

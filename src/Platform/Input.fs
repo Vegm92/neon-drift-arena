@@ -26,7 +26,7 @@ let private newRoom () : string = jsNative
 
 let private isPad = window.location.pathname.EndsWith "pad.html"
 
-let mutable private room = ""
+let mutable room = ""
 
 let private relayOrigin =
     let h = window.location.hostname
