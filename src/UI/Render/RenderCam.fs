@@ -49,7 +49,10 @@ let frameCamera (vw: View) (w: World) dt =
         w.Ships
         |> Array.filter (fun s -> s.Active && s.Stocks > 0 && s.Finish = 0.)
         |> Array.length
-    let floorH = if remaining <= duelShips then minCamH () * duelCamFactor else minCamH ()
+    let floorH =
+        if State.race then minCamH () * raceCamFactor
+        elif remaining <= duelShips then minCamH () * duelCamFactor
+        else minCamH ()
     // floorH is only a floor: hX/hY still hold every alive ship in frame.
     let h = max hX hY |> max floorH |> min (maxCamH ())
     // Below minCamH the recentre ramp is done, so sit on the ships, never past them.

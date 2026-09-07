@@ -1,4 +1,4 @@
-module Collisions
+﻿module Collisions
 
 open Vec
 open Domain
@@ -118,14 +118,16 @@ let resolveRams (ships: Ship[]) =
             if a.Alive && b.Alive && dist < 2. * shipRadius && dist > 1e-6 then
                 let n = d * (1. / dist)
                 let vn = dot (b.Vel - a.Vel) n
-                let push = n * ((2. * shipRadius - dist) / 2.)
-                let impulse = if vn < 0. then -(1. + restitution) * vn / 2. else 0.
+                let overlap = 2. * shipRadius - dist
+                let push = n * (overlap / 2.)
+                let bounce = if vn < 0. then -(1. + restitution) * vn / 2. else 0.
+                let impulse = max bounce (overlap * ramSeparate / 2.)
                 let enemy = side a <> side b
                 let dmg = if enemy then abs vn * ramDamageFactor else 0.
                 let mark by sh = if enemy then tag by Collision sh else sh
                 s.[i] <- { a with Pos = a.Pos - push; Vel = a.Vel - n * impulse } |> mark b.Id |> damage dmg
                 s.[j] <- { b with Pos = b.Pos + push; Vel = b.Vel + n * impulse } |> mark a.Id |> damage dmg
-                if impulse > 0. then events.Add(Ram(a.Pos + d * 0.5))
+                if vn < -ramEventSpeed then events.Add(Ram(a.Pos + d * 0.5))
     s, List.ofSeq events
 
 let resolvePads sudden dt (ships: Ship[]) (pads: Pad[]) =
@@ -176,16 +178,16 @@ let stepCrates dt rng (ships: Ship[]) (crates: Crate[]) =
                     r <- nextRng r
                     let w =
                         if practice then arsenal.[sh.[i].Grabs % arsenal.Length]
-                        elif race then raceArsenal.[r % raceArsenal.Length]
+                        elif race then raceArsenal.[rngIndex raceArsenal.Length r]
                         elif mutator = 1 then Rail
-                        else crateWeapons.[r % crateWeapons.Length]
+                        else crateWeapons.[rngIndex crateWeapons.Length r]
                     let a = Array.copy sh
-                    a.[i] <- { a.[i] with Weapon = w; Ammo = (if race && w = Swarm then 1 else weaponAmmo w); Charge = 0.; Grabs = a.[i].Grabs + 1 }
+                    a.[i] <- { a.[i] with Weapon = w; Ammo = (if race && (w = Swarm || w = Scatter) then 1 else weaponAmmo w); Charge = 0.; Grabs = a.[i].Grabs + 1 }
                     sh <- a
                     events.Add(Grab c.Pos)
                     r <- nextRng r
                     if practice then { c with RespawnIn = 1. } else
-                    let mutable k = r % cratePositions.Length
+                    let mutable k = rngIndex cratePositions.Length r
                     let mutable tries = 0
                     while tries < cratePositions.Length && taken.Contains cratePositions.[k] do
                         k <- (k + 1) % cratePositions.Length

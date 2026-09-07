@@ -1,4 +1,4 @@
-module Check
+﻿module Check
 
 open Vec
 open Domain
@@ -88,6 +88,30 @@ let main _ =
     check "a ram kill awards the rammer medal"
         (w7b.Ships.[1].Hp <= 0. && w7b.Ships.[0].RamKillMedals = 1
          && w7b.Events |> List.exists (function Medal(0, "ramkill") -> true | _ -> false))
+
+    let mashing =
+        Array.init 4 (fun i ->
+            if i = 0 then { present with Thrust = true }
+            elif i = 1 then { present with Thrust = true }
+            else noInput)
+    let w7c =
+        w0 |> place 0 zero 0. |> place 1 (v 20. 0.) System.Math.PI
+        |> edit 0 (fun s -> { s with Invuln = 0. })
+        |> edit 1 (fun s -> { s with Invuln = 0. })
+        |> run 60 mashing
+    check "two ships thrusting into each other still push apart"
+        (len (w7c.Ships.[1].Pos - w7c.Ships.[0].Pos) > 2. * shipRadius + 5.)
+    let rams =
+        Seq.fold
+            (fun (w, n) _ ->
+                let w = step dt mashing w
+                w, n + (w.Events |> List.sumBy (function Ram _ -> 1 | _ -> 0)))
+            (w0 |> place 0 zero 0. |> place 1 (v 20. 0.) System.Math.PI
+                |> edit 0 (fun s -> { s with Invuln = 0. })
+                |> edit 1 (fun s -> { s with Invuln = 0. }), 0)
+            (seq { 1..60 })
+        |> snd
+    check "a shoving match does not spam ram sparks" (rams <= 3)
 
     let two = Array.init 4 (fun i -> if i < 2 then present else noInput)
     let w8 = step dt two initial |> edit 1 (fun s -> { s with Hp = 0.; Stocks = 1 }) |> step dt two
@@ -487,10 +511,70 @@ let main _ =
     let quiet = grid |> place 0 gates.[0] 0. |> step dt shooter
     check "the blaster stays silent in a race" (quiet.Bullets.IsEmpty)
     let crated = grid |> place 0 grid.Crates.[0].Pos 0. |> step dt (all present)
-    check "race crates only hand out stun weapons" (Array.contains crated.Ships.[0].Weapon raceArsenal && (crated.Ships.[0].Weapon <> Swarm || crated.Ships.[0].Ammo = 1))
+    // The crate RNG used to be an LCG truncated with `% 1000003`, which collapsed
+    // it to a 124-long cycle and skewed the crateTiers weights badly.
+    let seenRng = System.Collections.Generic.HashSet<int>()
+    let mutable rr = 7
+    while seenRng.Add rr && seenRng.Count < 200000 do
+        rr <- nextRng rr
+    check "the crate rng does not repeat itself quickly" (seenRng.Count >= 200000)
+    let drawn n (pick: int -> Weapon) =
+        let c = System.Collections.Generic.Dictionary<Weapon, int>()
+        let mutable r = 7
+        for _ in 1..n do
+            r <- nextRng r
+            let w = pick r
+            c.[w] <- (if c.ContainsKey w then c.[w] else 0) + 1
+        c
+    let evenly (tiers: (Weapon * int)[]) (pick: int -> Weapon) =
+        let n = 120000
+        let total = tiers |> Array.sumBy snd
+        drawn n pick
+        |> Seq.forall (fun (KeyValue(w, k)) ->
+            let want = float n * float (tiers |> Array.find (fun (x, _) -> x = w) |> snd) / float total
+            abs (float k - want) / want < 0.05)
+    check "crates follow the tier weights in an arena match"
+        (evenly crateTiers (fun r -> crateWeapons.[rngIndex crateWeapons.Length r]))
+    check "crates are evenly spread across the race arsenal"
+        (evenly (raceArsenal |> Array.map (fun w -> w, 1)) (fun r -> raceArsenal.[rngIndex raceArsenal.Length r]))
+    check "race crates only hand out stun weapons" (Array.contains crated.Ships.[0].Weapon raceArsenal
+         && ((crated.Ships.[0].Weapon <> Swarm && crated.Ships.[0].Weapon <> Scatter) || crated.Ships.[0].Ammo = 1))
+    // Walk enough crates to see every entry in the race arsenal at least once,
+    // so the one-shot rule is checked against a real Swarm and Scatter grab.
+    let grabs =
+        Seq.fold
+            (fun (w, seen) _ ->
+                let w = run 60 (all present) w
+                let w = w |> place 0 w.Crates.[0].Pos 0. |> step dt (all present)
+                w, (w.Ships.[0].Weapon, w.Ships.[0].Ammo) :: seen)
+            (grid, [])
+            (seq { 1..60 })
+        |> snd
+    check "a race crate hands the zapper a single shot"
+        (grabs |> List.exists (fun (w, _) -> w = Scatter)
+         && grabs |> List.forall (fun (w, a) -> (w <> Swarm && w <> Scatter) || a = 1))
     let seeker = { Owner = 1; Pos = gates.[0] - v 30. 0.; Vel = v 400. 0.; Life = 1.; Kind = 2; Damage = seekerDamage }
     let stung = { grid with Bullets = [ seeker ] } |> place 0 gates.[0] 0. |> edit 0 (fun s -> { s with Invuln = 0. }) |> run 12 (all present)
     check "a race hit stuns instead of hurting" (stung.Ships.[0].Stun > 0. && stung.Ships.[0].Hp = hpMax)
+    check "a race hit stuns for about a second and spins the ship"
+        (stung.Ships.[0].Stun > scatterStun - 0.2 && stung.Ships.[0].Spin <> 0.)
+    check "the race arsenal only holds weapons that work in a race"
+        (raceArsenal |> Array.forall (fun w -> w <> Sentry && w <> Blaster))
+    check "the race repulsor has a shorter reach than the arena one" (racePulseRange < pulseRange)
+    check "a race time bubble fades sooner than an arena one" (raceBubbleLife < bubbleLife)
+    // The tractor sorts by reach in a race and by aim angle otherwise, so a
+    // near target off to the side must win over a distant one dead ahead.
+    let towed =
+        grid |> place 0 gates.[0] 0.
+        // Ship 1 is near but off to the side, ship 2 is dead ahead but further,
+        // ship 3 is parked square abeam so it falls outside the tractor cone.
+        |> place 1 (gates.[0] + v 60. 40.) 0.
+        |> place 2 (gates.[0] + v 260. 0.) 0.
+        |> place 3 (gates.[0] + v 0. 900.) 0.
+        |> edit 0 (fun s -> { s with Weapon = Tractor; Ammo = 2; Tow = NoTether })
+        |> run (int (railCharge / dt) + 2) (all { present with Special = true })
+    check "a race tractor grabs the closest target, not the straightest"
+        (towed.Ships.[0].Tow = TowShip 1)
     let minePos = gates.[0] + v 0. 200.
     let laid = { grid with Mines = [ { Owner = 1; Pos = minePos; Vel = zero; Fuse = -1. } ] } |> edit 0 (fun s -> { s with Invuln = 0. })
     let waiting = laid |> place 0 (minePos + v 80. 0.) 0. |> run 30 (all present)

@@ -1,4 +1,4 @@
-module Combat
+﻿module Combat
 
 open Vec
 open Domain
@@ -24,7 +24,10 @@ let damage amt (s: Ship) =
     if s.Invuln > 0. then
         s
     elif race then
-        if amt >= bulletDamage then { s with Stun = max s.Stun scatterStun; Thrusting = 0. } else s
+        if amt >= bulletDamage then
+            { s with Stun = max s.Stun scatterStun; Spin = asteroidSpin; Thrusting = 0. }
+        else
+            s
     else
         let soaked = min s.Shield amt
         { s with Shield = s.Shield - soaked; Hp = s.Hp - (amt - soaked) }

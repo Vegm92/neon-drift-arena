@@ -1,4 +1,4 @@
-module Domain
+﻿module Domain
 
 open Vec
 
@@ -96,7 +96,7 @@ module Binds =
 module Cfg =
     let mutable arenaHalf = 1350.
     let arenaDefault = 1350.
-    let raceHalf = 1800.
+    let raceHalf = 1500.
     let diagLimit () = arenaHalf * 1.62
     let killMargin = 60.
     let shipRadius = 18.
@@ -125,6 +125,8 @@ module Cfg =
     let invulnTime = 1.5
     let restitution = 0.85
     let mutable ramDamageFactor = 0.09
+    let mutable ramSeparate = 6.
+    let mutable ramEventSpeed = 40.
     let physicsDt = 1. / 120.
     let mutable asteroidStun = 0.666
     let mutable asteroidSpin = 6.3
@@ -191,6 +193,8 @@ module Cfg =
     let duelShips = 2
     // Fraction of the normal minimum camera height used once duelShips remain.
     let duelCamFactor = 0.6
+    // Fraction of the normal minimum camera height used in RACE.
+    let raceCamFactor = 0.6
     let seriesTo = 5
     let mutable ghostSpeed = 240.
     let mutable ghostCooldown = 8.
@@ -230,9 +234,11 @@ module Cfg =
     let mutable laps = 3.
     let mutable gateRadius = 150.
     let mutable raceGrace = 20.
-    let mutable raceDrag = 0.16
+    let mutable raceDrag = 0.10
     let mutable offroadFactor = 0.55
-    let mutable raceGrip = 6.
+    let mutable raceGrip = 2.5
+    let mutable racePulseRange = 190.
+    let mutable raceBubbleLife = 2.
 
     let mutable padAimOn = 0.15
     let mutable padThrustOn = 0.75
@@ -253,6 +259,8 @@ module Cfg =
            "bulletKnockback", (fun () -> bulletKnockback), (fun x -> bulletKnockback <- x)
            "recoil", (fun () -> recoil), (fun x -> recoil <- x)
            "ramDamageFactor", (fun () -> ramDamageFactor), (fun x -> ramDamageFactor <- x)
+           "ramSeparate", (fun () -> ramSeparate), (fun x -> ramSeparate <- x)
+           "ramEventSpeed", (fun () -> ramEventSpeed), (fun x -> ramEventSpeed <- x)
            "asteroidStun", (fun () -> asteroidStun), (fun x -> asteroidStun <- x)
            "asteroidSpin", (fun () -> asteroidSpin), (fun x -> asteroidSpin <- x)
            "heatPerShot", (fun () -> heatPerShot), (fun x -> heatPerShot <- x)
@@ -316,6 +324,8 @@ module Cfg =
            "raceDrag", (fun () -> raceDrag), (fun x -> raceDrag <- x)
            "offroadFactor", (fun () -> offroadFactor), (fun x -> offroadFactor <- x)
            "raceGrip", (fun () -> raceGrip), (fun x -> raceGrip <- x)
+           "racePulseRange", (fun () -> racePulseRange), (fun x -> racePulseRange <- x)
+           "raceBubbleLife", (fun () -> raceBubbleLife), (fun x -> raceBubbleLife <- x)
            "padAimOn", (fun () -> padAimOn), (fun x -> padAimOn <- x)
            "padThrustOn", (fun () -> padThrustOn), (fun x -> padThrustOn <- x) |]
 

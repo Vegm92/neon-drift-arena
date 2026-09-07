@@ -1,4 +1,4 @@
-module Arena
+﻿module Arena
 
 open System
 open Vec
@@ -30,8 +30,9 @@ let freeSpot k (ships: Ship[]) (avoid: V2 list) rng =
         && avoid |> List.forall (fun q -> len (q - p) > 500.)
     while tries < 40 && (tries = 0 || not (clear pick)) do
         r <- nextRng r
-        let a = float (r % 360) * Math.PI / 180.
-        let d = 250. + float ((r / 360) % 900)
+        let a = float (rngIndex 360 r) * Math.PI / 180.
+        r <- nextRng r
+        let d = 250. + float (rngIndex 900 r)
         pick <- ofAngle a * d
         tries <- tries + 1
     pick, r

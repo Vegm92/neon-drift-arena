@@ -1,4 +1,4 @@
-module Strings
+﻿module Strings
 
 type Locale =
     { Player: int -> string
@@ -405,8 +405,8 @@ let weaponName (w: Domain.Weapon) =
     match w with
     | Domain.Blaster -> t.WBlaster
     | Domain.Rail -> t.WRail
-    | Domain.Mines -> t.WMines
-    | Domain.Swarm -> t.WSwarm
+    | Domain.Mines -> if State.race then t.WContact else t.WMines
+    | Domain.Swarm -> if State.race then t.WMissile else t.WSwarm
     | Domain.Pulse -> t.WPulse
     | Domain.Scatter -> t.WScatter
     | Domain.Tractor -> t.WTractor

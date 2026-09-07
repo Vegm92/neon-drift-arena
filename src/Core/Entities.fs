@@ -1,4 +1,4 @@
-module Entities
+﻿module Entities
 
 open System
 open Vec
@@ -175,7 +175,7 @@ let resolveWaves (ships: Ship[]) waves =
     let s = Array.copy ships
     for (p, a, owner) in waves do
         for i in 0 .. s.Length - 1 do
-            match inCone s p a pulseRange pulseCone owner i with
+            match inCone s p a (if race then racePulseRange else pulseRange) pulseCone owner i with
             | Some(n, f) -> s.[i] <- { s.[i] with Vel = s.[i].Vel + n * (pulseForce * f) } |> tag owner Pulse
             | None -> ()
     s
@@ -200,7 +200,8 @@ let private acquire (s: Ship[]) owner =
         let d = p - me.Pos
         let rel = atan2 d.Y d.X - me.Angle
         let off = abs (atan2 (sin rel) (cos rel))
-        if len d - radius < tractorRange && off < tractorCone then Some(off, tow) else None
+        let reach = len d - radius
+        if reach < tractorRange && off < tractorCone then Some((if race then reach else off), tow) else None
     let ships = s |> Array.choose (fun t -> if t.Alive && side t <> side me then ahead t.Pos 0. (TowShip t.Id) else None)
     let rocks = asteroids |> Array.mapi (fun k a -> ahead a.Pos a.Radius (TowRock k)) |> Array.choose id
     match (if ships.Length > 0 then ships else rocks) with
