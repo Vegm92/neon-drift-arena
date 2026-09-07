@@ -34,6 +34,10 @@ export function addJoinRoomListener(callback) {
   if (sdk) call(() => sdk.game.addJoinRoomListener((p) => p?.roomId && callback(p.roomId)));
 }
 
+export function isInstantMultiplayer() { return !!sdk?.game?.isInstantMultiplayer; }
+
+export function leftRoom() { if (sdk) call(() => sdk.game.leftRoom()); }
+
 export function isUserAvailable() { return !!sdk?.user?.isUserAccountAvailable; }
 
 export async function getUser() {

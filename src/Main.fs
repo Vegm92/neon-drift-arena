@@ -9,32 +9,6 @@ Input.init ()
 Settings.init ()
 Sfx.init ()
 
-async {
-    do! CrazyGames.init(Sfx.setCrazyGamesMuted) |> Async.AwaitPromise
-    Input.initNetwork ()
-    Menu.initUser ()
-    CrazyGames.addJoinRoomListener(fun roomId ->
-        if roomId <> "" then
-            window.sessionStorage.setItem ("nda-room", roomId)
-            window.location.reload ()
-    )
-} |> Async.StartImmediate
-
-let view = Render.create ()
-let banner = document.getElementById "banner"
-document.getElementById("loader").className <- "done"
-
-let mutable private adPlaying = false
-
-let requestMidgameAd (onDone: unit -> unit) =
-    adPlaying <- true
-    CrazyGames.gameplayStop ()
-    let finish () =
-        adPlaying <- false
-        Sfx.setAdMuted false
-        onDone ()
-    CrazyGames.requestAd("midgame", (fun () -> Sfx.setAdMuted true), finish, ignore >> finish)
-
 let tutKey = "nda-tut"
 let tutEl = document.getElementById "tut"
 let mutable tutShown = false
@@ -57,11 +31,37 @@ let hideTutorial () =
         tutEl.className <- "hidden"
         tutShown <- false
 
-showTutorial ()
+async {
+    do! CrazyGames.init(Sfx.setCrazyGamesMuted) |> Async.AwaitPromise
+    Input.initNetwork ()
+    Menu.initUser ()
+    if not (CrazyGames.isInstantMultiplayer ()) then showTutorial ()
+    CrazyGames.addJoinRoomListener(fun roomId ->
+        if roomId <> "" then
+            window.sessionStorage.setItem ("nda-room", roomId)
+            window.location.reload ()
+    )
+} |> Async.StartImmediate
+
+let view = Render.create ()
+let banner = document.getElementById "banner"
+document.getElementById("loader").className <- "done"
+
+let mutable private adPlaying = false
+
+let requestMidgameAd (onDone: unit -> unit) =
+    adPlaying <- true
+    CrazyGames.gameplayStop ()
+    let finish () =
+        adPlaying <- false
+        Sfx.setAdMuted false
+        onDone ()
+    CrazyGames.requestAd("midgame", (fun () -> Sfx.setAdMuted true), finish, ignore >> finish)
 
 let mutable world = Sim.initial
 let mutable last = 0.
 let mutable lastHost = 0.
+let mutable lastSend = 0.
 let mutable acc = 0.
 let mutable countdown = 0.
 let mutable slowmo = 0.
@@ -267,6 +267,8 @@ let mutable private lastMenuAt = 0.
 let mutable private remote: obj = null
 let mutable private remoteAt = 0.
 let mutable private wasClient = false
+let mutable private hostLeftSaid = false
+let mutable private lastJoinable = true
 Input.hotOn "nda:state" (fun m -> remote <- m; remoteAt <- JS.Constructors.Date.now ())
 let private client () = not (isNull remote) && JS.Constructors.Date.now () - remoteAt < 1000.
 
@@ -277,6 +279,7 @@ let private sendState () =
     if not (isNull menu) then lastMenuAt <- now
     lastMenu <- html
     Input.hotSend "nda:state" (createObj [ "world" ==> { world with Events = [] }; "events" ==> List.toArray frameEvents; "layout" ==> State.layout; "race" ==> State.race; "colors" ==> playerColor; "intro" ==> view.Intro; "banner" ==> banner.textContent; "bannerClass" ==> banner.className; "menuClass" ==> menuEl.className; "menu" ==> menu ])
+    frameEvents <- []
 
 let private weaponOf (s: string) =
     match s with
@@ -360,8 +363,15 @@ let private clientFrame dt =
     Sfx.thrust world
     Render.draw view world events dt
 
+let private syncJoinable () =
+    if Input.padUrl <> "" then
+        let joinable = Menu.visible () && Menu.screen = Menu.Lobby && Menu.joined.Count < 4
+        if joinable <> lastJoinable then
+            lastJoinable <- joinable
+            CrazyGames.updateRoom (Input.room, joinable)
+
 let private localFrame (t: float) dt =
-    frameEvents <- []
+    syncJoinable ()
     if t - lastHost > 100. then
         lastHost <- t
         broadcast ()
@@ -383,6 +393,7 @@ let private localFrame (t: float) dt =
             world <- Sim.initial
             State.target <- -1
             Menu.show ()
+            if Input.padUrl <> "" then CrazyGames.leftRoom ()
         | _ -> ()
         if view.Layout <> State.layout then world <- Sim.initial
         Render.syncArena view
@@ -418,7 +429,7 @@ let private localFrame (t: float) dt =
             acc <- acc - Cfg.physicsDt
             steps <- steps + 1
         if steps = 8 then acc <- 0.
-        frameEvents <- events
+        frameEvents <- frameEvents @ events
         match Menu.dropIn () with
         | Some(slot, fromBot) ->
             if fromBot then
@@ -474,6 +485,7 @@ let rec frame (t: float) =
     for i in 0..3 do view.Names.[i] <- name i
     if client () then
         wasClient <- true
+        hostLeftSaid <- false
         clientFrame dt
     else
         if wasClient then
@@ -481,8 +493,14 @@ let rec frame (t: float) =
             world <- Sim.initial
             State.target <- -1
             Menu.show ()
+        if not hostLeftSaid && not (isNull remote) && JS.Constructors.Date.now () - remoteAt > 4000. then
+            hostLeftSaid <- true
+            say Strings.t.HostLeft
         localFrame t dt
-        sendState ()
+        if Input.isPeer then frameEvents <- []
+        elif t - lastSend > Cfg.netStateMs then
+            lastSend <- t
+            sendState ()
     window.requestAnimationFrame frame |> ignore
 window.addEventListener ("keydown", fun _ -> hideTutorial ())
 window.addEventListener ("pointerdown", fun _ -> hideTutorial ())
@@ -492,6 +510,7 @@ window.addEventListener (
         if document.hidden && not (client ()) && not (Menu.visible ()) && world.Phase = Playing then
             Menu.pause ()
 )
+window.addEventListener ("pagehide", fun _ -> if Input.padUrl <> "" then CrazyGames.leftRoom ())
 window.requestAnimationFrame frame |> ignore
 
 window.addEventListener (

@@ -26,7 +26,7 @@ let private newRoom () : string = jsNative
 
 let private isPad = window.location.pathname.EndsWith "pad.html"
 
-let mutable private room = ""
+let mutable room = ""
 
 let private relayOrigin =
     let h = window.location.hostname
@@ -39,14 +39,21 @@ let mutable private sock: obj = null
 
 let mutable getLocalPlayerName : unit -> string = fun () -> ""
 
+/// Set from the relay's "nda:role" message: true once this connection was
+/// demoted to a peer, so the joining machine stops broadcasting its own world.
+let mutable isPeer = false
+
 let rec private connect () =
     let s = createNew window?WebSocket (relayOrigin.Replace("http", "ws") + "/relay?room=" + room + (if isPad then "&role=pad" else "&role=host"))
     sock <- s
     s?onmessage <- fun (e: obj) ->
         let msg = JS.JSON.parse (e?data: string)
-        match handlers.TryGetValue(msg?``event``: string) with
-        | true, f -> f msg?data
-        | _ -> ()
+        let ev: string = msg?``event``
+        if ev = "nda:role" then isPeer <- (msg?data?host: bool) <> true
+        else
+            match handlers.TryGetValue(ev) with
+            | true, f -> f msg?data
+            | _ -> ()
     s?onclose <- fun (_: obj) -> window.setTimeout (connect, 1000) |> ignore
 
 let initNetwork () =
