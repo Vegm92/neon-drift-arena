@@ -4,11 +4,12 @@
   "type": "module",
   "scripts": {
     "dev": "dotnet fable watch src -o build --run npx vite --host",
-    "build": "dotnet fable src -o build && vite build",
+    "build": "dotnet fable src -o build && vite build && node scripts/prune-dist.mjs",
     "check": "dotnet run --project test && npm run check:js",
     "check:js": "node test/progress-check.mjs",
     "check:relay": "node test/relay-check.mjs",
     "deploy": "railway up --ci --service site",
+    "pack": "npm run build && node scripts/pack-crazygames.mjs",
     "qa:sweep": "node scripts/qa-playwright-sweep.mjs"
   },
   "dependencies": {
