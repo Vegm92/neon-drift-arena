@@ -56,6 +56,9 @@ type Locale =
       Ready: string
       NeedTwo: string
       Paused: string
+      Sure: string
+      Yes: string
+      No: string
       Resume: string
       Quit: string
       Restart: string
@@ -261,6 +264,9 @@ let en =
       Ready = "READY"
       NeedTwo = "NEED 2 OPPOSING SIDES"
       Paused = "PAUSED"
+      Sure = "ARE YOU SURE?"
+      Yes = "YES"
+      No = "NO"
       Resume = "RESUME"
       Quit = "QUIT TO LOBBY"
       Restart = "RESTART MATCH"

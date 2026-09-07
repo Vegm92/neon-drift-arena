@@ -383,7 +383,7 @@ let private localFrame (t: float) dt =
             world <- Sim.initial
             State.target <- -1
             Menu.show ()
-        | None -> ()
+        | _ -> ()
         if view.Layout <> State.layout then world <- Sim.initial
         Render.syncArena view
         Render.draw view world [] dt
