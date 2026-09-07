@@ -48,9 +48,9 @@ The SDK v2 script is loaded from `sdk.crazygames.com` in both `index.html` and `
 
 ## Phone pads and LAN mirrors
 
-Under the dev server, pad messages travel over Vite's HMR WebSocket and the QR code points at `http://<lan-ip>:5173/pad.html` (`npm run dev` serves on the LAN with `--host`). On the deployed build there is no HMR, so the host page mints a four-character room code (kept in `sessionStorage`), the QR points at `https://<site>/pad.html#<code>`, and both ends meet on `/relay` in `deploy/server.mjs`, which only ever forwards a room's phones to that room's host. The relay carries pad input, nothing else — the match still runs entirely in the host browser.
+Under the dev server, pad messages travel over Vite's HMR WebSocket and the QR code points at `http://<lan-ip>:5173/pad.html` (`npm run dev` serves on the LAN with `--host`). On the deployed build there is no HMR, so the host page mints a four-character room code (kept in `sessionStorage`), the QR points at `https://<site>/pad.html#<code>`, and both ends meet on `/relay` in `deploy/server.mjs`: the first connection in a room becomes its host, and every later connection — phone pad or a second desktop — is routed as a peer of that host, never evicting it.
 
-LAN mirror clients (`nda:state`, host-authoritative) ride the Vite dev socket only.
+LAN mirror clients (`nda:state`, host-authoritative) ride the Vite dev socket in dev. On the deployed build a second desktop in the same room mirrors the same way over `/relay`: it renders the host's `nda:state` and its own input rides back over the pad channel, seated with its CrazyGames username instead of "Phone".
 
 ## Tuning
 
