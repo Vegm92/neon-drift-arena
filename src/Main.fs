@@ -482,7 +482,7 @@ let rec frame (t: float) =
             State.target <- -1
             Menu.show ()
         localFrame t dt
-        sendState ()
+        if not Input.isPeer then sendState ()
     window.requestAnimationFrame frame |> ignore
 window.addEventListener ("keydown", fun _ -> hideTutorial ())
 window.addEventListener ("pointerdown", fun _ -> hideTutorial ())

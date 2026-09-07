@@ -44,6 +44,7 @@ new WebSocketServer({ server, path: "/relay" }).on("connection", (ws, req) => {
   if (!room) rooms.set(code, (room = { host: null, pads: new Set() }));
   const isHost = wantsHost && !room.host;
   if (isHost) room.host = ws; else room.pads.add(ws);
+  send(ws, JSON.stringify({ event: "nda:role", data: { host: isHost } }));
 
   ws.on("message", (buf) => {
     const msg = buf.toString().slice(0, 4096);
