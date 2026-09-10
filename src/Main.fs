@@ -69,6 +69,7 @@ let mutable slowmo = 0.
 let mutable hitstop = 0.
 let mutable finish = 0.
 let mutable ending = false
+let mutable private resultShown = false
 let mutable shout = 0.
 let mutable shoutText = ""
 let mutable bled = false
@@ -98,6 +99,7 @@ let private go intro =
     hitstop <- 0.
     finish <- 0.
     ending <- false
+    resultShown <- false
     shout <- 0.
     bled <- false
     suddenSaid <- false
@@ -487,7 +489,8 @@ let private localFrame (t: float) dt =
             | _ -> ()
         | Over _ ->
             finish <- finish - dt
-            if finish <= 0. then
+            if finish <= 0. && not resultShown then
+                resultShown <- true
                 banner.className <- "hidden"
                 Menu.note <- endNote
                 let me = world.Ships.[0]

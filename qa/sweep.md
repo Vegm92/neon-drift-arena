@@ -1,9 +1,9 @@
-# QA sweep raw notes (2026-09-07T20:28:36.114Z)
+# QA sweep raw notes (2026-09-10T21:36:04.173Z)
 
-Base: http://localhost:4175
+Base: http://localhost:4173
 
 ## Notes
-- **landing**: {"video":{"paused":false,"muted":true,"readyState":4,"currentTime":13.8},"cta":"PLAY FREE NO DOWNLOAD REQUIRED","nodesktop":false,"stores":["store soon:STEAM SOON","store soon:CRAZYGAMES SOON","store soon:ITCH.IO SOON"],"og":{"image":"/og.jpg","title":"Neon Drift Arena · Free 4-player couch brawler in your browser","desc":"Four ships, one couch. Asteroids drift, a blaster that kicks back, phones as controllers. Free, no install, last ship flying wins.","twitter":"summary_large_image"},"placeholders":[],"h1":"\"Bebas Neue\", \"Arial Narrow\", Impact, sans-serif"}
+- **landing**: {"video":{"paused":false,"muted":true,"readyState":4,"currentTime":13.9},"cta":"PLAY FREE NO DOWNLOAD REQUIRED","nodesktop":false,"stores":["store soon:STEAM SOON","store soon:CRAZYGAMES SOON","store soon:ITCH.IO SOON"],"og":{"image":"/og.jpg","title":"Neon Drift Arena · Free 4-player couch brawler in your browser","desc":"Four ships, one couch. Asteroids drift, a blaster that kicks back, phones as controllers. Free, no install, last ship flying wins.","twitter":"summary_large_image"},"placeholders":[],"h1":"\"Bebas Neue\", \"Arial Narrow\", Impact, sans-serif"}
 - **landing**: body exceeds viewport 1920x3222 vs 1920x1080
 - **landing**: smallest text 10.0px at 1920x1080
 - **tutorial**: smallest text 13.0px at 1920x1080
@@ -22,39 +22,40 @@ Base: http://localhost:4175
 - **qr**: no QR rendered in the lobby (padUrl empty)
 - **settings**: smallest text 17.0px at 1920x1080
 - **settings**: {"rows":11,"hint":"▼ MORE BELOW\nW S / STICK · MOVE A D / STICK · ADJUST SPACE / A · TOGGLE ESC / B · BACK","sel":"KEYBOARD\nP1"}
-- **settings-bottom**: ["STRAFE LEFT Q","STRAFE RIGHT E","THRUST W / ↑","REVERSE S / ↓"]
-- **settings-adjust**: after ▶▶ on last selected row: STRAFE RIGHT E / D
+- **settings-bottom**: ["BOOST SHIFT","FIRE SPACE","SPECIAL F","PAUSE / START ENTER"]
+- **settings-adjust**: after ▶▶ on last selected row: PAUSE / START ENTER / D
 - **settings-1366**: smallest text 13.7px at 1366x768
 - **settings-back**: after ESC: {"slots":["slot in away | User1 KEYBOARD ◀ CYAN ▶","slot in | BOT BOT READY","slot in | BOT BOT READY","slot in | BOT BOT READY"],"row":[":FREE FOR ALL",":CROSS BASTIONS",":NONE",":CLEAR BOTS","sel:SETTINGS","dim:START"],"sel":"4","go":false,"away":true,"note":"ALL PLAYERS MUST READY UP"}
 - **hud**: smallest text 11.0px at 1920x1080
 - **hud**: {"clock":"2:28","panels":["panel p0 | User1 HP SHIELD HEAT BOOST BLASTER","panel p1 r | BOT HP SHIELD HEAT BOOST BLASTER","panel p2 | BOT HP SHIELD HEAT BOOST BLASTER","panel p3 r | BOT HP SHIELD HEAT BOOST BLASTER"]}
-- **flash**: kill-fx: mean luma 10.5 → 10.1 → 9.7 → 9 → 8.5 → 8.2 · bright(>180) 0.008 → 0.007 → 0.008 → 0.007 → 0.007 → 0.007 · changed-area per 16ms step 0.053, 0.045, 0.039, 0.032, 0.03
-- **kill-feed**: {"feed":"BOT BLASTER User1","banner":"hidden BOT ON LAST STOCK"}
+- **danger-arc**: no natural bullet threat within 20 s, injecting one
+- **flash**: kill-fx: mean luma 10.2 → 9.3 → 8.5 → 8.2 → 8 → 7.5 · bright(>180) 0.009 → 0.01 → 0.01 → 0.009 → 0.009 → 0.009 · changed-area per 16ms step 0.044, 0.036, 0.023, 0.027, 0.026
+- **kill-feed**: {"feed":"RING OUT BOT RING OUT BOT","banner":"shout RING OUT"}
 - **low-hp**: {"panel0":"panel p0 hurt","hp":18}
-- **wormhole**: {"ax":-5.113555086124065,"ay":-292.9553746808226,"bx":-449.68392609921995,"by":642.2152027225698,"life":8.325000000000209}
+- **wormhole**: {"ax":262.3913500942931,"ay":348.2050823806197,"bx":-837.7229662236191,"by":-256.11761333711706,"life":8.891666666666843}
 - **wormhole**: ship warped A→B: true
-- **black-hole**: {"x":-882.3877466989384,"y":155.58876718956952}
-- **flash**: black-hole horizon (close-up, 16ms steps): mean 14.7 → 14.4 → 14 → 13.8 → 13.5 → 13.2 · bright 0.021 → 0.022 → 0.022 → 0.022 → 0.022 → 0.022 · changed-area 0.02, 0.015, 0.012, 0.019, 0.018
+- **black-hole**: {"x":-132.81286081915616,"y":-838.5474011652718}
+- **flash**: black-hole horizon (close-up, 16ms steps): mean 11.8 → 11.4 → 11.1 → 10.8 → 10.7 → 10.6 · bright 0.018 → 0.018 → 0.018 → 0.018 → 0.018 → 0.018 · changed-area 0.02, 0.014, 0.012, 0.019, 0.018
 - **pause**: smallest text 10.0px at 1920x1080
 - **pause**: {"items":["item sel:RESUME","item:SETTINGS","item:RESTART MATCH","item:QUIT TO LOBBY"],"qr":false,"hints":"W S STICK MOVE SPACE A SELECT ESC B BACK"}
 - **sudden-death**: {"clock":"sudden SUDDEN DEATH","banner":"RING OUT","bounds":0.45}
 - **launcher**: {"rocks":1,"wep":"<span class=\"wait\"><svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" st","launchCd":5.558333333333311}
 - **result**: smallest text 9.0px at 1920x1080
-- **result**: {"title":"DRAW","tally":"User1 ★ BOT BOT BOT ★★","hints":"W S STICK MOVE SPACE A SELECT ESC B BACK SPACE A JOIN ESC B LEAVE","awards":["MOST KILLS BOT TOOK DOWN 4 SHIPS","BEST AIM BOT LANDED 75% OF SHOTS","RING-OUTS User1 FLEW OUT 1 TIMES","EMPTY HANDED User1 NEVER OPENED A CRATE"]}
+- **result**: {"title":"BOT WINS","tally":"User1 ★ BOT BOT ★ BOT ★★","hints":"W S STICK MOVE SPACE A SELECT ESC B BACK SPACE A JOIN ESC B LEAVE","awards":["MOST KILLS BOT TOOK DOWN 2 SHIPS","BEST AIM BOT LANDED 12% OF SHOTS","RING-OUTS BOT FLEW OUT 2 TIMES","EMPTY HANDED User1 NEVER OPENED A CRATE"]}
 - **result-1366**: smallest text 9.0px at 1366x768
 - **race-lobby**: ARENA cycle (RACE): GRAND PRIX → HAIRPIN → INFINITY → RANDOM → GRAND PRIX
 - **race-hud**: {"clock":"0:02","panels":["4TH · LAP 1/3","3RD · LAP 1/3","2ND · LAP 1/3","1ST · LAP 1/3"]}
 - **race**: gates: 10
 - **practice-lobby**: {"slots":["slot in | User1 KEYBOARD ◀ CYAN ▶","slot | P2 PRESS FIRE TO JOIN","slot | P3 PRESS FIRE TO JOIN","slot | P4 PRESS FIRE TO JOIN"],"row":[":PRACTICE",":CORE RING",":NONE",":ADD BOT",":SETTINGS","go:START"],"sel":null,"go":true,"away":false,"note":""}
-- **flash**: weapon-1-release: mean luma 12.8 → 12.8 → 12.9 → 12.9 → 12.9 → 12.9 · bright(>180) 0.013 → 0.013 → 0.013 → 0.013 → 0.013 → 0.013 · changed-area per 16ms step 0.001, 0.001, 0.001, 0.001, 0
+- **flash**: weapon-1-release: mean luma 12.9 → 13 → 13 → 13 → 13 → 13 · bright(>180) 0.013 → 0.013 → 0.013 → 0.013 → 0.013 → 0.013 · changed-area per 16ms step 0.001, 0.001, 0.001, 0.001, 0.001
 - **weapon-1**: RAILGUN · {"wep":"RAILGUN●●","ammo":2,"bullets":0,"mines":1}
 - **weapon-2**: MAG MINES · {"wep":"MAG MINES●●●","ammo":3,"bullets":0,"mines":2}
 - **weapon-3**: SEEKERS · {"wep":"SEEKERS●●","ammo":2,"bullets":1,"mines":1}
 - **weapon-4**: REPULSOR · {"wep":"REPULSOR●●","ammo":2,"bullets":0,"mines":1}
 - **weapon-5**: SCATTER GUN · {"wep":"ZAPPER●","ammo":1,"bullets":0,"mines":1}
-- **flash**: weapon-6-release: mean luma 13.2 → 13.2 → 13.2 → 13.2 → 13.3 → 13.3 · bright(>180) 0.016 → 0.016 → 0.016 → 0.016 → 0.016 → 0.016 · changed-area per 16ms step 0.001, 0.001, 0, 0.001, 0.001
+- **flash**: weapon-6-release: mean luma 13.1 → 13.2 → 13.1 → 13 → 13 → 13 · bright(>180) 0.016 → 0.016 → 0.016 → 0.016 → 0.016 → 0.016 · changed-area per 16ms step 0.001, 0.001, 0, 0.001, 0.001
 - **weapon-6**: TRACTOR · {"wep":"TRACTOR●●","ammo":2,"bullets":0,"mines":1}
-- **flash**: target-kill-fx: mean luma 7.4 → 22.3 → 23.1 → 23.2 → 22.9 → 22.4 · bright(>180) 0.007 → 0.035 → 0.038 → 0.04 → 0.034 → 0.033 · changed-area per 16ms step 0.157, 0.024, 0.031, 0.038, 0.04
+- **flash**: target-kill-fx: mean luma 20.2 → 21.6 → 22.4 → 23.1 → 22.8 → 22.7 · bright(>180) 0.03 → 0.032 → 0.035 → 0.038 → 0.035 → 0.033 · changed-area per 16ms step 0.024, 0.023, 0.025, 0.035, 0.038
 - **pad**: phase text: NEON DRIFT ARENA JOIN
 - **pad-card**: PHONE ◀ MAGENTA ▶ BACK START
 - **pad-lobby-host**: {"slots":["slot in | User1 KEYBOARD ◀ CYAN ▶","slot in | PHONE PHONE READY","slot | P3 PRESS FIRE TO JOIN","slot | P4 PRESS FIRE TO JOIN"],"row":[":FREE FOR ALL",":CORE RING",":NONE",":ADD BOT",":SETTINGS","dim:START"],"sel":null,"go":false,"away":false,"note":"ALL PLAYERS MUST READY UP"}
