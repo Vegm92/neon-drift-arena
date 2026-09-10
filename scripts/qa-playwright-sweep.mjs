@@ -312,6 +312,7 @@ await page.setViewportSize({ width: 1920, height: 1080 });
 await key(page, "Escape");
 await wait(300);
 note("settings-back", "after ESC: " + JSON.stringify(await lobbyState(page)));
+await q(page, () => { __qa.D.Binds_reset(); });
 
 // 8 launch FFA with 3 bots
 await setMode(page, "FREE FOR ALL");
