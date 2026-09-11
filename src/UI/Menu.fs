@@ -359,14 +359,20 @@ let private invite () =
 let private plus =
     "<svg viewBox=\"0 0 100 100\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linejoin=\"round\"><path d=\"M50 8 L86 29 L86 71 L50 92 L14 71 L14 29 Z\"/><path d=\"M50 34 L50 66 M34 50 L66 50\" stroke-width=\"4\"/></svg>"
 
-let private legend (title: string) (rows: (string list * string) list) =
+let deviceIcon =
+    function
+    | "kb" -> "<svg viewBox=\"0 0 24 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.4\"><rect x=\"1\" y=\"1\" width=\"22\" height=\"14\" rx=\"2\"/><path d=\"M4 5h2M8 5h2M12 5h2M16 5h4M4 8h2M8 8h2M12 8h2M16 8h4M6 11h12\" stroke-linecap=\"round\"/></svg>"
+    | "pad" -> "<svg viewBox=\"0 0 24 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.4\" stroke-linejoin=\"round\"><path d=\"M6 4h12a4 4 0 0 1 4 4.6l-.9 4.4a2 2 0 0 1-3.5.8L15 11H9l-2.6 2.8a2 2 0 0 1-3.5-.8L2 8.6A4 4 0 0 1 6 4Z\"/><path d=\"M6.5 7v3M5 8.5h3\" stroke-linecap=\"round\"/><circle cx=\"18\" cy=\"7\" r=\".9\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"16\" cy=\"9\" r=\".9\" fill=\"currentColor\" stroke=\"none\"/></svg>"
+    | _ -> "<svg viewBox=\"0 0 14 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.4\"><rect x=\"1\" y=\"1\" width=\"12\" height=\"18\" rx=\"2\"/><path d=\"M6 16h2\" stroke-linecap=\"round\"/></svg>"
+
+let private legend (dev: string) (title: string) (rows: (string list * string) list) =
     let cells =
         rows
         |> List.map (fun (keys, label) ->
             let caps = keys |> List.map (fun k -> sprintf "<i>%s</i>" k) |> String.concat ""
             sprintf "<div class=\"key\"><div class=\"caps\">%s</div><span>%s</span></div>" caps label)
         |> String.concat ""
-    sprintf "<div class=\"legend\"><div class=\"lt\">%s</div><div class=\"keys\">%s</div></div>" title cells
+    sprintf "<div class=\"legend %s\"><div class=\"lt\">%s<b>%s</b></div><div class=\"keys\">%s</div></div>" dev (deviceIcon dev) title cells
 
 let private hint (keys: string) (label: string) =
     let caps = keys.Split([| " / " |], System.StringSplitOptions.None) |> Array.map (sprintf "<i>%s</i>") |> String.concat ""
@@ -433,7 +439,7 @@ let private renderLobby (devices: Input.Device[]) =
           Strings.t.Mutator, Strings.t.Mutators.[State.mutator], true
           "", (if joined.Count < 4 then Strings.t.AddBot else Strings.t.ClearBots), true
           "", Strings.t.Settings, true
-          Strings.keysLaunch (), Strings.t.Start, go ]
+          Strings.keysLaunch (), (if go then Strings.t.Start else Strings.t.Ready), go ]
         |> List.mapi (fun i (top, t, ok) ->
             let who = whoOn i
             let sel = who <> ""
@@ -460,9 +466,9 @@ let private renderLobby (devices: Input.Device[]) =
             sprintf
                 "<div class=\"lobby\"><div class=\"title\"><h1>%s</h1><div class=\"sub\">%s</div></div><div class=\"modebar\">%s</div><div class=\"slots\">%s</div><div class=\"hints\">%s</div><div class=\"buttons\">%s</div><div class=\"notebar\"><span class=\"note\">%s</span>%s</div><div class=\"legends\">%s%s%s%s%s</div></div>"
                 Strings.t.TitleMain Strings.t.TitleSub mode slots hints picks note (pilot ())
-                (legend Strings.t.Keyboard (Strings.kbLegend ()))
-                (legend Strings.t.Gamepad Strings.t.PadLegend)
-                (legend Strings.t.Phone Strings.t.PhoneLegend)
+                (legend "kb" Strings.t.Keyboard (Strings.kbLegend ()))
+                (legend "pad" Strings.t.Gamepad Strings.t.PadLegend)
+                (legend "phone" Strings.t.Phone Strings.t.PhoneLegend)
                 (qr ())
                 (invite ()))
     if wrote && renaming >= 0 then
@@ -609,7 +615,7 @@ let private updateLobby () =
                     | 2 -> State.mutator <- (State.mutator + 1) % State.mutators
                     | 3 -> toggleBots ()
                     | 4 -> options <- true
-                    | _ -> if canStart () then launch <- true
+                    | _ -> if canStart () then launch <- true else ready.[d.Slot] <- true
             else
                 if (left || right) && not ready.[d.Slot] then
                     if teamMode then teams.[d.Slot] <- 3 - teams.[d.Slot]
