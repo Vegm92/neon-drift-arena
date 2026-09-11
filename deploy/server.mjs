@@ -46,7 +46,7 @@ const every = (ms, key) => {
   return true;
 };
 
-new WebSocketServer({ server, path: "/relay" }).on("connection", (ws, req) => {
+new WebSocketServer({ server, path: "/relay", perMessageDeflate: { threshold: 1024 } }).on("connection", (ws, req) => {
   const query = new URL(req.url, "http://x").searchParams;
   const code = (query.get("room") ?? "").slice(0, 8);
   const wantsHost = query.get("role") === "host";
