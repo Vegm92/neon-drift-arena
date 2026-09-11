@@ -13,12 +13,28 @@ open Combat
 let private turbo () = if mutator = 2 then 1.5 else 1.
 let private slick () = if mutator = 3 then 0.25 else 1.
 
+/// Flies just like a live ship — same turn/accel/drag/strafe feel — but boost
+/// never drains (a ghost has nothing left to conserve it for) and it passes
+/// through everything, clamped only to the arena bounds.
 let private stepGhost dt (inp: Input) (s: Ship) =
+    let k = turbo ()
     let angle =
         match inp.Aim with
-        | Some a -> a
-        | None -> s.Angle + inp.Turn * turnRate * dt
-    let vel = if inp.Thrust || inp.Boost then ofAngle angle * ghostSpeed else zero
+        | Some a when not inp.Steer -> a
+        | Some a ->
+            let d = atan2 (sin (a - s.Angle)) (cos (a - s.Angle))
+            let lim = turnRate * k * dt
+            s.Angle + max -lim (min lim d)
+        | None -> s.Angle + inp.Turn * turnRate * k * dt
+    let boosting = inp.Boost
+    let thrusting = if boosting then 2. elif inp.Thrust || inp.Boost then 1. else 0.
+    let accel =
+        if boosting then boostAccel * k
+        elif thrusting > 0. then thrustAccel * k
+        elif inp.Reverse then -thrustAccel * reverseFactor * k
+        else 0.
+    let push = ofAngle angle * accel + ofAngle (angle + System.Math.PI / 2.) * (inp.Strafe * strafeAccel * k)
+    let vel = (s.Vel + push * dt) * (1. - drag * slick () * dt) |> clampLen (maxSpeed * k)
     let p = s.Pos + vel * dt
     let clamp x = max -arenaHalf (min arenaHalf x)
     { s with
@@ -26,6 +42,9 @@ let private stepGhost dt (inp: Input) (s: Ship) =
         LaunchAngle = angle
         Vel = vel
         Pos = v (clamp p.X) (clamp p.Y)
+        Boost = boostMax
+        Thrusting = thrusting
+        Reversing = accel < 0.
         LaunchCd = max 0. (s.LaunchCd - dt) }
 
 let private stepLauncher k dt (inp: Input) (s: Ship) =

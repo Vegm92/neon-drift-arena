@@ -72,7 +72,9 @@ module Binds =
         | Special -> [| "KeyF" |]
         | Start -> [| "Enter" |]
         | Back -> [| "Escape" |]
-        | Swap -> [| "KeyB" |]
+        // shares Special's default: dead players have no weapon, so F is free to
+        // double as the ghost/launcher toggle — see `Binds.isSoleBindingOf` note above
+        | Swap -> [| "KeyF" |]
 
     let private codes = all |> Array.map defaults
 
@@ -199,7 +201,6 @@ module Cfg =
     // Fraction of the normal minimum camera height used in RACE.
     let raceCamFactor = 0.6
     let seriesTo = 5
-    let mutable ghostSpeed = 240.
     let mutable ghostCooldown = 8.
     let mutable rockSpeed = 300.
     let mutable rockRadius = 20.
@@ -323,7 +324,6 @@ module Cfg =
            "tractorPull", (fun () -> tractorPull), (fun x -> tractorPull <- x)
            "tractorTime", (fun () -> tractorTime), (fun x -> tractorTime <- x)
            "matchTime", (fun () -> matchTime), (fun x -> matchTime <- x)
-           "ghostSpeed", (fun () -> ghostSpeed), (fun x -> ghostSpeed <- x)
            "ghostCooldown", (fun () -> ghostCooldown), (fun x -> ghostCooldown <- x)
            "rockSpeed", (fun () -> rockSpeed), (fun x -> rockSpeed <- x)
            "rockRadius", (fun () -> rockRadius), (fun x -> rockRadius <- x)
