@@ -415,6 +415,8 @@ let main _ =
         (feudW.Ships.[0].Stocks > 0 && feudW.Ships.[1].Stocks > 0)
 
 
+
+
     let duel = w0 |> place 0 zero 0. |> place 1 (v 300. 0.) 0. |> place 2 (v (-1200.) 1200.) 0. |> place 3 (v 1200. (-1200.)) 0.
     let b = bot duel 0
     check "bot fires at the ship ahead" (b.Fire && b.Aim = Some 0. && not b.Thrust)
@@ -496,6 +498,41 @@ let main _ =
     check "bots weave across the line while duelling up close"
         (weaveA.Strafe <> 0. && weaveB.Strafe <> 0. && weaveA.Strafe <> weaveB.Strafe)
     check "bots hold a straight line at range" ((bot (duel |> place 1 (v 900. 0.) 0.) 0).Strafe = 0.)
+    // The lead was three rounds of a fixed point that contracts by |v| / speed:
+    // wobbly for the blaster and divergent for the swarm. Fire along the aim it
+    // gives and the shot has to actually arrive with the target.
+    let interceptMiss wpn (tv: V2) =
+        let w = duel |> place 1 (v 400. 0.) 0. |> edit 0 (fun s -> { s with Weapon = wpn }) |> edit 1 (fun s -> { s with Vel = tv })
+        let a = (bot w 0).Aim |> Option.defaultValue 0.
+        let speed = if wpn = Swarm then seekerSpeed else bulletSpeed
+        [ for k in 1 .. 240 -> float k / 120. ]
+        |> List.map (fun tm -> len (ofAngle a * speed * tm - (v 400. 0. + tv * tm)))
+        |> List.min
+    check "the blaster lead actually intercepts a crossing target" (interceptMiss Blaster (v 0. 200.) < shipRadius)
+    // Seekers home, so they do not need the lead to land - what matters is that
+    // asking for one against a target the seeker cannot outrun no longer throws
+    // the aim somewhere arbitrary, which is what the divergent fixed point did.
+    let swarmAim (tv: V2) =
+        let w = duel |> place 1 (v 400. 0.) 0. |> edit 0 (fun s -> { s with Weapon = Swarm }) |> edit 1 (fun s -> { s with Vel = tv })
+        (bot w 0).Aim |> Option.defaultValue nan
+    // When no intercept exists the only sane aim is the target itself. The old
+    // fixed point had nothing to converge on and simply ran away: three rounds
+    // of a 1.27x expansion put the nose 0.65 rad off a target sitting dead
+    // ahead, and the further it ran the further it pointed.
+    check "an unreachable swarm lead aims at the target rather than running away"
+        ([ v 260. 260.; v 300. 0.; v 200. 240. ]
+         |> List.forall (fun tv -> let a = swarmAim tv in not (System.Double.IsNaN a) && abs (atan2 (sin a) (cos a)) < 0.1))
+    // A solver that wobbles turns a smooth world into a twitching one, so nudge
+    // the target's speed in tiny steps: the aim must follow smoothly. The old
+    // fixed point jumped, which is the twitch seen from the cockpit.
+    let sweep =
+        [ for k in 0 .. 200 -> float k * 0.5 ]
+        |> List.map (fun sp ->
+            let w = duel |> place 1 (v 420. 0.) 0. |> edit 1 (fun s -> { s with Vel = v 0. sp })
+            (bot w 0).Aim |> Option.defaultValue nan)
+    let roughest =
+        sweep |> List.pairwise |> List.map (fun (a, b) -> abs (atan2 (sin (b - a)) (cos (b - a)))) |> List.max
+    check "the aim tracks a target's speed smoothly instead of jumping" (roughest < 0.02)
     // Measured across all eight arenas, four bots, sixty seconds: ram accounted
     // for 1% of the damage and guns 99%, so the opening slaughter was never a
     // ramming problem. It was 249 nose-to-nose charges where both bots flew

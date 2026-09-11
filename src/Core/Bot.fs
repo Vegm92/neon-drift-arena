@@ -9,13 +9,66 @@ open Track
 open Arena
 open Combat
 
+/// Picking "the nearest" re-runs 120 times a second, so two candidates a few
+/// units apart trade places constantly and the ship swings between them. That
+/// thrashing, not any threshold, is most of what reads as hesitation from the
+/// outside. The hull's own facing is the only memory a pure bot has, so
+/// whatever it is already pointing at is scored as if it were nearer and keeps
+/// winning the tie for as long as the bot keeps flying at it.
+///
+/// Goals only. Dodging picks the nearest hazard on the flight path and must
+/// stay that way: biasing it toward the rock the nose happens to favour picks
+/// the wrong rock to avoid, and the bot flies into the other one.
+let private held (me: Ship) (p: V2) =
+    let d = p - me.Pos
+    let off = abs (atan2 (sin (atan2 d.Y d.X - me.Angle)) (cos (atan2 d.Y d.X - me.Angle)))
+    if off < botLock then botStick else 1.
+
+let private closest (me: Ship) (pos: 'a -> V2) (xs: 'a[]) =
+    if xs.Length = 0 then None else Some(xs |> Array.minBy (fun x -> len (pos x - me.Pos) * held me (pos x)))
+
+/// The bot's own target pick. Combat.nearest stays as it is - homing weapons
+/// want the genuinely closest hull, not the one their owner happens to face.
+let private quarry (w: World) i (me: Ship) =
+    w.Ships |> Array.filter (fun s -> s.Alive && side s <> side me) |> closest me (fun s -> s.Pos)
+
+/// Where to point so the shot and a moving target arrive together. A bullet
+/// leaves at `dir * speed + me.Vel * 0.5`, so relative to the shot the target
+/// travels at `t.Vel - me.Vel * 0.5`, and the lead is the first positive root
+/// of |p + v t| = speed * t.
+///
+/// This was three rounds of a fixed point, which contracts by |v| / speed:
+/// slow and wobbly for the blaster, and outright divergent for the swarm,
+/// whose seekers are slower than two ships can close. The aim came out
+/// different between frames with nothing in the world having changed, and a
+/// ship that re-points every frame reads as a hesitating one. Solving it
+/// outright costs the same few lines and cannot oscillate.
+///
+/// The lead is then capped: past `botLeadMax` the target has had time to
+/// change its mind, so a longer prediction is not aim, it is noise, and
+/// chasing it swings the nose around for nothing.
 let private lead (me: Ship) (t: Ship) =
     if me.Weapon = Rail then
         t.Pos
     else
-        let rel = t.Vel - me.Vel * 0.5
         let speed = if me.Weapon = Swarm then seekerSpeed else bulletSpeed
-        Seq.fold (fun (p: V2) _ -> t.Pos + rel * (len (p - me.Pos) / speed)) t.Pos (seq { 1..3 })
+        let p = t.Pos - me.Pos
+        let v = t.Vel - me.Vel * 0.5
+        let a = dot v v - speed * speed
+        let b = 2. * dot p v
+        let c = dot p p
+        let soonest =
+            if abs a < 1e-6 then
+                if abs b < 1e-6 then 0. else max 0. (-c / b)
+            else
+                let disc = b * b - 4. * a * c
+                if disc < 0. then
+                    0.
+                else
+                    let r = sqrt disc
+                    let lo, hi = min ((-b + r) / (2. * a)) ((-b - r) / (2. * a)), max ((-b + r) / (2. * a)) ((-b - r) / (2. * a))
+                    if lo > 0. then lo elif hi > 0. then hi else 0.
+        t.Pos + v * min soonest botLeadMax
 
 let private rockBetween (from: V2) (target: V2) =
     let d = target - from
@@ -35,10 +88,10 @@ let private dodge (me: Ship) =
         let rel = a.Pos - me.Pos
         let along = dot rel dir
         let side = dir.X * rel.Y - dir.Y * rel.X
-        if along > 0. && along < look + a.Radius && abs side < a.Radius + 2.5 * shipRadius then Some(along, side) else None)
-    |> Array.sortBy fst
+        if along > 0. && along < look + a.Radius && abs side < a.Radius + 2.5 * shipRadius then Some(along, side, a.Pos) else None)
+    |> Array.sortBy (fun (along, _, _) -> along)
     |> Array.tryHead
-    |> Option.map (fun (_, side) -> atan2 dir.Y dir.X - (if side >= 0. then 1. else -1.) * 0.9)
+    |> Option.map (fun (_, side, _) -> atan2 dir.Y dir.X - (if side >= 0. then 1. else -1.) * 0.9)
 
 let private ramDmg (hitter: Ship) (victim: Ship) =
     let n = norm (victim.Pos - hitter.Pos)
@@ -77,8 +130,7 @@ let private seekPad lull (me: Ship) (w: World) =
     |> Option.bind (fun k ->
         w.Pads
         |> Array.filter (fun p -> p.Kind = k && p.RespawnIn <= 0.)
-        |> Array.sortBy (fun p -> len (p.Pos - me.Pos))
-        |> Array.tryHead)
+        |> closest me (fun p -> p.Pos))
     |> Option.map (fun p -> let d = p.Pos - me.Pos in atan2 d.Y d.X)
 
 /// Idle time is still worth something: a loose crate is a weapon for the next
@@ -86,8 +138,7 @@ let private seekPad lull (me: Ship) (w: World) =
 let private seekCrate (me: Ship) (w: World) =
     w.Crates
     |> Array.filter (fun c -> c.RespawnIn <= 0.)
-    |> Array.sortBy (fun c -> len (c.Pos - me.Pos))
-    |> Array.tryHead
+    |> closest me (fun c -> c.Pos)
     |> Option.map (fun c -> let d = c.Pos - me.Pos in atan2 d.Y d.X)
 
 /// The last resort, and the reason there is no longer a branch that hands back
@@ -153,7 +204,7 @@ let bot (w: World) i =
         let aim = defaultArg (dodge me) (atan2 d.Y d.X)
         let off = abs (atan2 (sin (aim - me.Angle)) (cos (aim - me.Angle)))
         let ahead =
-            nearest w.Ships i me.Pos
+            quarry w i me
             |> Option.filter (fun t ->
                 let r = t.Pos - me.Pos
                 len r < 520. && abs (atan2 (sin (atan2 r.Y r.X - me.Angle)) (cos (atan2 r.Y r.X - me.Angle))) < 0.25)
@@ -164,7 +215,7 @@ let bot (w: World) i =
             Boost = off < 0.15 && me.Boost > 30.
             Special = ahead.IsSome && me.Weapon <> Blaster && int (w.Time * 2.) % 2 = 0 }
     else
-        match nearest w.Ships i me.Pos with
+        match quarry w i me with
         | None ->
             // Nobody to chase used to mean no input at all, so a bot coasted on
             // whatever heading it last had and sailed off the edge while the

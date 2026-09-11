@@ -138,6 +138,9 @@ module Cfg =
     let mutable passNose = 0.6
     let mutable passArc = 0.55
     let mutable passEdge = 1.5
+    let mutable botLock = 0.5
+    let mutable botStick = 0.9
+    let mutable botLeadMax = 1.3
     let physicsDt = 1. / 120.
     let mutable asteroidStun = 0.666
     let mutable asteroidSpin = 6.3
@@ -310,6 +313,9 @@ module Cfg =
            "passNose", (fun () -> passNose), (fun x -> passNose <- x)
            "passArc", (fun () -> passArc), (fun x -> passArc <- x)
            "passEdge", (fun () -> passEdge), (fun x -> passEdge <- x)
+           "botLock", (fun () -> botLock), (fun x -> botLock <- x)
+           "botStick", (fun () -> botStick), (fun x -> botStick <- x)
+           "botLeadMax", (fun () -> botLeadMax), (fun x -> botLeadMax <- x)
            "asteroidStun", (fun () -> asteroidStun), (fun x -> asteroidStun <- x)
            "asteroidSpin", (fun () -> asteroidSpin), (fun x -> asteroidSpin <- x)
            "spinInertia", (fun () -> spinInertia), (fun x -> spinInertia <- x)
