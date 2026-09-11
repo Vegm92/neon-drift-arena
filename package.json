@@ -10,6 +10,7 @@
     "check:relay": "node test/relay-check.mjs",
     "deploy": "railway up --ci --service site",
     "pack": "npm run build && node scripts/pack-crazygames.mjs",
+    "measure": "node scripts/measure-build.mjs",
     "qa:sweep": "node scripts/qa-playwright-sweep.mjs"
   },
   "dependencies": {

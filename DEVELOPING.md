@@ -46,6 +46,8 @@ The SDK v2 script is loaded from `sdk.crazygames.com` in both `index.html` and `
 
 `npm run pack` builds and then writes `dist-game/` through `scripts/pack-crazygames.mjs`: it promotes `dist/play/index.html` to the root (rewriting `../` to `./`, which `assetRoot` in `Sfx.fs` and `RenderMeshes.fs` already expects outside `/play/`) and drops the landing page and its media (`og.jpg`, `trailer.*`, `still-*.jpg`). Zip that folder for the CrazyGames upload.
 
+`npm run measure` then checks that build against the CrazyGames submission caps: `dist-game/` file count and total size, the bytes fetched before the menu is interactive, and the seconds from navigation to the `gameplayStart` call. It serves `dist-game/` with `vite preview`, blocks the real SDK script and injects a stub that timestamps `gameplayStart`, then plays the lobby with keys (tap-to-start, READY, START). It exits non-zero on any cap breach. Measured on 2026-09-11: 24 files, 10.65 MB packed, 4.30 MB initial download, menu interactive at 0.70 s, `gameplayStart` at 2.01 s.
+
 `docs/CrazyGames-v1-plan.md` and `docs/CrazyGames-v2-plan.md` hold the publication plans and their accept/reject criteria.
 
 ## Phone pads and LAN mirrors
