@@ -1,17 +1,19 @@
-# Neon Drift Arena
+﻿# Neon Drift Arena
 
 Fable 5 (F# → JS) + Vite + Three.js couch brawler. `README.md` is the commercial front page; read `GAMEPLAY.md` for rules and controls and `DEVELOPING.md` for build, deploy and file layout.
 
 ## Commands
 
 - `npm run dev` — Fable watch + Vite dev server.
-- `npm run check` — headless simulation assertions (`dotnet run --project test`) followed by `check:js`. Run after touching `Sim.fs`, `Domain.fs` or `Progress.fs`.
+- `npm run check` — headless simulation assertions (`dotnet run --project test`) followed by `check:js`. Run after touching `Sim.fs`, `Domain.fs`, `Impact.fs`, `Collisions.fs`, `Bot.fs` or `Progress.fs`.
 - `npm run check:js` — runs `Progress.fs` through its compiled JS (`test/progress-check.mjs`). The .NET suite cannot see Fable's number model: `uint32` overflow arithmetic silently loses precision in JS and `Array.zeroCreate` yields nulls, so anything numeric in `Progress.fs` needs a compiled-output assertion too.
 - `dotnet fable src -o build` — one-shot compile; output is `build/*.js` (no `.fs.js` suffix).
 
 ## Constraints
 
-- `Core/Vec.fs`, `Core/Domain.fs`, `Core/Sim.fs` stay free of Fable/browser dependencies so `test/Check.fsproj` can compile them on plain .NET.
+- `Core/Vec.fs`, `Core/Domain.fs`, `Core/Impact.fs`, `Core/Sim.fs` stay free of Fable/browser dependencies so `test/Check.fsproj` can compile them on plain .NET.
+- `Core/Impact.fs` is the only place a ship's collision response is computed — asteroids, thrown rocks, deployed walls and ship-on-ship rams all go through `apply` or `pair`. The hull is a unit-mass disc of inertia `r²/2`, and torque comes only from the tangential scrape at the contact, so a square hit spins nothing and a glancing one spins hard. Never hand-roll a reflection at a call site: that is what made bumps read as canned, and four call sites each had their own version of it.
+- A bot's wants are a priority chain, and every want belongs *in* it. Wiring one around the chain — an `if` that replaces the aim wholesale — silently outranks fleeing a gravity well and skips the thrust every other want gets; that is how bots ended up parked on the rim. For the same reason no branch may return bare `idle`: a live bot always has somewhere it means to be, and `test/Check.fs` sweeps the arena asserting it.
 - All tunables live in `Domain.Cfg`. Keep `2 * arenaHalf / maxSpeed` inside 8–10 s.
 - No inventories; the match always runs in one browser. Phone pads ride the Vite dev socket in dev and the `/relay` room socket in `deploy/server.mjs` on the deployed build (`pad.html`) — `Input.initNetwork ()` picks the room from a CrazyGames invite (`getInviteParams`), else `sessionStorage`, else a fresh code, and opens it through `CrazyGames.createRelaySocket` (WebRTC where available, WebSocket otherwise). LAN mirror clients (`nda:state`, host-authoritative) ride the Vite dev socket in dev; on the deployed build a second desktop joining the same room rides the `/relay` socket as a peer — `deploy/server.mjs` grants `role=host` to the first connection in a room only, so a later connection is routed and rendered exactly like a phone pad, just carrying a full mirrored `nda:state` instead of raw input. The relay tells each connection its assigned role with an `nda:role` message right after connect; `Input.isPeer` records it, and `Main.fs` skips `sendState ()` while `isPeer` is true so a joining desktop never broadcasts its own world back at the host. If the host drops, `deploy/server.mjs` promotes the oldest remaining desktop peer (never a `pad.html` phone) and re-sends it `nda:role`; the existing `wasClient` true→false path in `Main.fs`'s `frame` already resets the promoted machine to the lobby once its mirrored world goes stale, so no client-side change was needed. A promoted host restarts from the lobby — the in-flight match is not carried over. UI is the lobby overlay (`Menu.fs`), the SETTINGS panel, the four corner panels and one banner.
 - Faults and timings go through `Platform/Log.fs`: it colours the browser console and ships the same line to the relay as `nda:log`, which `deploy/server.mjs` prints as one-line JSON. Railway parses that natively — `level` colours and filters it, every other field is queryable as `@name:value`. Repeats are throttled with `Log.once`, since Railway drops past 500 lines/sec.
