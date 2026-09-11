@@ -77,7 +77,7 @@ let mutable private engineCut: Filter = Unchecked.defaultof<Filter>
 let mutable private crazyGamesMuted = false
 let mutable private localMuted = false
 let mutable private adMuted = false
-let isMuted () = crazyGamesMuted || localMuted || adMuted
+let isMuted () = crazyGamesMuted || adMuted
 
 let private volume = 0.32
 let private rnd = System.Random()
@@ -89,7 +89,7 @@ let private music = document.createElement "audio" :?> HTMLAudioElement
 let private apply () =
     let m = isMuted ()
     music.volume <- 0.35 * levels.[1]
-    music.muted <- m
+    music.muted <- m || localMuted
     if not (isNullOrUndefined (box ctx)) then
         master.gain.value <- (if m then 0. else volume * levels.[0])
 
