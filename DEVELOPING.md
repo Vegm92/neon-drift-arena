@@ -34,14 +34,14 @@ The game is desktop only for now. Both the landing page and `/play/` test `(any-
 
 ## CrazyGames
 
-The SDK v2 script is loaded from `sdk.crazygames.com` in both `index.html` and `play/index.html`. Every call into it goes through `src/Platform/CrazyGames.fs`, which imports `src/Platform/CrazyGames.js` — gameplay start/stop, the platform mute listener, invite rooms, the user module, video ads, banners, the data module and the leaderboard. Nothing else in the codebase touches `window.CrazyGames`.
+The SDK v3 script is loaded from `sdk.crazygames.com` in `play/index.html` only — the landing page does not load it. Every call into it goes through `src/Platform/CrazyGames.fs`, which imports `src/Platform/CrazyGames.js` — gameplay start/stop, loading start/stop, the platform mute listener, invite rooms, the user module, video ads and the data module. There are no banner ads and no leaderboard call. Nothing else in the codebase touches `window.CrazyGames`.
 
 `base: "./"` in `vite.config.js` keeps every emitted path relative so the build runs from a CrazyGames subpath; links in the HTML must stay relative for the same reason.
 
 - **Boot order.** `Main.fs` awaits `CrazyGames.init` (which hands `Sfx.setCrazyGamesMuted` the platform mute) before calling `Input.initNetwork ()` and `Menu.initUser ()`, so a room arriving from an invite is known before the socket opens.
-- **Rooms.** `Input.initNetwork ()` takes the room from `getInviteParams`, else `sessionStorage`, else a fresh code, then connects through `CrazyGames.createRelaySocket` (WebRTC where available, the `/relay` WebSocket otherwise) and calls `updateRoom`. A join event stores the room and reloads. `CrazyGames.isInstantMultiplayer ()` skips the first-run tutorial overlay so an instant-multiplayer launch drops straight into the already-joinable lobby with nothing to click through. `CrazyGames.leftRoom ()` fires on `pagehide` so `isJoinable` stops claiming a closed tab is still open.
+- **Rooms.** `Input.initNetwork ()` takes the room from `CrazyGames.getInviteRoom ()`, else `sessionStorage`, else a fresh code, then opens a plain `/relay` WebSocket itself (`Input.fs`, unrelated to the SDK wrapper) and calls `updateRoom`. A join event stores the room and reloads. `CrazyGames.isInstantMultiplayer ()` skips the first-run tutorial overlay so an instant-multiplayer launch drops straight into the already-joinable lobby with nothing to click through. `CrazyGames.leftRoom ()` fires on `pagehide` so `isJoinable` stops claiming a closed tab is still open.
 - **Audio.** `Sfx.isMuted ()` is the OR of three flags: the platform mute, the ad mute and the local `M` toggle. The platform mute can never be overridden from in-game.
-- **Ads.** The midgame ad runs between the match ending and the result screen; `adPlaying` freezes the sim to a render-only frame and mutes, and `gameplayStop`/`gameplayStart` bracket it. Banners live in `#cg-banner-1` and `#cg-banner-2` in `play/index.html`, are requested on every menu screen at most once per 31 s, and are cleared when the menu hides.
+- **Ads.** The midgame ad runs between the match ending and the result screen; `adPlaying` freezes the sim to a render-only frame and mutes, and `gameplayStop`/`gameplayStart` bracket it. There are no banner ads.
 - **Progress and identity.** `Menu.loadProgress` / `saveProgress` keep `nda-high-score` and `nda-matches-played` in the data module; `Menu.initUser` sets the player tag from `getUser` and updates it live through `addAuthListener`. SETTINGS shows a SIGN IN row only while `Settings.isGuest`.
 
 `npm run pack` builds and then writes `dist-game/` through `scripts/pack-crazygames.mjs`: it promotes `dist/play/index.html` to the root (rewriting `../` to `./`, which `assetRoot` in `Sfx.fs` and `RenderMeshes.fs` already expects outside `/play/`) and drops the landing page and its media (`og.jpg`, `trailer.*`, `still-*.jpg`). Zip that folder for the CrazyGames upload.
@@ -97,7 +97,7 @@ SAVE MAP posts to the dev-server-only `/__maps` hook, which replaces the `custom
 | `src/Platform/Input.fs` | Keyboard (through `Domain.Binds`) + Gamepad API → `Input[]` for the four slots |
 | `src/Platform/Three.fs` | Minimal Three.js bindings used by the renderer |
 | `src/Platform/CrazyGames.fs` | Typed bindings over `CrazyGames.js` — the only door to the SDK |
-| `src/Platform/CrazyGames.js` | SDK v2 wrapper: gameplay events, mute, rooms, user, ads, banners, data, leaderboard, relay socket |
+| `src/Platform/CrazyGames.js` | SDK v3 wrapper: gameplay events, mute, rooms, user, video ads, data |
 | `src/Platform/Sfx.fs` | WebAudio synth: arcade square/noise voices, shimmer delay bus, stereo pan, boost engine drone; music player (`public/music/menu.mp3` loops in menus, `battle1..3.mp3` shuffle in play) |
 | **UI** (browser-dependent screens) | |
 | `src/UI/Render/RenderTypes.fs` | Render types, constants, shared material helpers |
