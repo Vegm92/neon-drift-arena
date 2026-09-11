@@ -64,9 +64,19 @@ export function requestAd(adType, adStarted, adFinished, adError) {
 }
 
 export function dataSetItem(key, value) {
-  (sdk?.data ?? localStorage).setItem(key, value);
+  try {
+    (sdk?.data ?? localStorage).setItem(key, value);
+  } catch (e) {
+    console.error(e);
+    call(() => localStorage.setItem(key, value));
+  }
 }
 
 export function dataGetItem(key) {
-  return (sdk?.data ?? localStorage).getItem(key);
+  try {
+    return (sdk?.data ?? localStorage).getItem(key);
+  } catch (e) {
+    console.error(e);
+    try { return localStorage.getItem(key); } catch (e2) { console.error(e2); return null; }
+  }
 }
