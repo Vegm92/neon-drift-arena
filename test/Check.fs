@@ -28,6 +28,7 @@ let damage' amt (s: Ship) =
 let check name cond =
     if not cond then failwithf "FAIL: %s" name else printfn "ok  %s" name
 
+
 [<EntryPoint>]
 let main _ =
     let traverse = 2. * arenaHalf / maxSpeed
@@ -673,5 +674,15 @@ let main _ =
     check "yesterday's daily resets when the date rolls over" (rolled = [| 0; 0; 0 |])
     let _, junkIds, junkProg = Progress.decode today "not|a|record"
     check "a corrupt daily falls back to a fresh set" (junkIds = Progress.daily today && junkProg = [| 0; 0; 0 |])
+
+    let goldenHash = Determinism.golden
+    let settled = Determinism.goldenRun ()
+    let actual = Determinism.worldHash settled
+    let moved = settled.Ships |> Array.filter (fun s -> len s.Pos > 1.) |> Array.length
+    if actual <> goldenHash then
+        printfn "  sim golden hash=0x%08X time=%.3f phase=%A alive=%d moved=%d" actual settled.Time settled.Phase (settled.Ships |> Array.filter (fun s -> s.Alive) |> Array.length) moved
+    check "the golden run is still a live match, not a degenerate state" (settled.Phase = Playing && moved = 4)
+    check "the scripted run hashes to the golden value" (actual = goldenHash)
+    check "the same script replays to the same hash" (Determinism.worldHash (Determinism.goldenRun ()) = goldenHash)
 
     0

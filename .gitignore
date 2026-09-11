@@ -11,7 +11,8 @@ REFERENCES.md
 PRD.md
 .claude/
 .playwright-mcp/
-.config/
+.config/*
+!.config/dotnet-tools.json
 
 qa/screenshots/
 qa/sweep.json

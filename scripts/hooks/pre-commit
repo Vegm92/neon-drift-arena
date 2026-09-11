@@ -1,0 +1,20 @@
+#!/bin/sh
+# Only the sim can move the golden hash, so skip every other commit.
+git diff --cached --quiet -- src/Core && exit 0
+
+node scripts/sim-guard.mjs
+status=$?
+[ $status -eq 0 ] && exit 0
+[ $status -ne 2 ] && exit $status
+
+printf "  Are you sure you want to commit these tweaks? [y/N] "
+if { read -r reply < /dev/tty; } 2>/dev/null; then
+	case "$reply" in
+		[yY]*) node scripts/sim-guard.mjs --accept; exit $? ;;
+		*) echo "  Commit aborted."; exit 1 ;;
+	esac
+fi
+
+echo ""
+echo "  No terminal to ask on. Accept with: npm run retune"
+exit 1
