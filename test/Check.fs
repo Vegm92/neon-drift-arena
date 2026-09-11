@@ -450,6 +450,51 @@ let main _ =
         (match back.Aim with Some a -> abs (abs a - System.Math.PI) < 0.2 && back.Thrust | None -> false)
     let cornered = duel |> place 0 (v (arenaHalf - 100.) 0.) 0. |> place 1 (v 2000. 0.) 0. |> edit 0 (fun s -> { s with Hp = 5. })
     check "fleeing the rim outranks hunting a pad" (bot cornered 0).Thrust
+    // With the enemy respawning there is no target, and a bot used to hand back
+    // no input at all: it coasted on its last heading and sailed off the edge.
+    let alone =
+        w0 |> place 0 (v (arenaHalf - 300.) 0.) 0.
+        |> edit 0 (fun s -> { s with Vel = v 240. 0. })
+        |> edit 1 (fun s -> { s with Alive = false; Active = true; RespawnIn = 2.5 })
+        |> edit 2 (fun s -> { s with Alive = false; Active = true; RespawnIn = 2.5 })
+        |> edit 3 (fun s -> { s with Alive = false; Active = true; RespawnIn = 2.5 })
+    let lonely = bot alone 0
+    check "a bot with nobody to chase still flies itself off the rim"
+        (match lonely.Aim with Some a -> abs (abs a - System.Math.PI) < 0.2 && lonely.Steer | None -> false)
+    let survived =
+        Seq.fold (fun w _ -> step dt (Array.init 4 (fun i -> if i = 0 then bot w i else noInput)) w) alone (seq { 1 .. 120 * 4 })
+    check "a bot left alone does not drift out of the arena and die" survived.Ships.[0].Alive
+    // A lull is dead time, so the bar for a detour drops to "not already full".
+    let topping =
+        bot (w0 |> place 0 zero 0. |> edit 0 (fun s -> { s with Boost = boostMax * 0.5 })
+             |> edit 1 (fun s -> { s with Alive = false; Active = true; RespawnIn = 2.5 })
+             |> edit 2 (fun s -> { s with Alive = false; Active = true; RespawnIn = 2.5 })
+             |> edit 3 (fun s -> { s with Alive = false; Active = true; RespawnIn = 2.5 })) 0
+    check "a bot tops up its boost while there is nothing to fight" topping.Thrust
+    // The class of fault behind all of this: a branch that hands back no input
+    // at all, leaving a live ship coasting like scenery. A live bot always has
+    // somewhere it means to be, from anywhere in the arena, with or without a
+    // fight on.
+    let empty =
+        w0 |> edit 1 (fun s -> { s with Alive = false; Active = true; RespawnIn = 2.5 })
+        |> edit 2 (fun s -> { s with Alive = false; Active = true; RespawnIn = 2.5 })
+        |> edit 3 (fun s -> { s with Alive = false; Active = true; RespawnIn = 2.5 })
+    let inert =
+        [ for gx in -4 .. 4 do
+            for gy in -4 .. 4 do
+                let p = v (float gx * arenaHalf / 4.2) (float gy * arenaHalf / 4.2)
+                let b = bot (empty |> place 0 p 0. |> edit 0 (fun s -> { s with Boost = boostMax })) 0
+                if b.Aim.IsNone || not b.Steer then yield p ]
+    check "a live bot is never handed a dead stick, anywhere in the arena" inert.IsEmpty
+    let roaming =
+        Seq.fold (fun w _ -> step dt (Array.init 4 (fun i -> if i = 0 then bot w i else noInput)) w) (empty |> place 0 zero 0.) (seq { 1 .. 120 * 20 })
+    check "a bot with no fight keeps flying instead of parking" (len roaming.Ships.[0].Vel > 40. && roaming.Ships.[0].Alive)
+    let close = duel |> place 1 (v 220. 0.) 0.
+    let weaveA = bot close 0
+    let weaveB = bot { close with Time = close.Time + 0.7 } 0
+    check "bots weave across the line while duelling up close"
+        (weaveA.Strafe <> 0. && weaveB.Strafe <> 0. && weaveA.Strafe <> weaveB.Strafe)
+    check "bots hold a straight line at range" ((bot (duel |> place 1 (v 900. 0.) 0.) 0).Strafe = 0.)
     let sucked = bot { duel with Hole = Some { Pos = v 150. 0.; Life = 5. } } 0
     check "bot flees a gravity well" (match sucked.Aim with Some a -> abs a > 2.5 && sucked.Thrust && sucked.Boost | None -> false)
     let padAim kind (b: Input) =

@@ -66,8 +66,13 @@ let private fleeHole (me: Ship) (w: World) =
     |> Option.filter (fun h -> len (h.Pos - me.Pos) < 1.5 * sqrt (holeGNow () / thrustAccel))
     |> Option.map (fun h -> let d = me.Pos - h.Pos in atan2 d.Y d.X)
 
-let private seekPad (me: Ship) (w: World) =
-    let need = if hurting me && not (sudden w) then Some 1 elif me.Boost < 20. then Some 0 else None
+/// In a lull there is nothing to spend the time on but topping up, so the bar
+/// for being worth a detour drops to "not already full".
+let private seekPad lull (me: Ship) (w: World) =
+    let need =
+        if me.Hp < (if lull then hpMax else hurtBelow) && not (sudden w) then Some 1
+        elif me.Boost < (if lull then boostMax else 20.) then Some 0
+        else None
     need
     |> Option.bind (fun k ->
         w.Pads
@@ -75,6 +80,41 @@ let private seekPad (me: Ship) (w: World) =
         |> Array.sortBy (fun p -> len (p.Pos - me.Pos))
         |> Array.tryHead)
     |> Option.map (fun p -> let d = p.Pos - me.Pos in atan2 d.Y d.X)
+
+/// Idle time is still worth something: a loose crate is a weapon for the next
+/// fight, so a bot with nothing to shoot goes shopping.
+let private seekCrate (me: Ship) (w: World) =
+    w.Crates
+    |> Array.filter (fun c -> c.RespawnIn <= 0.)
+    |> Array.sortBy (fun c -> len (c.Pos - me.Pos))
+    |> Array.tryHead
+    |> Option.map (fun c -> let d = c.Pos - me.Pos in atan2 d.Y d.X)
+
+/// The last resort, and the reason there is no longer a branch that hands back
+/// nothing: a pilot with no errand left flies a slow inward circuit instead of
+/// coasting to a halt in open space like a prop.
+let private patrol (me: Ship) =
+    let r = if len me.Pos < 1. then ofAngle me.Angle else norm me.Pos
+    atan2 r.Y r.X + Math.PI * 0.6
+
+/// A duelling stance that never moves is both an easy target and an obvious
+/// machine, so bots weave across the line of fire while they hold one. The
+/// swap is driven off the clock and the slot so it stays deterministic and the
+/// two sides of a fight do not weave in lockstep.
+let private weave (w: World) i (me: Ship) dist =
+    if dist < 320. && me.Stun <= 0. then
+        (if (int (w.Time * 1.7) + i) % 2 = 0 then 1. else -1.)
+    else
+        0.
+
+/// The rim is lethal and the arena shrinks, so wanting back inside is not a
+/// combat decision - it applies whether or not there is anyone left to fight.
+let private inbound (w: World) (me: Ship) =
+    let k = bounds w.Time
+    if abs me.Pos.X > arenaHalf * k - 220. || abs me.Pos.Y > arenaHalf * k - 220. then
+        Some(atan2 -me.Pos.Y -me.Pos.X)
+    else
+        None
 
 let bot (w: World) i =
     let me = w.Ships.[i]
@@ -105,20 +145,27 @@ let bot (w: World) i =
             Special = ahead.IsSome && me.Weapon <> Blaster && int (w.Time * 2.) % 2 = 0 }
     else
         match nearest w.Ships i me.Pos with
-        | None -> idle
+        | None ->
+            // Nobody to chase used to mean no input at all, so a bot coasted on
+            // whatever heading it last had and sailed off the edge while the
+            // enemy was still respawning. A lull is for getting off the rim and
+            // filling the tanks.
+            let aim =
+                fleeHole me w
+                |> Option.orElse (inbound w me)
+                |> Option.orElse (dodge me)
+                |> Option.orElse (seekPad true me w)
+                |> Option.orElse (seekCrate me w)
+                |> Option.defaultValue (patrol me)
+            let off = abs (atan2 (sin (aim - me.Angle)) (cos (aim - me.Angle)))
+            { idle with Aim = Some aim; Steer = true; Thrust = off < 1.2 }
         | Some t ->
             let dist = len (t.Pos - me.Pos)
-            let k = bounds w.Time
             let shot = lead me t
             let d = shot - me.Pos
             let dodging = dodge me
-            let leaving =
-                if abs me.Pos.X > arenaHalf * k - 220. || abs me.Pos.Y > arenaHalf * k - 220. then
-                    Some(atan2 -me.Pos.Y -me.Pos.X)
-                else
-                    None
-            let escaping = fleeHole me w |> Option.orElse leaving |> Option.orElse (veer me t)
-            let seeking = seekPad me w
+            let escaping = fleeHole me w |> Option.orElse (inbound w me) |> Option.orElse (veer me t)
+            let seeking = seekPad false me w
             let aim = escaping |> Option.orElse dodging |> Option.orElse seeking |> Option.defaultValue (atan2 d.Y d.X)
             let off = abs (atan2 (sin (aim - me.Angle)) (cos (aim - me.Angle)))
             let toShot = atan2 d.Y d.X
@@ -128,6 +175,7 @@ let bot (w: World) i =
             { idle with
                 Aim = Some aim
                 Steer = true
+                Strafe = weave w i me dist
                 Thrust = escaping.IsSome || seeking.IsSome || dodging.IsSome || dist > 320. || off > 0.6
                 Boost = (escaping.IsSome && me.Boost > 0.) || (dist > 900. && me.Boost > 40.)
                 Fire = facing && dist < 650.
