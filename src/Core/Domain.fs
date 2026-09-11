@@ -207,7 +207,7 @@ module Cfg =
     let mutable rockCooldown = 6.
     let mutable rockLife = 14.
     let mutable rockDamage = 0.09
-    let inviteButton = true
+    let inviteButton = false
 
     let mutable portalEvery = 20.
     let mutable portalLife = 12.
