@@ -415,6 +415,23 @@ let main _ =
     let veering = bot (headOn 20.) 0
     check "bot veers from a head-on that would kill it" (match veering.Aim with Some a -> abs a > 0.5 && veering.Thrust && veering.Boost | None -> false)
     check "bot keeps a ram that only kills the target" ((bot (headOn 100.) 0).Aim = Some 0.)
+    // A trade that guts both hulls kills both on the next touch, so an even
+    // head-on has to break off even though neither ship dies to this one hit.
+    let mutual =
+        duel |> place 1 (v 200. 0.) System.Math.PI
+        |> edit 0 (fun s -> { s with Vel = v 250. 0.; Angle = 0.3; Hp = hpMax; Shield = 0. })
+        |> edit 1 (fun s -> { s with Vel = v (-250.) 0.; Angle = System.Math.PI - 0.3; Hp = hpMax; Shield = 0. })
+    check "bot breaks off an even head-on instead of trading both hulls away"
+        (match (bot mutual 0).Aim with Some a -> abs a > 0.5 | None -> false)
+    // Turning for the centre used to replace the whole priority chain, so a bot
+    // that drifted out to the rim parked there, nose inward, firing and never
+    // thrusting clear of the band.
+    let rim = duel |> place 0 (v (arenaHalf - 100.) 0.) 0. |> place 1 (v 300. 0.) 0.
+    let back = bot rim 0
+    check "a bot on the rim turns inward and thrusts off it"
+        (match back.Aim with Some a -> abs (abs a - System.Math.PI) < 0.2 && back.Thrust | None -> false)
+    let cornered = duel |> place 0 (v (arenaHalf - 100.) 0.) 0. |> place 1 (v 2000. 0.) 0. |> edit 0 (fun s -> { s with Hp = 5. })
+    check "fleeing the rim outranks hunting a pad" (bot cornered 0).Thrust
     let sucked = bot { duel with Hole = Some { Pos = v 150. 0.; Life = 5. } } 0
     check "bot flees a gravity well" (match sucked.Aim with Some a -> abs a > 2.5 && sucked.Thrust && sucked.Boost | None -> false)
     let padAim kind (b: Input) =

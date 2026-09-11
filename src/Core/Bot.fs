@@ -1,4 +1,4 @@
-module Bot
+﻿module Bot
 
 open System
 open Vec
@@ -45,11 +45,17 @@ let private ramDmg (hitter: Ship) (victim: Ship) =
     let face = max 0. (dot (ofAngle victim.Angle) (n * -1.))
     max 0. (dot hitter.Vel n) * ramDamageFactor * (1. - ramFaceGuard * face)
 
+/// Breaking off is judged on the whole exchange, not on whether this single
+/// touch is lethal. A hit that leaves both hulls on a sliver kills both on the
+/// next contact, so the bot compares what the trade costs each side and only
+/// holds the charge while it is the one winning it.
 let private veer (me: Ship) (t: Ship) =
     let n = norm (t.Pos - me.Pos)
     let closing = dot (me.Vel - t.Vel) n
     let contact = (len (t.Pos - me.Pos) - 2. * shipRadius) / max 1. closing
-    if closing > 0. && contact < 1. && ramDmg t me >= me.Hp + me.Shield then
+    let costMe = ramDmg t me / max 1. (me.Hp + me.Shield)
+    let costThem = ramDmg me t / max 1. (t.Hp + t.Shield)
+    if closing > 0. && contact < 1. && costMe >= ramVeerRisk && costMe >= costThem then
         let side = n.X * t.Vel.Y - n.Y * t.Vel.X
         Some(atan2 n.Y n.X - (if side >= 0. then 1. else -1.) * Math.PI / 2.)
     else
@@ -106,13 +112,14 @@ let bot (w: World) i =
             let shot = lead me t
             let d = shot - me.Pos
             let dodging = dodge me
-            let escaping = fleeHole me w |> Option.orElse (veer me t)
-            let seeking = seekPad me w
-            let aim =
+            let leaving =
                 if abs me.Pos.X > arenaHalf * k - 220. || abs me.Pos.Y > arenaHalf * k - 220. then
-                    atan2 -me.Pos.Y -me.Pos.X
+                    Some(atan2 -me.Pos.Y -me.Pos.X)
                 else
-                    escaping |> Option.orElse dodging |> Option.orElse seeking |> Option.defaultValue (atan2 d.Y d.X)
+                    None
+            let escaping = fleeHole me w |> Option.orElse leaving |> Option.orElse (veer me t)
+            let seeking = seekPad me w
+            let aim = escaping |> Option.orElse dodging |> Option.orElse seeking |> Option.defaultValue (atan2 d.Y d.X)
             let off = abs (atan2 (sin (aim - me.Angle)) (cos (aim - me.Angle)))
             let toShot = atan2 d.Y d.X
             let facing = abs (atan2 (sin (toShot - me.Angle)) (cos (toShot - me.Angle))) < 0.25 && dodging.IsNone && not (rockBetween me.Pos shot)

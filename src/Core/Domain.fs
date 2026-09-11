@@ -132,6 +132,7 @@ module Cfg =
     let mutable ramParryStun = 2.
     let mutable ramSeparate = 6.
     let mutable ramEventSpeed = 40.
+    let mutable ramVeerRisk = 0.35
     let physicsDt = 1. / 120.
     let mutable asteroidStun = 0.666
     let mutable asteroidSpin = 6.3
@@ -298,6 +299,7 @@ module Cfg =
            "ramParryStun", (fun () -> ramParryStun), (fun x -> ramParryStun <- x)
            "ramSeparate", (fun () -> ramSeparate), (fun x -> ramSeparate <- x)
            "ramEventSpeed", (fun () -> ramEventSpeed), (fun x -> ramEventSpeed <- x)
+           "ramVeerRisk", (fun () -> ramVeerRisk), (fun x -> ramVeerRisk <- x)
            "asteroidStun", (fun () -> asteroidStun), (fun x -> asteroidStun <- x)
            "asteroidSpin", (fun () -> asteroidSpin), (fun x -> asteroidSpin <- x)
            "spinInertia", (fun () -> spinInertia), (fun x -> spinInertia <- x)
