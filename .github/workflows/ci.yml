@@ -5,8 +5,12 @@ on:
   pull_request:
 
 jobs:
+  # Sim correctness. `npm run check` is the .NET suite (Core compiled on plain .NET,
+  # including the golden sim hash) followed by check:js, which re-asserts Progress.fs
+  # through its compiled output because Fable's number model differs from .NET's.
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,3 +25,22 @@ jobs:
       - run: fable src -o build
       - run: npm run check
       - run: npm run check:relay
+
+  # Shippable bundle. `fable src -o build` in the check job proves the F# compiles,
+  # but not that Vite can resolve the three.js imports, the html entry points and the
+  # prune step. A broken import path is invisible to the sim suite and fatal on deploy.
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet tool install --global fable --version 5.16.0
+      - run: echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+      - run: npm ci
+      - run: npm run build
