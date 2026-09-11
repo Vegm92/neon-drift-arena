@@ -116,7 +116,7 @@ module Cfg =
     let mutable fireCooldown = 0.11
     let mutable bulletSpeed = 560.
     let bulletLife = 1.3
-    let mutable bulletDamage = 20.
+    let mutable bulletDamage = 15.
     let mutable bulletKnockback = 40.
     let mutable recoil = 4.08
     let hpMax = 100.
@@ -135,7 +135,7 @@ module Cfg =
     let mutable asteroidSpin = 6.3
 
     let heatMax = 100.
-    let mutable heatPerShot = 9.6
+    let mutable heatPerShot = 14.5
     let mutable heatCool = 50.
 
     let mutable hurtBelow = 25.
@@ -152,7 +152,7 @@ module Cfg =
 
     let mutable railCharge = 1.5
     let mutable railDamage = 100.
-    let mutable railRecoil = 46.
+    let mutable railRecoil = 69.
     let railAmmo = 2
 
     let mineRadius = 11.
@@ -261,6 +261,14 @@ module Cfg =
     let mutable trailBoostMult = 1.3
     let mutable trailEjectSpeed = 106.
 
+    // Engine drone: gain contributed per ship on plain thrust vs boost, the
+    // overall loudness cap, and how the lowpass cutoff tracks speed (pitch).
+    let mutable sfxThrustVolume = 0.005
+    let mutable sfxBoostVolume = 0.01
+    let mutable sfxThrustVolumeMax = 0.08
+    let mutable sfxThrustPitchBase = 40.
+    let mutable sfxThrustPitchRange = 340.
+
     let netStateMs = 100.
 
     let tunables: (string * (unit -> float) * (float -> unit))[] =
@@ -361,7 +369,12 @@ module Cfg =
            "trailOffsetX", (fun () -> trailOffsetX), (fun x -> trailOffsetX <- x)
            "trailOffsetY", (fun () -> trailOffsetY), (fun x -> trailOffsetY <- x)
            "trailBoostMult", (fun () -> trailBoostMult), (fun x -> trailBoostMult <- x)
-           "trailEjectSpeed", (fun () -> trailEjectSpeed), (fun x -> trailEjectSpeed <- x) |]
+           "trailEjectSpeed", (fun () -> trailEjectSpeed), (fun x -> trailEjectSpeed <- x)
+           "sfxThrustVolume", (fun () -> sfxThrustVolume), (fun x -> sfxThrustVolume <- x)
+           "sfxBoostVolume", (fun () -> sfxBoostVolume), (fun x -> sfxBoostVolume <- x)
+           "sfxThrustVolumeMax", (fun () -> sfxThrustVolumeMax), (fun x -> sfxThrustVolumeMax <- x)
+           "sfxThrustPitchBase", (fun () -> sfxThrustPitchBase), (fun x -> sfxThrustPitchBase <- x)
+           "sfxThrustPitchRange", (fun () -> sfxThrustPitchRange), (fun x -> sfxThrustPitchRange <- x) |]
 
 type Input =
     { Turn: float
