@@ -12,7 +12,7 @@ Everything the game does. For build and deploy notes see [DEVELOPING.md](DEVELOP
 
 The keyboard column is the default map, not a fixed one: SETTINGS > KEY BINDINGS lists every keyboard action and rebinds it. Fire on a row captures the next key you press and makes it the only key for that action, `▶` captures a key and adds it as an extra one, `◀` drops the last extra, and Esc cancels a capture. A key that is another action's last remaining key is refused, and RESET KEYS puts the whole map back. Whatever the map says, Enter and Esc always still reach the menus, so a rebind can never lock you out. Every key name the game prints — the lobby legend, the settings hints, the HOW TO PLAY card — comes from the map, and from your keyboard layout, so an AZERTY board reads Z Q S D.
 
-SWAP STICKS in SETTINGS > CONTROLLERS flips the stick roles per pad. `M` mutes everything, music included (that one is fixed); SETTINGS > AUDIO sets MUSIC and SOUNDS levels (left/right steps 10%, Fire toggles OFF/100%).
+SWAP STICKS in SETTINGS > CONTROLLERS flips the stick roles per pad. `M` mutes the music only, sounds stay up (that one is fixed); SETTINGS > AUDIO sets MUSIC and SOUNDS levels (left/right steps 10%, Fire toggles OFF/100%).
 
 SETTINGS lives in the lobby: a READY player moves down to the SETTINGS entry and confirms. The panel is a single controller-driven list - up/down moves, left/right adjusts, A/Space toggles, B/Esc goes back - covering controller slots, SWAP STICKS, KEY BINDINGS, ARENA and AUDIO. The TUNING rows (every tunable in `Cfg`, plus RESET) are a developer tool and only show with `?dev=1` in the URL.
 

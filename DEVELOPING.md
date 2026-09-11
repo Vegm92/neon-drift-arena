@@ -40,7 +40,7 @@ The SDK v3 script is loaded from `sdk.crazygames.com` in `play/index.html` only 
 
 - **Boot order.** `Main.fs` awaits `CrazyGames.init` (which hands `Sfx.setCrazyGamesMuted` the platform mute) before calling `Input.initNetwork ()` and `Menu.initUser ()`, so a room arriving from an invite is known before the socket opens.
 - **Rooms.** `Input.initNetwork ()` takes the room from `CrazyGames.getInviteRoom ()`, else `sessionStorage`, else a fresh code, then opens a plain `/relay` WebSocket itself (`Input.fs`, unrelated to the SDK wrapper) and calls `updateRoom`. A join event stores the room and reloads. `CrazyGames.isInstantMultiplayer ()` skips the first-run tutorial overlay so an instant-multiplayer launch drops straight into the already-joinable lobby with nothing to click through. `CrazyGames.leftRoom ()` fires on `pagehide` so `isJoinable` stops claiming a closed tab is still open.
-- **Audio.** `Sfx.isMuted ()` is the OR of three flags: the platform mute, the ad mute and the local `M` toggle. The platform mute can never be overridden from in-game.
+- **Audio.** `Sfx.isMuted ()` is the OR of the platform mute and the ad mute; the local `M` toggle silences the music only. The platform mute can never be overridden from in-game.
 - **Ads.** The midgame ad runs between the match ending and the result screen; `adPlaying` freezes the sim to a render-only frame and mutes, and `gameplayStop`/`gameplayStart` bracket it. There are no banner ads.
 - **Progress and identity.** `Menu.loadProgress` / `saveProgress` keep `nda-high-score` and `nda-matches-played` in the data module; `Menu.initUser` sets the player tag from `getUser` and updates it live through `addAuthListener`. SETTINGS shows a SIGN IN row only while `Settings.isGuest`.
 
