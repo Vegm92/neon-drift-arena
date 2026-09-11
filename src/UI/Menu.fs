@@ -615,7 +615,7 @@ let private updateLobby () =
                     | 2 -> State.mutator <- (State.mutator + 1) % State.mutators
                     | 3 -> toggleBots ()
                     | 4 -> options <- true
-                    | _ -> if canStart () then launch <- true
+                    | _ -> if canStart () then launch <- true else ready.[d.Slot] <- true
             else
                 if (left || right) && not ready.[d.Slot] then
                     if teamMode then teams.[d.Slot] <- 3 - teams.[d.Slot]
