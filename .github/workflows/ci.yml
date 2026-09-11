@@ -19,14 +19,13 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-      - run: dotnet tool install --global fable --version 5.16.0
-      - run: echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+      - run: dotnet tool restore
       - run: npm ci
-      - run: fable src -o build
+      - run: dotnet fable src -o build
       - run: npm run check
       - run: npm run check:relay
 
-  # Shippable bundle. `fable src -o build` in the check job proves the F# compiles,
+  # Shippable bundle. `dotnet fable src -o build` in the check job proves the F# compiles,
   # but not that Vite can resolve the three.js imports, the html entry points and the
   # prune step. A broken import path is invisible to the sim suite and fatal on deploy.
   build:
@@ -40,7 +39,6 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-      - run: dotnet tool install --global fable --version 5.16.0
-      - run: echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+      - run: dotnet tool restore
       - run: npm ci
       - run: npm run build
