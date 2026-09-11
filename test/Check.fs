@@ -396,6 +396,24 @@ let main _ =
         { camping with Rng = -1234567 } |> edit 0 (fun s -> { s with Alive = false; RespawnIn = dt / 2. }) |> step dt (all present)
     check "respawn survives a negative rng state" (negativeRng.Ships.[0].Alive && [ 0..3 ] |> List.exists (fun i -> negativeRng.Ships.[0].Pos = spawnPos i))
 
+
+    // Two bots left alone used to open every match by flying straight down each
+    // other's throat, trading both hulls away and burning all three stocks each
+    // inside a minute. The opening has to survive on its own.
+    let feud =
+        setLayout 0
+        let joined = step dt (Array.init 4 (fun i -> if i < 2 then present else noInput)) initial
+        Seq.fold
+            (fun (w, worst) _ ->
+                let w = step dt (Array.init 4 (fun i -> if i < 2 then bot w i else noInput)) w
+                w, min worst (if w.Ships.[0].Alive || w.Ships.[1].Alive then 2 else 0))
+            (joined, 2)
+            (seq { 1 .. 120 * 45 })
+    let feudW, bothDown = feud
+    check "two bots never trade themselves out in the same breath" (bothDown = 2)
+    check "two bots duelling for 45 s do not burn through their stocks"
+        (feudW.Ships.[0].Stocks > 0 && feudW.Ships.[1].Stocks > 0)
+
     let duel = w0 |> place 0 zero 0. |> place 1 (v 300. 0.) 0. |> place 2 (v (-1200.) 1200.) 0. |> place 3 (v 1200. (-1200.)) 0.
     let b = bot duel 0
     check "bot fires at the ship ahead" (b.Fire && b.Aim = Some 0. && not b.Thrust)
