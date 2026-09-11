@@ -502,7 +502,11 @@ let private localFrame (t: float) dt =
                               | Over(Some i) -> i = 0 || (me.Team > 0 && world.Ships.[i].Team = me.Team)
                               | _ -> false
                     Menu.recordMatch won me.Kills (Cfg.stocks - me.Stocks) me.Finish
-                requestMidgameAd (fun () -> Menu.result endTitle)
+                if Menu.adSeen then
+                    requestMidgameAd (fun () -> Menu.result endTitle)
+                else
+                    Menu.markAdSeen ()
+                    Menu.result endTitle
         | Playing when pause -> Menu.pause ()
         | Playing -> ()
         Render.draw view world events dt
