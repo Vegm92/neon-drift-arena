@@ -20,21 +20,32 @@ let private shipSheet =
 
 let private shipGeometry = lazy (three.PlaneGeometry(64., 54.).rotateZ (-Math.PI / 2.) |> flat)
 
+// Exhaust particle pool: each live particle is its own quad (2 tris, 6 verts,
+// no index buffer) so width is an actual mesh property, not the 1px WebGL line cap.
+let trailVerts = trailLen * 6
+
 let mkTrail () =
     let g = three.BufferGeometry()
-    g.setAttribute ("position", three.Float32BufferAttribute(Array.zeroCreate (trailLen * 3), 3))
-    let cols =
-        Array.init (trailLen * 3) (fun i ->
-            let f = 1. - float (i / 3) / float (trailLen - 1)
-            f * f)
-    g.setAttribute ("color", three.Float32BufferAttribute(cols, 3))
+    g.setAttribute ("position", three.Float32BufferAttribute(Array.zeroCreate (trailVerts * 3), 3))
+    g.setAttribute ("color", three.Float32BufferAttribute(Array.zeroCreate (trailVerts * 3), 3))
     g.setDrawRange (0, 0)
-    three.Line(
-        g,
-        three.LineBasicMaterial(
-            box {| vertexColors = true; transparent = true; opacity = 0.9; blending = three.AdditiveBlending |}
+    let mesh =
+        three.Mesh(
+            g,
+            three.MeshBasicMaterial(
+                box
+                    {| vertexColors = true
+                       transparent = true
+                       opacity = 0.9
+                       depthWrite = false
+                       side = three.DoubleSide
+                       blending = three.AdditiveBlending |}
+            )
         )
-    )
+    // Geometry is empty on the first frame, so Three.js would cache a
+    // zero-radius bounding sphere and frustum-cull this mesh forever.
+    mesh.frustumCulled <- false
+    mesh
 
 let mkShip (scene: Object3D) i =
     let hex = colors.[i]
@@ -96,7 +107,8 @@ let mkShip (scene: Object3D) i =
       Warn = warn
       Mark = mark
       Trail = trail
-      History = ResizeArray() }
+      History = ResizeArray()
+      Particles = ResizeArray() }
 
 let private padHex (p: Pad) =
     match p.Kind with

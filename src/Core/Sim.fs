@@ -39,7 +39,7 @@ let private build i =
     arenaHalf <- l.Size
     corners <- l.Track |> Option.map (fun (r, _, _) -> List.toArray r) |> Option.defaultValue [||]
     road <- if corners.Length > 0 then smoothLoop corners else [||]
-    gateEvery <- l.Track |> Option.map (fun (_, _, k) -> k * 4) |> Option.defaultValue 1
+    gateEvery <- l.Track |> Option.map (fun (_, _, k) -> k * smoothSamples) |> Option.defaultValue 1
     gates <- [| for i in 0 .. gateEvery .. road.Length - 1 -> road.[i] |]
     trackWidth <- l.Track |> Option.map (fun (_, w, _) -> w) |> Option.defaultValue 0.
     mapHole <- l.Hole

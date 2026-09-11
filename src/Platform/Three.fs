@@ -44,6 +44,7 @@ type Object3D =
     abstract rotation: Vector3
     abstract scale: Vector3
     abstract visible: bool with get, set
+    abstract frustumCulled: bool with get, set
     abstract children: Object3D[]
     abstract add: Object3D -> unit
     abstract remove: Object3D -> unit
@@ -128,6 +129,8 @@ type Lib =
     abstract Points: BufferGeometry * Material -> Mesh
     [<Emit("$0.AdditiveBlending")>]
     abstract AdditiveBlending: int
+    [<Emit("$0.DoubleSide")>]
+    abstract DoubleSide: int
     [<Emit("new $0.TextureLoader().load($1)")>]
     abstract loadTexture: string -> Texture
     [<Emit("$0.SRGBColorSpace")>]

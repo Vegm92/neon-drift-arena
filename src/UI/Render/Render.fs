@@ -168,7 +168,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
         | Finished(i, _) -> spawnBurst vw w.Ships.[i].Pos (shipColor w.Ships.[i]) 40 260.
         | Shot _ -> ()
     drawSmoke vw w dt
-    Array.iter2 (drawShip w.Time vw) vw.Ships w.Ships
+    Array.iter2 (drawShip w.Time dt vw) vw.Ships w.Ships
     Array.iter2 (drawTether w.Time w) vw.Ships w.Ships
     Array.iter2 (drawWarn w.Time w) vw.Ships w.Ships
     drawBorder vw w

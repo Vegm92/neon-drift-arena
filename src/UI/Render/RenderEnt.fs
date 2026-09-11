@@ -29,7 +29,7 @@ let drawTether t (w: World) (sv: ShipView) (s: Ship) =
         sv.Tether.material.color.setHex (shipColor s)
     | None -> ()
 
-let drawShip t (vw: View) (sv: ShipView) (s: Ship) =
+let drawShip t dt (vw: View) (sv: ShipView) (s: Ship) =
     let launcher = Sim.launcher s
     let ghost = launcher && s.Ghosting
     sv.Root.visible <- s.Alive || ghost
@@ -101,21 +101,71 @@ let drawShip t (vw: View) (sv: ShipView) (s: Ship) =
         sv.Body.rotation.y <- if k = 3 then Math.PI else 0.
         sv.Body.material?map?offset?set (cx / fst sheet, 1. - (cy + snd cell) / snd sheet)
         sv.Flame.material.color.setHex (shipColor s)
-        sv.Trail.material.opacity <- min 1. (0.55 + 0.18 * float s.Streak)
-        sv.Trail.material.color.setHex (shipColor s)
+        // Small unconditional sample kept only so `Explode` can read a recent
+        // heading (History[0]-History[1]); the exhaust trail below is separate.
         sv.History.Insert(0, s.Pos)
-        if sv.History.Count > trailLen then sv.History.RemoveAt(sv.History.Count - 1)
+        if sv.History.Count > 2 then sv.History.RemoveAt(sv.History.Count - 1)
+        // Exhaust puffs: only spawn while thrust or boost is actually firing
+        // (Thrusting: 0 idle, 1 thrust, 2 boost). Once ejected each puff drifts
+        // and fades on its own for its own lifetime, even if thrust stops.
+        if s.Thrusting > 0. then
+            let boosting = s.Thrusting > 1.5
+            let ejectSpeed = trailEjectSpeed * (if boosting then trailBoostMult else 1.)
+            let ca = cos s.Angle
+            let sa = sin s.Angle
+            let ox = trailOffsetX * ca - trailOffsetY * sa
+            let oy = trailOffsetX * sa + trailOffsetY * ca
+            let back = s.Angle + Math.PI + (rnd.NextDouble() - 0.5) * 0.5
+            sv.Particles.Add
+                { PX = s.Pos.X + ox
+                  PZ = s.Pos.Y + oy
+                  VX = cos back * ejectSpeed
+                  VZ = sin back * ejectSpeed
+                  Age = 0.
+                  MaxAge = max 0.05 trailLength }
+            if sv.Particles.Count > trailLen then
+                sv.Particles.RemoveAt 0
     else
         sv.History.Clear()
-    let attr = sv.Trail.geometry.getAttribute "position"
-    let a = attr.array
-    for i in 0 .. sv.History.Count - 1 do
-        let p = sv.History.[i]
-        a.[i * 3] <- p.X
-        a.[i * 3 + 1] <- 2.
-        a.[i * 3 + 2] <- p.Y
-    sv.Trail.geometry.setDrawRange (0, sv.History.Count)
-    attr.needsUpdate <- true
+        sv.Particles.Clear()
+    // Age, drift and cull every frame regardless of alive/thrust state, so
+    // already-ejected puffs keep living out their own decay.
+    for p in sv.Particles do
+        p.Age <- p.Age + dt
+        p.PX <- p.PX + p.VX * dt
+        p.PZ <- p.PZ + p.VZ * dt
+    sv.Particles.RemoveAll(fun p -> p.Age >= p.MaxAge) |> ignore
+    let boostMult = if s.Alive && s.Thrusting > 1.5 then trailBoostMult else 1.
+    let flicker = trailFlicker * sin (t * trailFlickerSpeed)
+    sv.Trail.material.opacity <-
+        min 1. (max 0. ((trailBrightness + trailStreakBoost * float s.Streak + flicker) * boostMult))
+    sv.Trail.material.color.setHex (shipColor s)
+    let posAttr = sv.Trail.geometry.getAttribute "position"
+    let colAttr = sv.Trail.geometry.getAttribute "color"
+    let pos = posAttr.array
+    let col = colAttr.array
+    let hw = max 0.05 (0.5 * trailWidth * boostMult)
+    let mutable vi = 0
+    let put px pz fade =
+        pos.[vi * 3] <- px
+        pos.[vi * 3 + 1] <- 2.
+        pos.[vi * 3 + 2] <- pz
+        col.[vi * 3] <- fade
+        col.[vi * 3 + 1] <- fade
+        col.[vi * 3 + 2] <- fade
+        vi <- vi + 1
+    for p in sv.Particles do
+        let fade = (1. - p.Age / p.MaxAge) ** trailDecay
+        let w = hw * fade
+        put (p.PX - w) (p.PZ - w) fade
+        put (p.PX + w) (p.PZ - w) fade
+        put (p.PX + w) (p.PZ + w) fade
+        put (p.PX - w) (p.PZ - w) fade
+        put (p.PX + w) (p.PZ + w) fade
+        put (p.PX - w) (p.PZ + w) fade
+    sv.Trail.geometry.setDrawRange (0, vi)
+    posAttr.needsUpdate <- true
+    colAttr.needsUpdate <- true
 
 let private threat (w: World) (me: Ship) =
     let foe (owner: int) = Sim.side w.Ships.[owner] <> Sim.side me

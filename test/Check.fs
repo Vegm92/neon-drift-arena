@@ -81,13 +81,55 @@ let main _ =
     check "ram exchanges momentum" (w7.Ships.[0].Vel.X < -50. && w7.Ships.[1].Vel.X > -50.)
 
     let w7b =
-        w0 |> place 0 zero 0. |> place 1 (v 30. 0.) 0.
-        |> edit 0 (fun s -> { s with Invuln = 0. })
-        |> edit 1 (fun s -> { s with Invuln = 0.; Hp = 1.; Vel = v (-150.) 0. })
+        w0 |> place 0 zero (System.Math.PI / 2.) |> place 1 (v 30. 0.) 0.
+        |> edit 0 (fun s -> { s with Invuln = 0.; Hp = 1. })
+        |> edit 1 (fun s -> { s with Invuln = 0.; Vel = v (-150.) 0. })
         |> step dt (all present)
     check "a ram kill awards the rammer medal"
-        (w7b.Ships.[1].Hp <= 0. && w7b.Ships.[0].RamKillMedals = 1
-         && w7b.Events |> List.exists (function Medal(0, "ramkill") -> true | _ -> false))
+        (w7b.Ships.[0].Hp <= 0. && w7b.Ships.[1].RamKillMedals = 1
+         && w7b.Events |> List.exists (function Medal(1, "ramkill") -> true | _ -> false))
+
+    let w7d =
+        w0 |> place 0 zero (System.Math.PI / 2.) |> place 1 (v 30. 0.) 0.
+        |> edit 0 (fun s -> { s with Invuln = 0. })
+        |> edit 1 (fun s -> { s with Invuln = 0.; Vel = v (-maxSpeed) 0. })
+        |> step dt (all present)
+    check "a full-speed ram one-shots a stationary, unguarded target"
+        (w7d.Ships.[0].Hp <= 0.)
+    check "the attacker takes no damage ramming a stationary target"
+        (w7d.Ships.[1].Hp = hpMax)
+    check "an attacker's nose pointing at its target is not a brace: no parry on the victim"
+        (w7d.Ships.[0].Stun = 0. && w7d.Ships.[1].Stun = 0.)
+
+    let w7d2 =
+        w0 |> place 0 zero (System.Math.PI / 2.) |> place 1 (v 30. 0.) System.Math.PI
+        |> edit 0 (fun s -> { s with Invuln = 0. })
+        |> edit 1 (fun s -> { s with Invuln = 0.; Vel = v (-maxSpeed) 0. })
+        |> step dt (all present)
+    check "an attacker facing its own direction of travel still doesn't parry an unguarded hit"
+        (w7d2.Ships.[0].Hp <= 0. && w7d2.Ships.[0].Stun = 0. && w7d2.Ships.[1].Stun = 0.)
+
+    let w7e =
+        w0 |> place 0 zero (System.Math.PI / 3.) |> place 1 (v 30. 0.) 0.
+        |> edit 0 (fun s -> { s with Invuln = 0. })
+        |> edit 1 (fun s -> { s with Invuln = 0.; Vel = v (-maxSpeed) 0. })
+        |> step dt (all present)
+    check "facing the incoming ram cuts the damage you take"
+        (w7e.Ships.[0].Hp > w7d.Ships.[0].Hp && w7e.Ships.[0].Hp < hpMax)
+
+    let w7f =
+        w0 |> place 0 zero 0. |> place 1 (v 30. 0.) 0.
+        |> edit 0 (fun s -> { s with Invuln = 0. })
+        |> edit 1 (fun s -> { s with Invuln = 0.; Vel = v (-maxSpeed) 0. })
+        |> step dt (all present)
+    check "squarely facing a hard enough ram parries it: both ships clash, spark and stun"
+        (w7f.Ships.[0].Stun > 0. && w7f.Ships.[1].Stun > 0.
+         && w7f.Events |> List.exists (function Bump _ -> true | _ -> false))
+    check "a parry announces both ships by id, for the HUD shout"
+        (w7f.Events |> List.exists (function Parried(_, a, b) -> (a = 0 && b = 1) || (a = 1 && b = 0) | _ -> false))
+    check "a stunned ship cannot steer out of it (existing stun contract)"
+        (let stepped = w7f |> step dt (all { present with Thrust = true })
+         stepped.Ships.[0].Thrusting = 0. && stepped.Ships.[1].Thrusting = 0.)
 
     let mashing =
         Array.init 4 (fun i ->
@@ -158,7 +200,7 @@ let main _ =
                 |> Array.mapi (fun i g -> i, g)
                 |> Array.forall (fun (i, g) ->
                     corners |> Array.mapi (fun j h -> j, h) |> Array.forall (fun (j, h) -> abs (i - j) <= 1 || abs (i - j) >= corners.Length - 1 || len (g - h) > trackWidth * 0.9)))
-            check (tag "the road is smoothed through every corner") (road.Length = corners.Length * 4 && corners |> Array.forall (fun c -> Array.contains c road))
+            check (tag "the road is smoothed through every corner") (road.Length = corners.Length * Track.smoothSamples && corners |> Array.forall (fun c -> Array.contains c road))
             check (tag "a race track is a big arena") (arenaHalf = raceHalf)
         else
             check (tag "the core has an open approach") (

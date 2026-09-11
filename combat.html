@@ -88,7 +88,8 @@
         <button id="btnStep">Step Frame</button>
       </div>
       <button id="btnReset">Reset Sandbox</button>
-      
+      <button id="btnFreezeP1" title="Pin P1 in place so you can watch the trail/thruster effects without the ship flying off">Freeze P1 Position: OFF</button>
+
       <h3>Spawn Actions</h3>
       <div class="row">
         <button id="btnSpawnP2" title="Spawn Target Dummy Ship at center">Spawn Target P2</button>
@@ -191,6 +192,8 @@
       let prevShipsState = null;
       let showDamageNumbers = true;
       const SHOW_NUMBERS_KEY = "nda_show_damage_numbers";
+      let freezeP1 = false;
+      let freezeAnchor = v(-150, 0);
 
       try {
         const savedShow = localStorage.getItem(SHOW_NUMBERS_KEY);
@@ -399,7 +402,18 @@
         { name: "bubbleLife", label: "Bubble Lifetime", min: 1, max: 20, step: 0.5, default: 4 },
         { name: "bubbleFactor", label: "Bubble Time Scale", min: 0.05, max: 1, step: 0.05, default: 0.4 },
         { name: "strafeAccel", label: "Side Thrusters (Strafe)", min: 20, max: 300, step: 5, default: 90 },
-        { name: "reverseFactor", label: "Reverse Thrust Factor", min: 0.05, max: 1, step: 0.05, default: 0.25 }
+        { name: "reverseFactor", label: "Reverse Thrust Factor", min: 0.05, max: 1, step: 0.05, default: 0.25 },
+        { name: "trailLength", label: "Trail Length (puff lifetime, sec)", min: 0.05, max: 5, step: 0.05, default: 0.8 },
+        { name: "trailEjectSpeed", label: "Trail Eject Speed", min: 0, max: 150, step: 2, default: 25 },
+        { name: "trailWidth", label: "Trail Width", min: 0.5, max: 60, step: 0.5, default: 4 },
+        { name: "trailDecay", label: "Trail Decay (fade curve)", min: 0.3, max: 8, step: 0.1, default: 2 },
+        { name: "trailBrightness", label: "Trail Brightness", min: 0, max: 2, step: 0.05, default: 0.55 },
+        { name: "trailStreakBoost", label: "Trail Streak Boost", min: 0, max: 2, step: 0.05, default: 0.18 },
+        { name: "trailFlicker", label: "Trail Flicker Amount", min: 0, max: 1.5, step: 0.02, default: 0 },
+        { name: "trailFlickerSpeed", label: "Trail Flicker Speed", min: 1, max: 80, step: 1, default: 10 },
+        { name: "trailBoostMult", label: "Boost Trail Strength", min: 1, max: 4, step: 0.1, default: 1.6 },
+        { name: "trailOffsetX", label: "Trail Origin X (fwd/back)", min: -80, max: 80, step: 1, default: 0 },
+        { name: "trailOffsetY", label: "Trail Origin Y (left/right)", min: -80, max: 80, step: 1, default: 0 }
       ];
 
       const createSliders = () => {
@@ -484,22 +498,23 @@
         });
 
         // 4. Movement / Maneuver Thruster Tuning (always visible)
-        const moveDivider = document.createElement("h3");
-        moveDivider.style.marginTop = "14px";
-        moveDivider.style.marginBottom = "6px";
-        moveDivider.style.fontSize = "10px";
-        moveDivider.style.color = "#6a8";
-        moveDivider.style.textTransform = "uppercase";
-        moveDivider.style.borderBottom = "1px dashed rgba(28, 42, 58, 0.4)";
-        moveDivider.style.paddingBottom = "2px";
-        moveDivider.textContent = "Maneuver Thrusters";
-        tuningContainer.appendChild(moveDivider);
-        const moveSliders = ["strafeAccel", "reverseFactor"];
-        activeSliders.forEach(s => {
-          if (moveSliders.includes(s.name)) {
-            appendSlider(s);
-          }
-        });
+        const appendSection = (title, names) => {
+          const div = document.createElement("h3");
+          div.style.marginTop = "14px";
+          div.style.marginBottom = "6px";
+          div.style.fontSize = "10px";
+          div.style.color = "#6a8";
+          div.style.textTransform = "uppercase";
+          div.style.borderBottom = "1px dashed rgba(28, 42, 58, 0.4)";
+          div.style.paddingBottom = "2px";
+          div.textContent = title;
+          tuningContainer.appendChild(div);
+          activeSliders.forEach(s => {
+            if (names.includes(s.name)) appendSlider(s);
+          });
+        };
+        appendSection("Maneuver Thrusters", ["strafeAccel", "reverseFactor"]);
+        appendSection("Neon Trail", ["trailLength", "trailEjectSpeed", "trailWidth", "trailDecay", "trailBrightness", "trailStreakBoost", "trailFlicker", "trailFlickerSpeed", "trailBoostMult", "trailOffsetX", "trailOffsetY"]);
       };
 
       createSliders();
@@ -577,6 +592,16 @@
         isPlaying = !isPlaying;
         btnPlay.textContent = isPlaying ? "Pause" : "Play Sandbox";
         btnPlay.className = isPlaying ? "on" : "";
+      };
+
+      // Freeze P1 position (debug aid for inspecting trail/thruster effects in place)
+      const btnFreezeP1 = document.getElementById("btnFreezeP1");
+      btnFreezeP1.onclick = () => {
+        freezeP1 = !freezeP1;
+        if (freezeP1) freezeAnchor = v(worldState.Ships[0].Pos.X, worldState.Ships[0].Pos.Y);
+        btnFreezeP1.textContent = freezeP1 ? "Freeze P1 Position: ON" : "Freeze P1 Position: OFF";
+        btnFreezeP1.className = freezeP1 ? "on" : "";
+        addLog(freezeP1 ? "P1 position frozen." : "P1 position unfrozen.", "info");
       };
 
       // Display Settings Toggle
@@ -740,6 +765,12 @@
 
         // Force infinite special weapon ammo
         nextState.Ships[0].Ammo = 999;
+
+        // Debug: pin P1 in place (angle/thrust/trail still update, position doesn't)
+        if (freezeP1) {
+          nextState.Ships[0].Pos = v(freezeAnchor.X, freezeAnchor.Y);
+          nextState.Ships[0].Vel = v(0, 0);
+        }
 
         // Auto-respawn P2 ship in original spot instantly without cooldowns, stuns, heat, or stun locks
         const s2 = nextState.Ships[1];

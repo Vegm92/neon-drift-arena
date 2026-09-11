@@ -123,10 +123,29 @@ let resolveRams (ships: Ship[]) =
                 let bounce = if vn < 0. then -(1. + restitution) * vn / 2. else 0.
                 let impulse = max bounce (overlap * ramSeparate / 2.)
                 let enemy = side a <> side b
-                let dmg = if enemy then abs vn * ramDamageFactor else 0.
+                // damage is one-sided by default: each ship's own closing speed hurts the other,
+                // so a stationary ship dies to a full-speed hit while the attacker takes nothing back
+                let speedIntoB = max 0. (dot a.Vel n)
+                let speedIntoA = max 0. (-(dot b.Vel n))
+                // facing the incoming ship (bracing nose-first) cuts the damage you take
+                let faceA = max 0. (dot (ofAngle a.Angle) n)
+                let faceB = max 0. (dot (ofAngle b.Angle) (n * -1.))
+                let dmgToA = speedIntoA * ramDamageFactor * (1. - ramFaceGuard * faceA)
+                let dmgToB = speedIntoB * ramDamageFactor * (1. - ramFaceGuard * faceB)
+                // a hard, square brace parries the ram: only the ship actually under threat can
+                // parry with its own facing — an attacker's nose is always toward its target
+                // just from thrusting there, so that alone must never count as a brace
+                let parried =
+                    enemy
+                    && ((speedIntoA > ramEventSpeed && faceA > ramParryFace)
+                        || (speedIntoB > ramEventSpeed && faceB > ramParryFace))
                 let mark by sh = if enemy then tag by Collision sh else sh
-                s.[i] <- { a with Pos = a.Pos - push; Vel = a.Vel - n * impulse } |> mark b.Id |> damage dmg
-                s.[j] <- { b with Pos = b.Pos + push; Vel = b.Vel + n * impulse } |> mark a.Id |> damage dmg
+                let brace sh = if parried then { sh with Stun = max sh.Stun ramParryStun; Spin = asteroidSpin } else sh
+                s.[i] <- { a with Pos = a.Pos - push; Vel = a.Vel - n * impulse } |> mark b.Id |> damage (if enemy then dmgToA else 0.) |> brace
+                s.[j] <- { b with Pos = b.Pos + push; Vel = b.Vel + n * impulse } |> mark a.Id |> damage (if enemy then dmgToB else 0.) |> brace
+                if parried then
+                    events.Add(Bump(a.Pos + d * 0.5))
+                    events.Add(Parried(a.Pos + d * 0.5, a.Id, b.Id))
                 if vn < -ramEventSpeed then events.Add(Ram(a.Pos + d * 0.5))
     s, List.ofSeq events
 
