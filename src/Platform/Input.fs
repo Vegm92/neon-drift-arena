@@ -238,7 +238,9 @@ let private phoneRaw (m: obj) =
       Special = flag "special"
       Start = flag "start"
       Back = flag "back"
-      Swap = flag "swap"
+      // the pad never sends a "swap" flag — dead players have no weapon, so the
+      // special button doubles as the ghost/launcher toggle, same as keyboard F
+      Swap = flag "special"
       Present = true }
 
 let private phone (m: obj) =
