@@ -150,6 +150,7 @@
 </footer>
 <script>
   const v = document.getElementById("trailer"), b = document.getElementById("sound");
+  v.volume = 0.7;
   const unmute = () => { v.muted = false; b.classList.add("playing"); if (v.paused) v.play(); };
   b.addEventListener("click", () => { v.muted = !v.muted; b.classList.toggle("playing", !v.muted); if (v.paused) v.play(); });
   v.addEventListener("click", () => { if (v.paused) v.play(); });
