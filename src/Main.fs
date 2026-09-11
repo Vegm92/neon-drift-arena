@@ -261,7 +261,8 @@ let private padStats (card: obj) =
 
 let private broadcast () =
     let phones = [ for d in Input.devices () do if d.Key.StartsWith "ph:" then d.Key.Substring 3, Menu.padCard d.Key ]
-    Input.hotSend "nda:host" (createObj [ "phase" ==> Menu.phase (); "pads" ==> createObj [ for id, c in phones -> id ==> c ]; "stats" ==> createObj [ for id, c in phones -> id ==> padStats c ] ])
+    if not phones.IsEmpty then
+        Input.hotSend "nda:host" (createObj [ "phase" ==> Menu.phase (); "pads" ==> createObj [ for id, c in phones -> id ==> c ]; "stats" ==> createObj [ for id, c in phones -> id ==> padStats c ] ])
 
 let private menuEl = document.getElementById "menu"
 let mutable private frameEvents: Event list = []
