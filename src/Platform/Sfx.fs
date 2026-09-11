@@ -347,6 +347,10 @@ let play (events: Event list) =
                 if bumps < 2 then
                     bumps <- bumps + 1
                     bump p
+            | Parried(p, _, _) ->
+                if bumps < 2 then
+                    bumps <- bumps + 1
+                    cooked p
             | Pickup(p, big) -> pickup p big
             | Mend p -> mend p
             | Grab p -> grab p
