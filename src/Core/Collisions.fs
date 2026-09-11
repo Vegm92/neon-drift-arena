@@ -8,41 +8,33 @@ open Track
 open Combat
 open Entities
 
-let private bump (events: ResizeArray<Event>) (sh: Ship) (a: Asteroid) =
-    let d = sh.Pos - a.Pos
+let private bump (events: ResizeArray<Event>) (pos: V2) (radius: float) (vel: V2) (sh: Ship) =
+    let d = sh.Pos - pos
     let dist = len d
-    let minDist = a.Radius + shipRadius
-    if dist < minDist && dist > 1e-6 then
+    if dist < radius + shipRadius && dist > 1e-6 then
         let n = d * (1. / dist)
-        let vn = dot sh.Vel n
-        let turn = if sh.Vel.X * n.Y - sh.Vel.Y * n.X > 0. then 1. else -1.
-        events.Add(Bump(a.Pos + n * a.Radius))
-        { sh with
-            Pos = a.Pos + n * minDist
-            Vel = if vn < 0. then sh.Vel - n * ((1. + restitution) * vn) else sh.Vel
-            Stun = asteroidStun
-            Spin = turn * asteroidSpin
-            Thrusting = 0. }
+        let cp = pos + n * radius
+        events.Add(Bump cp)
+        let hit, jn = Impact.apply cp n vel 0. sh
+        hit |> Impact.separate cp n shipRadius |> Impact.stun jn, jn
     else
-        sh
+        sh, 0.
 
 let resolveAsteroids (ships: Ship[]) =
     let events = ResizeArray()
-    let s = ships |> Array.map (fun sh -> if sh.Alive then Array.fold (bump events) sh asteroids else sh)
+    let one sh (a: Asteroid) = fst (bump events a.Pos a.Radius zero sh)
+    let s = ships |> Array.map (fun sh -> if sh.Alive then Array.fold one sh asteroids else sh)
     s, List.ofSeq events
 
 let resolveRocks (ships: Ship[]) (rocks: Rock list) =
     let events = ResizeArray()
     let hit (sh: Ship) (r: Rock) =
-        let d = sh.Pos - r.Pos
-        if len d < r.Radius + shipRadius && len d > 1e-6 then
-            let n = norm d
-            let closing = min 0. (dot (sh.Vel - r.Vel) n)
+        let bumped, jn = bump events r.Pos r.Radius r.Vel sh
+        if jn > 0. then
             let mark s = if side s <> side ships.[r.Owner] then tag r.Owner Rock s else s
-            let bumped = bump events sh { Pos = r.Pos; Radius = r.Radius }
-            { bumped with Vel = bumped.Vel + r.Vel * 0.5 } |> mark |> damage (abs closing * rockDamage)
+            bumped |> mark |> damage (jn * rockDamage)
         else
-            sh
+            bumped
     let s = ships |> Array.map (fun sh -> if sh.Alive then List.fold hit sh rocks else sh)
     s, List.ofSeq events
 
@@ -62,11 +54,9 @@ let resolveDeploys (ships: Ship[]) (deploys: Deployable list) (bullets: Bullet l
                     let minDist = wallThick + shipRadius
                     if dist < minDist && dist > 1e-6 then
                         let n = d * (1. / dist)
-                        let vn = dot sh.Vel n
-                        s.[j] <-
-                            { sh with
-                                Pos = cp + n * minDist
-                                Vel = if vn < 0. then sh.Vel - n * ((1. + restitution) * vn) else sh.Vel }
+                        let surface = cp + n * wallThick
+                        let hit, _ = Impact.apply surface n zero 0. sh
+                        s.[j] <- hit |> Impact.separate surface n shipRadius
     let stopper (b: Bullet) =
         ds
         |> Array.tryFindIndex (fun d ->
@@ -120,8 +110,8 @@ let resolveRams (ships: Ship[]) =
                 let vn = dot (b.Vel - a.Vel) n
                 let overlap = 2. * shipRadius - dist
                 let push = n * (overlap / 2.)
-                let bounce = if vn < 0. then -(1. + restitution) * vn / 2. else 0.
-                let impulse = max bounce (overlap * ramSeparate / 2.)
+                let a', b', _ = Impact.pair (a.Pos + n * shipRadius) n a b
+                let sep = n * (overlap * ramSeparate / 2.)
                 let enemy = side a <> side b
                 // damage is one-sided by default: each ship's own closing speed hurts the other,
                 // so a stationary ship dies to a full-speed hit while the attacker takes nothing back
@@ -141,8 +131,8 @@ let resolveRams (ships: Ship[]) =
                         || (speedIntoB > ramEventSpeed && faceB > ramParryFace))
                 let mark by sh = if enemy then tag by Collision sh else sh
                 let brace sh = if parried then { sh with Stun = max sh.Stun ramParryStun; Spin = asteroidSpin } else sh
-                s.[i] <- { a with Pos = a.Pos - push; Vel = a.Vel - n * impulse } |> mark b.Id |> damage (if enemy then dmgToA else 0.) |> brace
-                s.[j] <- { b with Pos = b.Pos + push; Vel = b.Vel + n * impulse } |> mark a.Id |> damage (if enemy then dmgToB else 0.) |> brace
+                s.[i] <- { a' with Pos = a.Pos - push; Vel = a'.Vel - sep } |> mark b.Id |> damage (if enemy then dmgToA else 0.) |> brace
+                s.[j] <- { b' with Pos = b.Pos + push; Vel = b'.Vel + sep } |> mark a.Id |> damage (if enemy then dmgToB else 0.) |> brace
                 if parried then
                     events.Add(Bump(a.Pos + d * 0.5))
                     events.Add(Parried(a.Pos + d * 0.5, a.Id, b.Id))

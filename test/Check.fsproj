@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
@@ -12,6 +12,7 @@
     <Compile Include="../src/Core/Spawn.fs" />
     <Compile Include="../src/Core/Arena.fs" />
     <Compile Include="../src/Core/Combat.fs" />
+    <Compile Include="../src/Core/Impact.fs" />
     <Compile Include="../src/Core/Kinematics.fs" />
     <Compile Include="../src/Core/Weapons.fs" />
     <Compile Include="../src/Core/Entities.fs" />

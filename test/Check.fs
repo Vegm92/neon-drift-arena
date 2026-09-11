@@ -232,11 +232,23 @@ let main _ =
         |> edit 0 (fun s -> { s with Vel = v 200. 0. }) |> run 3 (all present)
     let s11 = w11.Ships.[0]
     check "asteroid bounces ship back" (s11.Vel.X < 0.)
-    check "asteroid stuns and spins" (s11.Stun > 0. && s11.Spin <> 0.)
+    check "asteroid stuns on impact" (s11.Stun > 0.)
+    // Spin is torque now, not a canned flourish: a square hit has no lever arm
+    // to turn, an off-centre one scrapes and tumbles, and the harder scrape
+    // must tumble harder.
+    check "a square asteroid hit does not spin the ship" (abs s11.Spin < 1e-6)
+    let graze off =
+        (w0 |> place 0 (rock.Pos + v (-(rock.Radius + shipRadius + 2.)) off) 0.
+         |> edit 0 (fun s -> { s with Vel = v 200. 0. }) |> run 3 (all present)).Ships.[0].Spin
+    check "an off-centre asteroid hit spins the ship" (abs (graze 14.) > 1.)
+    check "a deeper scrape spins harder" (abs (graze 14.) > abs (graze 6.))
+    check "opposite sides spin opposite ways" (graze 14. * graze -14. < 0.)
     let w12 = run 10 (Array.init 4 (fun i -> if i = 0 then { present with Turn = 1.; Thrust = true } else present)) w11
     check "stunned ship ignores input" (w12.Ships.[0].Thrusting = 0.)
     let w13 = run (int (asteroidStun / dt) + 2) (all present) w12
-    check "stun wears off" (w13.Ships.[0].Stun = 0. && w13.Ships.[0].Spin = 0.)
+    check "stun wears off" (w13.Ships.[0].Stun = 0.)
+    let spun = w0 |> place 0 zero 0. |> edit 0 (fun s -> { s with Spin = 6. }) |> run 400 (all present)
+    check "a tumble damps down to a clean stop" (spun.Ships.[0].Spin = 0.)
 
     let w14 =
         w0 |> place 0 (rock.Pos + v (-(rock.Radius + 60.)) 0.) 0.

@@ -1,4 +1,4 @@
-module Determinism
+﻿module Determinism
 
 open Vec
 open Domain
@@ -7,7 +7,7 @@ open Sim
 
 let steps = 600
 
-let golden = 0x62DC90D6L
+let golden = 0xE6060A32L
 
 let private qz (x: float) = int64 (x * 1000.)
 
@@ -17,7 +17,7 @@ let worldHash (w: World) =
     let mutable h = 2166136261L
     for s in w.Ships do
         for x in
-            [ qz s.Pos.X; qz s.Pos.Y; qz s.Vel.X; qz s.Vel.Y; qz s.Angle
+            [ qz s.Pos.X; qz s.Pos.Y; qz s.Vel.X; qz s.Vel.Y; qz s.Angle; qz s.Spin
               qz s.Hp; qz s.Shield; qz s.Boost; qz s.Cooldown; qz s.Charge
               int64 s.Stocks; int64 s.Ammo; (if s.Alive then 1L else 0L) ] do
             h <- fold h x

@@ -135,6 +135,11 @@ module Cfg =
     let physicsDt = 1. / 120.
     let mutable asteroidStun = 0.666
     let mutable asteroidSpin = 6.3
+    let mutable spinInertia = 1.
+    let mutable impactFriction = 0.45
+    let mutable spinDamp = 2.6
+    let mutable spinRest = 0.05
+    let mutable impactStunFull = 300.
 
     let heatMax = 100.
     let mutable heatPerShot = 14.5
@@ -206,7 +211,7 @@ module Cfg =
     let mutable rockRadius = 20.
     let mutable rockCooldown = 6.
     let mutable rockLife = 14.
-    let mutable rockDamage = 0.09
+    let mutable rockDamage = 0.049
     let inviteButton = true
 
     let mutable portalEvery = 20.
@@ -295,6 +300,11 @@ module Cfg =
            "ramEventSpeed", (fun () -> ramEventSpeed), (fun x -> ramEventSpeed <- x)
            "asteroidStun", (fun () -> asteroidStun), (fun x -> asteroidStun <- x)
            "asteroidSpin", (fun () -> asteroidSpin), (fun x -> asteroidSpin <- x)
+           "spinInertia", (fun () -> spinInertia), (fun x -> spinInertia <- x)
+           "impactFriction", (fun () -> impactFriction), (fun x -> impactFriction <- x)
+           "spinDamp", (fun () -> spinDamp), (fun x -> spinDamp <- x)
+           "spinRest", (fun () -> spinRest), (fun x -> spinRest <- x)
+           "impactStunFull", (fun () -> impactStunFull), (fun x -> impactStunFull <- x)
            "heatPerShot", (fun () -> heatPerShot), (fun x -> heatPerShot <- x)
            "heatCool", (fun () -> heatCool), (fun x -> heatCool <- x)
            "hurtBelow", (fun () -> hurtBelow), (fun x -> hurtBelow <- x)

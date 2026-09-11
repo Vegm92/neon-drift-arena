@@ -1,4 +1,4 @@
-module Kinematics
+﻿module Kinematics
 
 open System
 open Vec
@@ -9,6 +9,7 @@ open Track
 open Spawn
 open Arena
 open Combat
+open Impact
 
 let private turbo () = if mutator = 2 then 1.5 else 1.
 let private slick () = if mutator = 3 then 0.25 else 1.
@@ -108,4 +109,4 @@ let stepShip k dt (inp: Input) (s: Ship) =
             Heat = max 0. (s.Heat - heatCool * dt)
             Locked = max 0. (s.Locked - dt)
             Stun = max 0. (s.Stun - dt)
-            Spin = if s.Stun > dt then s.Spin else 0. }
+            Spin = Impact.damp dt s.Spin }
