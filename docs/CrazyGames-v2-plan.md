@@ -11,10 +11,10 @@ Turn the v1 online friends-brawler into a fully monetized, account-integrated ga
 ## Goals
 
 1. **Monetize without hurting the match.** Video ads (midgame/rewarded) are requested via the `SDK.ad.requestAd` module with robust callback handling (`adStarted`, `adFinished`, `adError`) that pauses game simulations and silences audio. Banner ads are shown in non-gameplay screens and **explicitly cleared** via `SDK.banner.clearAllBanners()` before active gameplay begins to prevent layout overlays.
-2. **Account-linked, cloud-synced progress.** Player progression (wins/series tally, collected loadouts, unlockables) persists via the CrazyGames SDK v2 **Data module** (`window.CrazyGames.SDK.data`). A guest's local progress is seamlessly migrated and synchronized with their CrazyGames cloud profile when they log in.
+2. **Account-linked, cloud-synced progress.** Player progression (wins/series tally, collected loadouts, unlockables) persists via the CrazyGames SDK v3 **Data module** (`window.CrazyGames.SDK.data`). A guest's local progress is seamlessly migrated and synchronized with their CrazyGames cloud profile when they log in.
 3. **CG identity as the online persona.** Use the `user` module (`isUserAccountAvailable`, `getUser`) for username/avatar in online rooms, with clean guest fallback and no blocking login CTA. Real-time auth listeners dynamically update names and profile details mid-game if a user signs in.
 4. **Transport latency pass (optional, post-metrics).** Swap the WebSocket relay hop for a direct WebRTC data channel where it pays off, without breaking the v1 wire-format, and with graceful, automatic fallback to the WebSocket relay via TURN.
-5. **Secure Platform Leaderboard.** Integrate a single, highly secure global leaderboard (e.g., Win Streaks or High Scores) using the CrazyGames SDK v2 `leaderboard` module. Scores are encrypted on the client using AES-GCM via the SDK's encryption helpers (`encryptScore`) to prevent tampering and ensure platform compliance.
+5. **Secure Platform Leaderboard.** Integrate a single, highly secure global leaderboard (e.g., Win Streaks or High Scores) using the CrazyGames SDK v3 `leaderboard` module. Scores are encrypted on the client using AES-GCM via the SDK's encryption helpers (`encryptScore`) to prevent tampering and ensure platform compliance.
 
 ## Correctness — what "done" means
 
@@ -24,14 +24,14 @@ Turn the v1 online friends-brawler into a fully monetized, account-integrated ga
 | **Progress save** | Progress written/read via `SDK.data.setItem`/`getItem`; local guest progress is merged/uploaded to the cloud when the auth listener triggers login; state is restored across devices upon reload | Progress is lost on page reload; fabricated sync drops local guest progress on account link; reliance on raw local storage for authenticated users |
 | **CG identity** | Online players are tagged with CG username/avatar; fallback is handled gracefully for guests; `addAuthListener` instantly updates the local player profile and broadcasts the update to the host when a guest logs in mid-room | In-game custom name input overrides CG identity in online rooms; login is shown as a blocking modal that gates gameplay |
 | **WebRTC drop-in** | Direct WebRTC data channel uses the exact same protocol bytes and routing logic as the v1 WebSocket relay; automatically falls back to WebSocket relay through a Railway-hosted TURN/NAT gateway if WebRTC handshake fails | WebRTC introduces a divergent wire format; feature-flagged divergence between paths causes room desynchronization; WebRTC failures leave players disconnected with no fallback |
-| **Leaderboard** | A single global platform leaderboard is configured in the CG Developer Portal; scores submitted via `SDK.leaderboard.submitScore` are **fully encrypted** using AES-GCM and the portal-provided encryption key; guests are cleanly excluded or handled without breaking account-keyed integrity | Attempting to submit raw, unencrypted scores (causes API rejection); attempting to create multiple platform leaderboards (violates SDK v2 limits); guest scores cause application crashes |
+| **Leaderboard** | A single global platform leaderboard is configured in the CG Developer Portal; scores submitted via `SDK.leaderboard.submitScore` are **fully encrypted** using AES-GCM and the portal-provided encryption key; guests are cleanly excluded or handled without breaking account-keyed integrity | Attempting to submit raw, unencrypted scores (causes API rejection); attempting to create multiple platform leaderboards (violates SDK v3 limits); guest scores cause application crashes |
 
 ## Safe rails (do)
 
 - **Keep the v1 architecture intact.** The host-authoritative lockstep state-reconciliation, transport-agnostic wire format, the sacred pure physics simulation (`Sim.step`), and `npm run check` as the canary must remain unchanged and functional.
 - **Implement proper banner ad lifecycle cleanup.** Always call `window.CrazyGames.SDK.banner.clearAllBanners()` or `clearBanner(containerId)` on any transition out of the lobby/menus and into active gameplay.
 - **Handle all video ad callbacks carefully.** You must implement `adStarted`, `adFinished`, and `adError` for every ad request. If an ad fails or is blocked, the `adError` callback must gracefully resume the game and ensure the player is not blocked from playing.
-- **Use the SDK's own modules over homegrown.** Standardize on the SDK v2 `data` module for player progress, the `user` module for authentication, and the `leaderboard` module for high scores. Discard legacy SDK v1 concepts like "APS" (Automatic Progress Saving).
+- **Use the SDK's own modules over homegrown.** Standardize on the SDK v3 `data` module for player progress, the `user` module for authentication, and the `leaderboard` module for high scores. Discard legacy SDK v1 concepts like "APS" (Automatic Progress Saving).
 - **Encrypt leaderboard scores.** Use the SDK's AES-GCM score encryption utilities (`encryptScore`) with the game's unique encryption key before calling `submitScore`. 
 - **Migrate Guest State on Login.** Register a listener via `window.CrazyGames.SDK.user.addAuthListener`. When a user transitions from Guest to Logged-in:
   1. Retrieve local-only progress from `localStorage` or `SDK.data` (guest partition).
@@ -41,7 +41,7 @@ Turn the v1 online friends-brawler into a fully monetized, account-integrated ga
 
 ## Guardrails (avoid)
 
-- **Do not use "Multiple Platform Leaderboards".** CrazyGames SDK v2 supports **only one primary leaderboard** per game. Do not attempt to submit to different leaderboard IDs. Choose one primary metric (e.g., Total Series Wins or High Streak) for the platform board.
+- **Do not use "Multiple Platform Leaderboards".** CrazyGames SDK v3 supports **only one primary leaderboard** per game. Do not attempt to submit to different leaderboard IDs. Choose one primary metric (e.g., Total Series Wins or High Streak) for the platform board.
 - **Do not let ads interrupt active matches.** Request midgame ads only during natural breaks (between matches, in lobby screens, or on respawn gates) where v1 already emits `gameplayStop/Start`.
 - **Do not make login or ads mandatory to play.** Guests must be able to play local couch games, bot matches, and online friends-rooms unimpeded. Ads must never act as a hard soft-wall for core content.
 - **Do not store or trust the client-side `__dangerousUserId`; do not decrypt `getUserToken()` on the client.** If secure verification is required (such as leaderboard validation or server-side progress saving), handle token exchange securely via a Railway-hosted backend using the official CrazyGames API key.
@@ -52,8 +52,8 @@ Turn the v1 online friends-brawler into a fully monetized, account-integrated ga
 
 When this plan is executed, the game is **Full-Launch eligible** on CrazyGames:
 - **Fully monetized** through non-intrusive rewarded/midgame video ads and clean menu banner placements that are properly destroyed upon gameplay entry.
-- **Cloud-synced progression** using the SDK v2 `data` module, with automatic guest-to-account profile migration.
+- **Cloud-synced progression** using the SDK v3 `data` module, with automatic guest-to-account profile migration.
 - **Seamless CG-account identity** in online multiplayer rooms.
 - **Low-latency, peer-to-peer WebRTC data channels** with a robust and transparent WebSocket relay fallback.
-- **A secure, encrypted single platform leaderboard** compliant with CrazyGames SDK v2 standards.
+- **A secure, encrypted single platform leaderboard** compliant with CrazyGames SDK v3 standards.
 - All of this is integrated with zero regressions to the F# deterministic core, local couch play, bots, mobile/phone pads, and with `npm run check` fully passing.
