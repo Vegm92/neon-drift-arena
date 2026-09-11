@@ -33,6 +33,7 @@ let mutable matchesPlayed = 0
 let mutable xp = 0
 let mutable dailyIds: int[] = Array.empty
 let mutable dailyProg: int[] = Array.create 3 0
+let mutable adSeen = false
 
 let private today () = System.DateTime.UtcNow.ToString "yyyy-MM-dd"
 
@@ -42,10 +43,12 @@ let loadProgress () =
         let m = CrazyGames.dataGetItem "nda-matches-played"
         let x = CrazyGames.dataGetItem "nda-xp"
         let d = CrazyGames.dataGetItem "nda-daily"
+        let a = CrazyGames.dataGetItem "nda-ad-seen"
         let num (v: string) = if isNullOrUndefined v || v = "" then 0 else int v
         highScore <- num w
         matchesPlayed <- num m
         xp <- num x
+        adSeen <- a = "1"
         let _, ids, prog = Progress.decode (today ()) (if isNullOrUndefined d then "" else d)
         dailyIds <- ids
         dailyProg <- prog
@@ -55,6 +58,16 @@ let loadProgress () =
         dailyIds <- ids
         dailyProg <- prog
         printfn "Failed to load progress: %s" e.Message
+
+/// Skip exactly the player's first-ever midgame ad, per CrazyGames' guidance
+/// against ads early in a new player's first session; every ad after is shown.
+let markAdSeen () =
+    if not adSeen then
+        adSeen <- true
+        try
+            CrazyGames.dataSetItem ("nda-ad-seen", "1")
+        with e ->
+            printfn "Failed to save ad-seen: %s" e.Message
 
 let saveProgress () =
     try
