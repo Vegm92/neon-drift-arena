@@ -161,7 +161,7 @@
       import { step, initial } from "./build/Core/Sim.js";
       import { v } from "./build/Core/Vec.js";
       import { Cfg_tunables, weaponAmmo, Weapon, Input, noInput } from "./build/Core/Domain.js";
-      import { empty, toArray } from "./build/fable_modules/fable-library-js.5.16.0/List.js";
+      import { empty, toArray } from "./build/fable_modules/fable-library-js.5.15.0/List.js";
       import { create, draw } from "./build/UI/Render/Render.js";
       import { init as sfxInit, play as sfxPlay, thrust as sfxThrust, track as sfxTrack, silence as sfxSilence } from "./build/Platform/Sfx.js";
 
@@ -397,7 +397,9 @@
         { name: "sentryDamage", label: "Sentry Damage", min: 1, max: 60, step: 1, default: 12 },
         { name: "bubbleRadius", label: "Bubble Radius", min: 60, max: 600, step: 10, default: 220 },
         { name: "bubbleLife", label: "Bubble Lifetime", min: 1, max: 20, step: 0.5, default: 4 },
-        { name: "bubbleFactor", label: "Bubble Time Scale", min: 0.05, max: 1, step: 0.05, default: 0.4 }
+        { name: "bubbleFactor", label: "Bubble Time Scale", min: 0.05, max: 1, step: 0.05, default: 0.4 },
+        { name: "strafeAccel", label: "Side Thrusters (Strafe)", min: 20, max: 300, step: 5, default: 90 },
+        { name: "reverseFactor", label: "Reverse Thrust Factor", min: 0.05, max: 1, step: 0.05, default: 0.25 }
       ];
 
       const createSliders = () => {
@@ -477,6 +479,24 @@
         const standardSliders = ["bulletSpeed", "bulletDamage", "recoil", "heatPerShot", "overheatLock"];
         activeSliders.forEach(s => {
           if (standardSliders.includes(s.name)) {
+            appendSlider(s);
+          }
+        });
+
+        // 4. Movement / Maneuver Thruster Tuning (always visible)
+        const moveDivider = document.createElement("h3");
+        moveDivider.style.marginTop = "14px";
+        moveDivider.style.marginBottom = "6px";
+        moveDivider.style.fontSize = "10px";
+        moveDivider.style.color = "#6a8";
+        moveDivider.style.textTransform = "uppercase";
+        moveDivider.style.borderBottom = "1px dashed rgba(28, 42, 58, 0.4)";
+        moveDivider.style.paddingBottom = "2px";
+        moveDivider.textContent = "Maneuver Thrusters";
+        tuningContainer.appendChild(moveDivider);
+        const moveSliders = ["strafeAccel", "reverseFactor"];
+        activeSliders.forEach(s => {
+          if (moveSliders.includes(s.name)) {
             appendSlider(s);
           }
         });

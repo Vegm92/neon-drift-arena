@@ -102,10 +102,10 @@ module Cfg =
     let shipRadius = 18.
     let mutable turnRate = 4.2
     let mutable thrustAccel = 110.
-    let mutable reverseFactor = 0.25
+    let mutable reverseFactor = 0.55
     let mutable boostAccel = 320.
     let mutable maxSpeed = 270.
-    let mutable strafeAccel = 90.
+    let mutable strafeAccel = 130.
     let mutable drag = 0.078
     let boostMax = 100.
     let mutable boostDrain = 20.9
@@ -124,7 +124,10 @@ module Cfg =
     let respawnDelay = 3.
     let invulnTime = 1.5
     let restitution = 0.85
-    let mutable ramDamageFactor = 0.09
+    let mutable ramDamageFactor = 0.372
+    let mutable ramFaceGuard = 0.6
+    let mutable ramParryFace = 0.8
+    let mutable ramParryStun = 2.
     let mutable ramSeparate = 6.
     let mutable ramEventSpeed = 40.
     let physicsDt = 1. / 120.
@@ -262,6 +265,9 @@ module Cfg =
            "bulletKnockback", (fun () -> bulletKnockback), (fun x -> bulletKnockback <- x)
            "recoil", (fun () -> recoil), (fun x -> recoil <- x)
            "ramDamageFactor", (fun () -> ramDamageFactor), (fun x -> ramDamageFactor <- x)
+           "ramFaceGuard", (fun () -> ramFaceGuard), (fun x -> ramFaceGuard <- x)
+           "ramParryFace", (fun () -> ramParryFace), (fun x -> ramParryFace <- x)
+           "ramParryStun", (fun () -> ramParryStun), (fun x -> ramParryStun <- x)
            "ramSeparate", (fun () -> ramSeparate), (fun x -> ramSeparate <- x)
            "ramEventSpeed", (fun () -> ramEventSpeed), (fun x -> ramEventSpeed <- x)
            "asteroidStun", (fun () -> asteroidStun), (fun x -> asteroidStun <- x)
