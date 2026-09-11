@@ -19,6 +19,9 @@ const call = (f) => { try { f(); } catch (e) { console.error(e); } };
 export function gameplayStart() { if (sdk) call(() => sdk.game.gameplayStart()); }
 export function gameplayStop() { if (sdk) call(() => sdk.game.gameplayStop()); }
 
+export function loadingStart() { if (sdk) call(() => sdk.game.loadingStart()); }
+export function loadingStop() { if (sdk) call(() => sdk.game.loadingStop()); }
+
 export function getInviteRoom() {
   if (sdk) {
     try { const r = sdk.game.getInviteParam("roomId"); if (r) return r; } catch (e) { console.error(e); }
