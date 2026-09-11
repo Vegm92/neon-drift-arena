@@ -47,8 +47,8 @@ let init () =
                 error
                     (string e?message)
                     (createObj
-                        [ "at" ==> string e?filename + ":" + string e?lineno
-                          "stack" ==> (if isNullOrUndefined e?error then "" else string e?error?stack) ])
+                        [ "at" ==> string e?filename + ":" + string e?lineno + ":" + string e?colno
+                          "stack" ==> (if isNullOrUndefined e?error?stack then "" else string e?error?stack) ])
     )
     window.addEventListener (
         "unhandledrejection",
