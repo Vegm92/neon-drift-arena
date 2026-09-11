@@ -22,7 +22,10 @@ let showTutorial () =
                 let keys = caps |> List.map (sprintf "<i>%s</i>") |> String.concat ""
                 sprintf "<div class=\"row\"><div class=\"keys\">%s</div><div class=\"lbl\">%s</div></div>" keys label)
             |> String.concat ""
-        tutEl.innerHTML <- sprintf "<h2>%s</h2><div class=\"rows\">%s</div><div class=\"skip\">%s</div>" Strings.t.TutTitle rows Strings.t.TutSkip
+        tutEl.innerHTML <-
+            sprintf
+                "<div class=\"tp\"><div class=\"lt\">%s<b>%s</b></div><div class=\"rows\">%s</div></div><div class=\"skip\">%s</div>"
+                (Menu.deviceIcon "kb") Strings.t.TutTitle rows Strings.t.TutSkip
         tutEl.className <- ""
         tutShown <- true
 

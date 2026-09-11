@@ -141,17 +141,24 @@
   @keyframes slamin{0%{transform:scale(3) skewX(-12deg);opacity:0;filter:blur(6px) brightness(3)}100%{transform:scale(1) skewX(-12deg);opacity:1}}
   @keyframes rumble{0%,100%{transform:skewX(-12deg) translate(0,0)}20%{transform:skewX(-12deg) translate(-6px,3px)}40%{transform:skewX(-12deg) translate(5px,-4px)}60%{transform:skewX(-12deg) translate(-4px,2px)}80%{transform:skewX(-12deg) translate(3px,-2px)}}
   @keyframes score{0%{filter:brightness(3) drop-shadow(0 0 14px #fff)}100%{filter:none}}
-  #tut{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;z-index:8;
+  #tut{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;z-index:8;
     background:rgba(3,3,10,.88);letter-spacing:.2em;text-align:center;animation:fadein .4s ease}
   #tut.hidden{display:none}
-  #tut h2{font-size:clamp(18px,4vh,32px);margin:0;text-shadow:0 0 14px #00f6ff;color:#fff}
+  #tut .tp{color:#00f6ff;padding:22px 34px;border:1px solid currentColor;
+    background:linear-gradient(rgba(8,14,26,.85),rgba(4,6,12,.92));box-shadow:0 0 30px -6px currentColor;
+    clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px)}
+  #tut .lt{display:flex;align-items:center;justify-content:center;gap:10px;font-size:clamp(16px,3.4vh,28px);
+    text-shadow:0 0 14px currentColor;border-bottom:1px solid currentColor;padding-bottom:14px;margin-bottom:16px}
+  #tut .lt svg{width:26px;height:26px;filter:drop-shadow(0 0 6px currentColor)}
   #tut .rows{display:flex;flex-direction:column;gap:14px;font-size:clamp(11px,1.8vh,16px)}
-  #tut .row{display:flex;align-items:center;gap:14px;justify-content:center}
+  #tut .row{display:flex;align-items:center;gap:18px;justify-content:space-between}
   #tut .keys{display:flex;gap:5px}
-  #tut .keys i{font-style:normal;padding:3px 10px;border:1px solid #3a557a;border-radius:4px;background:rgba(255,255,255,.06);
+  #tut .keys i{font-style:normal;padding:4px 11px;border:1px solid #3a557a;border-radius:4px;color:#cfe;
+    background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.02));
+    box-shadow:0 2px 0 rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08);
     font-size:clamp(10px,1.5vh,14px);min-width:1.6em;text-align:center}
-  #tut .lbl{opacity:.75;min-width:120px;text-align:left}
-  #tut .skip{margin-top:8px;font-size:clamp(10px,1.4vh,13px);opacity:.45;letter-spacing:.3em}
+  #tut .lbl{opacity:.75;min-width:120px;text-align:left;color:#cfe}
+  #tut .skip{font-size:clamp(10px,1.4vh,13px);opacity:.5;letter-spacing:.3em}
   @keyframes fadein{from{opacity:0}to{opacity:1}}
   #menu{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;letter-spacing:.3em;text-align:center;
     background:linear-gradient(rgba(3,3,10,.78),rgba(3,3,10,.9)),url(/backdrop.jpg) center/cover no-repeat #03030a}
@@ -235,8 +242,12 @@
   #menu .lobby .legends{display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:clamp(8px,1.4vw,22px);width:100%}
   #menu .lobby .legend.invite{color:#b6ff3b;display:flex;align-items:center;justify-content:center;text-align:center;max-width:150px;cursor:pointer;user-select:none}
   #menu .lobby .legend.invite.copied{color:#0a1220;background:#b6ff3b;border-color:#b6ff3b}
-  #menu .lobby .legend{padding:6px 12px;text-align:left;border:1px solid #26405e;border-radius:6px;background:rgba(8,14,26,.5)}
-  #menu .lobby .legend:first-child{color:#00f6ff}.lobby .legend:last-child{color:#ff2bd6}
+  #menu .lobby .legend{padding:8px 12px;text-align:left;border:1px solid currentColor;border-radius:0;color:#7a8bb0;
+    background:linear-gradient(rgba(8,14,26,.75),rgba(4,6,12,.85));box-shadow:0 0 18px -8px currentColor;
+    clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+  #menu .lobby .legend.kb{color:#00f6ff}
+  #menu .lobby .legend.pad{color:#ff2bd6}
+  #menu .lobby .legend.phone{color:#7cff3a}
   #menu .lobby .legend.qr{color:#00f6ff;display:flex;align-items:center;max-width:170px;cursor:pointer}
   #menu .lobby .legend.qr summary{list-style:none;text-align:center}
   #menu .lobby .legend.qr summary::-webkit-details-marker{display:none}
@@ -246,7 +257,10 @@
   #menu .lobby .legend.qr[open] .big{display:block}
   #menu .lobby .legend.qr svg{width:min(70vh,70vw);height:auto;filter:drop-shadow(0 0 10px rgba(0,246,255,.5))}
   #menu .lobby .legend.qr .url{margin-top:12px;font-size:clamp(11px,1.4vw,18px);letter-spacing:.1em;color:#cfe;opacity:.7}
-  #menu .lobby .lt{font-size:clamp(9px,1vw,13px);letter-spacing:.24em;text-shadow:0 0 12px currentColor}
+  #menu .lobby .lt{display:flex;align-items:center;gap:7px;font-size:clamp(9px,1vw,13px);letter-spacing:.24em;text-shadow:0 0 12px currentColor;
+    border-bottom:1px solid currentColor;padding-bottom:6px;margin-bottom:6px}
+  #menu .lobby .lt svg{width:16px;height:16px;flex:none;filter:drop-shadow(0 0 4px currentColor)}
+  #menu .lobby .lt b{font-weight:700}
   #menu .lobby .keys{display:flex;flex-wrap:wrap;justify-content:space-around;gap:6px 4px;margin-top:6px;color:#cfe}
   #menu .lobby .key{text-align:center}
   #menu .lobby .caps{display:flex;gap:4px;justify-content:center}
@@ -254,24 +268,24 @@
     font-size:clamp(9px,1vw,14px);background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.02));
     box-shadow:0 2px 0 rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08)}
   #menu .lobby .key span{display:block;margin-top:4px;font-size:clamp(8px,.8vw,10px);letter-spacing:.18em;opacity:.75}
-  #menu .lobby .legend:first-child .keys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px 4px}
-  #menu .lobby .legend:first-child .key:nth-child(1){grid-column:3/5;grid-row:1}
-  #menu .lobby .legend:first-child .key:nth-child(2){grid-column:1/3;grid-row:2}
-  #menu .lobby .legend:first-child .key:nth-child(3){grid-column:1/3;grid-row:1}
-  #menu .lobby .legend:first-child .key:nth-child(4){grid-column:1/2;grid-row:3}
-  #menu .lobby .legend:first-child .key:nth-child(5){grid-column:2/3;grid-row:3}
-  #menu .lobby .legend:first-child .key:nth-child(6){grid-column:3/5;grid-row:2}
-  #menu .lobby .legend:first-child .key:nth-child(7){grid-column:3/4;grid-row:3}
-  #menu .lobby .legend:first-child .key:nth-child(8){grid-column:4/5;grid-row:3}
-  #menu .lobby .legend:nth-child(2) .keys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px 4px}
-  #menu .lobby .legend:nth-child(2) .key:nth-child(1){grid-column:1/3;grid-row:2}
-  #menu .lobby .legend:nth-child(2) .key:nth-child(2){grid-column:3/5;grid-row:2}
-  #menu .lobby .legend:nth-child(2) .key:nth-child(3){grid-column:1/3;grid-row:1}
-  #menu .lobby .legend:nth-child(2) .key:nth-child(4){grid-column:3/4;grid-row:1}
-  #menu .lobby .legend:nth-child(2) .key:nth-child(5){grid-column:4/5;grid-row:1}
-  #menu .lobby .legend:nth-child(2) .key:nth-child(6){grid-column:1/3;grid-row:3}
-  #menu .lobby .legend:nth-child(2) .key:nth-child(7){grid-column:3/5;grid-row:3}
-  #menu .lobby .legend:nth-child(3) .keys{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 4px}
+  #menu .lobby .legend.kb .keys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px 4px}
+  #menu .lobby .legend.kb .key:nth-child(1){grid-column:3/5;grid-row:1}
+  #menu .lobby .legend.kb .key:nth-child(2){grid-column:1/3;grid-row:2}
+  #menu .lobby .legend.kb .key:nth-child(3){grid-column:1/3;grid-row:1}
+  #menu .lobby .legend.kb .key:nth-child(4){grid-column:1/2;grid-row:3}
+  #menu .lobby .legend.kb .key:nth-child(5){grid-column:2/3;grid-row:3}
+  #menu .lobby .legend.kb .key:nth-child(6){grid-column:3/5;grid-row:2}
+  #menu .lobby .legend.kb .key:nth-child(7){grid-column:3/4;grid-row:3}
+  #menu .lobby .legend.kb .key:nth-child(8){grid-column:4/5;grid-row:3}
+  #menu .lobby .legend.pad .keys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px 4px}
+  #menu .lobby .legend.pad .key:nth-child(1){grid-column:1/3;grid-row:2}
+  #menu .lobby .legend.pad .key:nth-child(2){grid-column:3/5;grid-row:2}
+  #menu .lobby .legend.pad .key:nth-child(3){grid-column:1/3;grid-row:1}
+  #menu .lobby .legend.pad .key:nth-child(4){grid-column:3/4;grid-row:1}
+  #menu .lobby .legend.pad .key:nth-child(5){grid-column:4/5;grid-row:1}
+  #menu .lobby .legend.pad .key:nth-child(6){grid-column:1/3;grid-row:3}
+  #menu .lobby .legend.pad .key:nth-child(7){grid-column:3/5;grid-row:3}
+  #menu .lobby .legend.phone .keys{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 4px}
   #menu .list{display:flex;flex-direction:column;gap:8px}
   #menu .item{padding:8px 32px;font-size:14px;opacity:.45;border:1px solid transparent}
   #menu .item.sel{opacity:1;border-color:#00f6ff;box-shadow:0 0 14px #00f6ff}
