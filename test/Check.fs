@@ -395,6 +395,20 @@ let main _ =
     let swerve = bot rolling 0
     check "bot swerves around a rock in its path" (match swerve.Aim with Some a -> abs a > 0.5 | None -> false)
     check "bot holds fire when a rock blocks the shot" (not swerve.Fire && swerve.Thrust)
+    let headOn hp0 =
+        duel |> place 1 (v 200. 0.) System.Math.PI
+        |> edit 0 (fun s -> { s with Vel = v 250. 0.; Hp = hp0; Shield = 0. })
+        |> edit 1 (fun s -> { s with Vel = v (-250.) 0.; Hp = 20.; Shield = 0. })
+    let veering = bot (headOn 20.) 0
+    check "bot veers from a head-on that would kill it" (match veering.Aim with Some a -> abs a > 0.5 && veering.Thrust && veering.Boost | None -> false)
+    check "bot keeps a ram that only kills the target" ((bot (headOn 100.) 0).Aim = Some 0.)
+    let sucked = bot { duel with Hole = Some { Pos = v 150. 0.; Life = 5. } } 0
+    check "bot flees a gravity well" (match sucked.Aim with Some a -> abs a > 2.5 && sucked.Thrust && sucked.Boost | None -> false)
+    let padAim kind (b: Input) =
+        let p = duel.Pads |> Array.filter (fun p -> p.Kind = kind && p.RespawnIn <= 0.) |> Array.minBy (fun p -> len p.Pos)
+        match b.Aim with Some a -> abs (atan2 (sin (a - atan2 p.Pos.Y p.Pos.X)) (cos (a - atan2 p.Pos.Y p.Pos.X))) < 0.2 && b.Thrust | None -> false
+    check "bot heads for a boost pad when dry" (bot (duel |> place 1 (v 0. 1200.) 0. |> edit 0 (fun s -> { s with Boost = 5. })) 0 |> padAim 0)
+    check "bot heads for a heal pad when hurting" (bot (duel |> place 1 (v 0. 1200.) 0. |> edit 0 (fun s -> { s with Hp = 10. })) 0 |> padAim 1)
 
     let out = w0 |> place 0 zero 0. |> edit 0 (fun s -> { s with Alive = false; Stocks = 0; LaunchAngle = 0. })
     let turning = run 12 (Array.init 4 (fun i -> if i = 0 then { present with Turn = 1. } else present)) out
