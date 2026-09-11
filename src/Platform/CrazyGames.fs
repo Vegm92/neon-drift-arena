@@ -13,6 +13,12 @@ let gameplayStart () : unit = jsNative
 [<Import("gameplayStop", "./CrazyGames.js")>]
 let gameplayStop () : unit = jsNative
 
+[<Import("loadingStart", "./CrazyGames.js")>]
+let loadingStart () : unit = jsNative
+
+[<Import("loadingStop", "./CrazyGames.js")>]
+let loadingStop () : unit = jsNative
+
 [<Import("getInviteRoom", "./CrazyGames.js")>]
 let getInviteRoom () : string = jsNative
 

@@ -34,6 +34,7 @@ let hideTutorial () =
 
 async {
     do! CrazyGames.init(Sfx.setCrazyGamesMuted) |> Async.AwaitPromise
+    CrazyGames.loadingStart ()
     Input.initNetwork ()
     Menu.initUser ()
     if not (CrazyGames.isInstantMultiplayer ()) then showTutorial ()
@@ -46,6 +47,7 @@ async {
 
 let view = Render.create ()
 let banner = document.getElementById "banner"
+CrazyGames.loadingStop ()
 document.getElementById("loader").className <- "done"
 
 let mutable private adPlaying = false
