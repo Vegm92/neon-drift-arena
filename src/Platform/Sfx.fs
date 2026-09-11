@@ -112,12 +112,19 @@ let private assetRoot = if window.location.pathname.Contains "/play/" then "../"
 
 let private battle = [| "battle1"; "battle2"; "battle3" |]
 let mutable private inMenu = true
+let mutable private musicOn = true
+
+// Music only, independent of the SFX mute flags above and never persisted --
+// for sandboxes/tools that want thruster/weapon sound but no background track.
+let setMusicMuted (v: bool) =
+    musicOn <- not v
+    if musicOn then music.play () |> ignore else music.pause ()
 
 let private pick () =
     let name = if inMenu then "menu" else battle.[rnd.Next battle.Length]
     music.src <- sprintf "%smusic/%s.mp3" assetRoot name
     music.loop <- inMenu
-    music.play () |> ignore
+    if musicOn then music.play () |> ignore
 
 let private build () =
     ctx <- newCtx ()
@@ -347,6 +354,10 @@ let play (events: Event list) =
                 if bumps < 2 then
                     bumps <- bumps + 1
                     bump p
+            | Parried(p, _, _) ->
+                if bumps < 2 then
+                    bumps <- bumps + 1
+                    cooked p
             | Pickup(p, big) -> pickup p big
             | Mend p -> mend p
             | Grab p -> grab p
@@ -371,11 +382,16 @@ let play (events: Event list) =
 let thrust (w: World) =
     if ready () then
         let ships = w.Ships |> Array.filter (fun s -> s.Alive && s.Thrusting > 0.)
-        let level = ships |> Array.sumBy (fun s -> if s.Thrusting > 1. then 0.09 else 0.035)
+        let level =
+            ships
+            |> Array.sumBy (fun s -> if s.Thrusting > 1. then Cfg.sfxBoostVolume else Cfg.sfxThrustVolume)
         let speed = ships |> Array.fold (fun acc s -> max acc (Vec.len s.Vel)) 0.
         let t = now () + 0.05
-        engine.gain.linearRampToValueAtTime (min 0.16 level, t)
-        engineCut.frequency.linearRampToValueAtTime (180. + speed / Cfg.maxSpeed * 620., t)
+        engine.gain.linearRampToValueAtTime (min Cfg.sfxThrustVolumeMax level, t)
+        engineCut.frequency.linearRampToValueAtTime (
+            Cfg.sfxThrustPitchBase + speed / Cfg.maxSpeed * Cfg.sfxThrustPitchRange,
+            t
+        )
 
 let silence () =
     if not (isNullOrUndefined (box ctx)) then

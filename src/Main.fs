@@ -234,6 +234,7 @@ let private announce (w: World) (events: Event list) =
         | Medal(i, "holekill") -> say (sprintf "%s: %s" (name i) Strings.t.HoleKill)
         | Medal(i, "abductkill") -> say (sprintf "%s: %s" (name i) Strings.t.AbductKill)
         | Medal(i, "gravekill") -> say (sprintf "%s: %s" (name i) Strings.t.GraveKill)
+        | Parried(_, a, b) -> say (Strings.t.Parry (name a) (name b))
         | _ -> ()
     if Sim.sudden w && not suddenSaid then
         suddenSaid <- true
@@ -313,6 +314,7 @@ let private eventOf (e: obj) : Event =
     | "Shot" -> Shot(a 1)
     | "Ram" -> Ram(a 1)
     | "Bump" -> Bump(a 1)
+    | "Parried" -> Parried(a 1, a 2, a 3)
     | "Pickup" -> Pickup(a 1, a 2)
     | "Mend" -> Mend(a 1)
     | "Grab" -> Grab(a 1)

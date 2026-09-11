@@ -14,7 +14,7 @@ let private pickSpawn (ships: Ship[]) rng (s: Ship) =
     let safety p =
         if foes.Length = 0 then 0. else foes |> Array.map (fun t -> len (t.Pos - p)) |> Array.min
     let ranked = [| 0..3 |] |> Array.sortByDescending (fun i -> safety (spawnPos i))
-    ranked.[(rng + s.Id * 7919) % 2]
+    ranked.[rngIndex 2 (rng + s.Id * 7919)]
 
 let private underdog (ships: Ship[]) (s: Ship) =
     let rivals = ships |> Array.filter (fun t -> t.Active && t.Stocks > 0 && side t <> side s)

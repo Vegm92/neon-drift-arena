@@ -116,7 +116,7 @@ module Cfg =
     let mutable fireCooldown = 0.11
     let mutable bulletSpeed = 560.
     let bulletLife = 1.3
-    let mutable bulletDamage = 20.
+    let mutable bulletDamage = 15.
     let mutable bulletKnockback = 40.
     let mutable recoil = 4.08
     let hpMax = 100.
@@ -124,7 +124,10 @@ module Cfg =
     let respawnDelay = 3.
     let invulnTime = 1.5
     let restitution = 0.85
-    let mutable ramDamageFactor = 0.09
+    let mutable ramDamageFactor = 0.372
+    let mutable ramFaceGuard = 0.6
+    let mutable ramParryFace = 0.8
+    let mutable ramParryStun = 2.
     let mutable ramSeparate = 6.
     let mutable ramEventSpeed = 40.
     let physicsDt = 1. / 120.
@@ -132,7 +135,7 @@ module Cfg =
     let mutable asteroidSpin = 6.3
 
     let heatMax = 100.
-    let mutable heatPerShot = 15.
+    let mutable heatPerShot = 14.5
     let mutable heatCool = 50.
 
     let mutable hurtBelow = 25.
@@ -149,7 +152,7 @@ module Cfg =
 
     let mutable railCharge = 1.5
     let mutable railDamage = 100.
-    let mutable railRecoil = 46.
+    let mutable railRecoil = 69.
     let railAmmo = 2
 
     let mineRadius = 11.
@@ -168,7 +171,7 @@ module Cfg =
 
     let mutable pulseRange = 340.
     let mutable pulseCone = 0.62
-    let mutable pulseForce = 430.
+    let mutable pulseForce = 1400.
     let pulseAmmo = 3
 
     let mutable scatterRange = bulletSpeed * bulletLife * 0.5
@@ -244,6 +247,28 @@ module Cfg =
     let mutable padAimOn = 0.15
     let mutable padThrustOn = 0.75
 
+    // Exhaust particle: length is how long each puff lives (seconds) once
+    // ejected, not a point count -- it keeps drifting/fading after thrust stops.
+    let mutable trailLength = 1.75
+    let mutable trailBrightness = 0.55
+    let mutable trailStreakBoost = 0.18
+    let mutable trailFlicker = 0.08
+    let mutable trailFlickerSpeed = 24.
+    let mutable trailWidth = 5.
+    let mutable trailDecay = 5.9
+    let mutable trailOffsetX = -21.
+    let mutable trailOffsetY = 0.
+    let mutable trailBoostMult = 1.3
+    let mutable trailEjectSpeed = 106.
+
+    // Engine drone: gain contributed per ship on plain thrust vs boost, the
+    // overall loudness cap, and how the lowpass cutoff tracks speed (pitch).
+    let mutable sfxThrustVolume = 0.005
+    let mutable sfxBoostVolume = 0.01
+    let mutable sfxThrustVolumeMax = 0.08
+    let mutable sfxThrustPitchBase = 40.
+    let mutable sfxThrustPitchRange = 340.
+
     let netStateMs = 100.
 
     let tunables: (string * (unit -> float) * (float -> unit))[] =
@@ -262,6 +287,9 @@ module Cfg =
            "bulletKnockback", (fun () -> bulletKnockback), (fun x -> bulletKnockback <- x)
            "recoil", (fun () -> recoil), (fun x -> recoil <- x)
            "ramDamageFactor", (fun () -> ramDamageFactor), (fun x -> ramDamageFactor <- x)
+           "ramFaceGuard", (fun () -> ramFaceGuard), (fun x -> ramFaceGuard <- x)
+           "ramParryFace", (fun () -> ramParryFace), (fun x -> ramParryFace <- x)
+           "ramParryStun", (fun () -> ramParryStun), (fun x -> ramParryStun <- x)
            "ramSeparate", (fun () -> ramSeparate), (fun x -> ramSeparate <- x)
            "ramEventSpeed", (fun () -> ramEventSpeed), (fun x -> ramEventSpeed <- x)
            "asteroidStun", (fun () -> asteroidStun), (fun x -> asteroidStun <- x)
@@ -330,7 +358,23 @@ module Cfg =
            "racePulseRange", (fun () -> racePulseRange), (fun x -> racePulseRange <- x)
            "raceBubbleLife", (fun () -> raceBubbleLife), (fun x -> raceBubbleLife <- x)
            "padAimOn", (fun () -> padAimOn), (fun x -> padAimOn <- x)
-           "padThrustOn", (fun () -> padThrustOn), (fun x -> padThrustOn <- x) |]
+           "padThrustOn", (fun () -> padThrustOn), (fun x -> padThrustOn <- x)
+           "trailLength", (fun () -> trailLength), (fun x -> trailLength <- x)
+           "trailBrightness", (fun () -> trailBrightness), (fun x -> trailBrightness <- x)
+           "trailStreakBoost", (fun () -> trailStreakBoost), (fun x -> trailStreakBoost <- x)
+           "trailFlicker", (fun () -> trailFlicker), (fun x -> trailFlicker <- x)
+           "trailFlickerSpeed", (fun () -> trailFlickerSpeed), (fun x -> trailFlickerSpeed <- x)
+           "trailWidth", (fun () -> trailWidth), (fun x -> trailWidth <- x)
+           "trailDecay", (fun () -> trailDecay), (fun x -> trailDecay <- x)
+           "trailOffsetX", (fun () -> trailOffsetX), (fun x -> trailOffsetX <- x)
+           "trailOffsetY", (fun () -> trailOffsetY), (fun x -> trailOffsetY <- x)
+           "trailBoostMult", (fun () -> trailBoostMult), (fun x -> trailBoostMult <- x)
+           "trailEjectSpeed", (fun () -> trailEjectSpeed), (fun x -> trailEjectSpeed <- x)
+           "sfxThrustVolume", (fun () -> sfxThrustVolume), (fun x -> sfxThrustVolume <- x)
+           "sfxBoostVolume", (fun () -> sfxBoostVolume), (fun x -> sfxBoostVolume <- x)
+           "sfxThrustVolumeMax", (fun () -> sfxThrustVolumeMax), (fun x -> sfxThrustVolumeMax <- x)
+           "sfxThrustPitchBase", (fun () -> sfxThrustPitchBase), (fun x -> sfxThrustPitchBase <- x)
+           "sfxThrustPitchRange", (fun () -> sfxThrustPitchRange), (fun x -> sfxThrustPitchRange <- x) |]
 
 type Input =
     { Turn: float
@@ -502,6 +546,7 @@ type Event =
     | Shot of V2
     | Ram of V2
     | Bump of V2
+    | Parried of V2 * int * int
     | Pickup of V2 * bool
     | Mend of V2
     | Grab of V2

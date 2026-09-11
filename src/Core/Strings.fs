@@ -112,6 +112,7 @@ type Locale =
       AbductMedal: string
       GraveKill: string
       GraveMedal: string
+      Parry: string -> string -> string
       OnFireMedal: string
       Deadeye: string
       Flawless: string
@@ -330,6 +331,7 @@ let en =
       AbductMedal = "ABDUCTOR"
       GraveKill = "FROM THE GRAVE!"
       GraveMedal = "FROM THE GRAVE"
+      Parry = fun a b -> sprintf "%s AND %s CLASH!" a b
       OnFireMedal = "ON FIRE"
       Deadeye = "DEADEYE"
       Flawless = "FLAWLESS"

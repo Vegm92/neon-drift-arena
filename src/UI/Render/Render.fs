@@ -92,6 +92,9 @@ let draw (vw: View) (w: World) (events: Event list) dt =
         | Medal _ -> ()
         | Ram p -> spawnBurst vw p 0xffffff 16 200.
         | Bump p -> spawnBurst vw p 0xff9955 8 130.
+        | Parried(p, _, _) ->
+            spawnBurst vw p 0xffffff 18 220.
+            spawnRing vw p 0xffffff (shipRadius + 8.) 2.2 0.35
         | Pickup(p, big) -> spawnBurst vw p 0x33ffcc (if big then 26 else 14) 150.
         | Mend p ->
             spawnBurst vw p 0xff4d9d 20 140.
@@ -168,7 +171,7 @@ let draw (vw: View) (w: World) (events: Event list) dt =
         | Finished(i, _) -> spawnBurst vw w.Ships.[i].Pos (shipColor w.Ships.[i]) 40 260.
         | Shot _ -> ()
     drawSmoke vw w dt
-    Array.iter2 (drawShip w.Time vw) vw.Ships w.Ships
+    Array.iter2 (drawShip w.Time dt vw) vw.Ships w.Ships
     Array.iter2 (drawTether w.Time w) vw.Ships w.Ships
     Array.iter2 (drawWarn w.Time w) vw.Ships w.Ships
     drawBorder vw w

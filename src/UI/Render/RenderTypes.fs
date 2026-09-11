@@ -13,7 +13,7 @@ let teamColors = [| 0; 0x3b7bff; 0xff3b5c |]
 let shipColor (s: Ship) =
     if s.Team > 0 then teamColors.[s.Team] else colors.[playerColor.[s.Id]]
 
-let trailLen = 48
+let trailLen = 240
 let bulletPool = 96
 let minePool = 24
 let rockPool = 8
@@ -59,6 +59,16 @@ let lineMat hex opacity =
         box {| color = hex; transparent = true; opacity = opacity; blending = Three.three.AdditiveBlending |}
     )
 
+// One ejected exhaust puff: drifts and fades on its own once spawned,
+// independent of where the ship goes afterward.
+type TrailParticle =
+    { mutable PX: float
+      mutable PZ: float
+      VX: float
+      VZ: float
+      mutable Age: float
+      MaxAge: float }
+
 type ShipView =
     { Shield: Mesh
       Vent: Mesh
@@ -73,7 +83,8 @@ type ShipView =
       Warn: Mesh
       Mark: Mesh
       Trail: Mesh
-      History: ResizeArray<V2> }
+      History: ResizeArray<V2>
+      Particles: ResizeArray<TrailParticle> }
 
 let ventSegments = 48
 
