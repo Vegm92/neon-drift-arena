@@ -40,6 +40,36 @@ let private dodge (me: Ship) =
     |> Array.tryHead
     |> Option.map (fun (_, side) -> atan2 dir.Y dir.X - (if side >= 0. then 1. else -1.) * 0.9)
 
+let private ramDmg (hitter: Ship) (victim: Ship) =
+    let n = norm (victim.Pos - hitter.Pos)
+    let face = max 0. (dot (ofAngle victim.Angle) (n * -1.))
+    max 0. (dot hitter.Vel n) * ramDamageFactor * (1. - ramFaceGuard * face)
+
+let private veer (me: Ship) (t: Ship) =
+    let n = norm (t.Pos - me.Pos)
+    let closing = dot (me.Vel - t.Vel) n
+    let contact = (len (t.Pos - me.Pos) - 2. * shipRadius) / max 1. closing
+    if closing > 0. && contact < 1. && ramDmg t me >= me.Hp + me.Shield then
+        let side = n.X * t.Vel.Y - n.Y * t.Vel.X
+        Some(atan2 n.Y n.X - (if side >= 0. then 1. else -1.) * Math.PI / 2.)
+    else
+        None
+
+let private fleeHole (me: Ship) (w: World) =
+    w.Hole
+    |> Option.filter (fun h -> len (h.Pos - me.Pos) < 1.5 * sqrt (holeGNow () / thrustAccel))
+    |> Option.map (fun h -> let d = me.Pos - h.Pos in atan2 d.Y d.X)
+
+let private seekPad (me: Ship) (w: World) =
+    let need = if hurting me && not (sudden w) then Some 1 elif me.Boost < 20. then Some 0 else None
+    need
+    |> Option.bind (fun k ->
+        w.Pads
+        |> Array.filter (fun p -> p.Kind = k && p.RespawnIn <= 0.)
+        |> Array.sortBy (fun p -> len (p.Pos - me.Pos))
+        |> Array.tryHead)
+    |> Option.map (fun p -> let d = p.Pos - me.Pos in atan2 d.Y d.X)
+
 let bot (w: World) i =
     let me = w.Ships.[i]
     let idle = { noInput with Present = true }
@@ -76,19 +106,22 @@ let bot (w: World) i =
             let shot = lead me t
             let d = shot - me.Pos
             let dodging = dodge me
+            let escaping = fleeHole me w |> Option.orElse (veer me t)
+            let seeking = seekPad me w
             let aim =
                 if abs me.Pos.X > arenaHalf * k - 220. || abs me.Pos.Y > arenaHalf * k - 220. then
                     atan2 -me.Pos.Y -me.Pos.X
                 else
-                    defaultArg dodging (atan2 d.Y d.X)
+                    escaping |> Option.orElse dodging |> Option.orElse seeking |> Option.defaultValue (atan2 d.Y d.X)
             let off = abs (atan2 (sin (aim - me.Angle)) (cos (aim - me.Angle)))
-            let facing = off < 0.25 && dodging.IsNone && not (rockBetween me.Pos shot)
+            let toShot = atan2 d.Y d.X
+            let facing = abs (atan2 (sin (toShot - me.Angle)) (cos (toShot - me.Angle))) < 0.25 && dodging.IsNone && not (rockBetween me.Pos shot)
             let hold = me.Weapon = Rail || me.Weapon = Tractor
             let charged = me.Weapon = Rail && me.Charge >= railCharge
             { idle with
                 Aim = Some aim
                 Steer = true
-                Thrust = dodging.IsSome || dist > 320. || off > 0.6
-                Boost = dist > 900. && me.Boost > 40.
+                Thrust = escaping.IsSome || seeking.IsSome || dodging.IsSome || dist > 320. || off > 0.6
+                Boost = (escaping.IsSome && me.Boost > 0.) || (dist > 900. && me.Boost > 40.)
                 Fire = facing && dist < 650.
                 Special = not charged && facing && dist < 520. && me.Weapon <> Blaster && (hold || int (w.Time * 2.) % 2 = 0) }
