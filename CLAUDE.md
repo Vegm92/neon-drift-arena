@@ -1,11 +1,11 @@
-# Neon Drift Arena
+﻿# Neon Drift Arena
 
 Fable 5 (F# → JS) + Vite + Three.js couch brawler. `README.md` is the commercial front page; read `GAMEPLAY.md` for rules and controls and `DEVELOPING.md` for build, deploy and file layout.
 
 ## Commands
 
 - `npm run dev` — Fable watch + Vite dev server.
-- `npm run check` — headless simulation assertions (`dotnet run --project test`) followed by `check:js`. Run after touching `Sim.fs`, `Domain.fs` or `Progress.fs`.
+- `npm run check` — headless simulation assertions (`dotnet run --project test`) followed by `check:js`. Run after touching `Sim.fs`, `Domain.fs`, `Impact.fs`, `Collisions.fs`, `Bot.fs` or `Progress.fs`.
 - `npm run check:sim` — compiles with Fable and runs the golden sim scenario under node (`test/determinism-check.mjs`), asserting the same hash the .NET suite asserts. Part of `npm run check`.
 - `npm run retune` — accepts a deliberate sim change: recomputes the golden hash, writes it into `Core/Determinism.fs` and stages it.
 - `npm run check:js` — runs `Progress.fs` through its compiled JS (`test/progress-check.mjs`). The .NET suite cannot see Fable's number model: `uint32` overflow arithmetic silently loses precision in JS and `Array.zeroCreate` yields nulls, so anything numeric in `Progress.fs` needs a compiled-output assertion too.
@@ -13,7 +13,9 @@ Fable 5 (F# → JS) + Vite + Three.js couch brawler. `README.md` is the commerci
 
 ## Constraints
 
-- `Core/Vec.fs`, `Core/Domain.fs`, `Core/Sim.fs` stay free of Fable/browser dependencies so `test/Check.fsproj` can compile them on plain .NET.
+- `Core/Vec.fs`, `Core/Domain.fs`, `Core/Impact.fs`, `Core/Sim.fs` stay free of Fable/browser dependencies so `test/Check.fsproj` can compile them on plain .NET.
+- `Core/Impact.fs` is the only place a ship's collision response is computed — asteroids, thrown rocks, deployed walls and ship-on-ship rams all go through `apply` or `pair`. The hull is a unit-mass disc of inertia `r²/2`, and torque comes only from the tangential scrape at the contact, so a square hit spins nothing and a glancing one spins hard. Never hand-roll a reflection at a call site: that is what made bumps read as canned, and four call sites each had their own version of it.
+- A bot's wants are a priority chain, and every want belongs *in* it. Wiring one around the chain — an `if` that replaces the aim wholesale — silently outranks fleeing a gravity well and skips the thrust every other want gets; that is how bots ended up parked on the rim. For the same reason no branch may return bare `idle`: a live bot always has somewhere it means to be, and `test/Check.fs` sweeps the arena asserting it.
 - All tunables live in `Domain.Cfg`. Keep `2 * arenaHalf / maxSpeed` inside 8–10 s.
 - `Core/Determinism.fs` is the golden sim scenario, shared by `test/Check.fs` (plain .NET) and `test/determinism-check.mjs` (the Fable output under node). Both run the same 600 scripted steps from `initial` and assert the same `golden` constant, so the constant also proves .NET and Fable/JS agree — measured identical on two independent sims, so a divergence in the number model shows up as a failure here rather than as mirror or ghost drift in the wild. Any change to `Domain.Cfg` or the `step` path moves it; a 0.0001 shift in `thrustAccel` is enough.
 - Changing a tunable is a deliberate act, so the `scripts/hooks/pre-commit` gate asks before letting it through: stage a change under `src/Core`, and it prints the `let mutable` lines in the diff and the old → new hash, then asks `Are you sure you want to commit these tweaks?`. Answering `y` rewrites `golden` and stages it. Outside a terminal (CI, an agent) it refuses and tells you to run `npm run retune`, which is the same acceptance without the prompt. Run `npm run hooks` once per clone to point `core.hooksPath` at `scripts/hooks`. Never delete the check or loosen it to a tolerance.
@@ -27,8 +29,8 @@ Fable 5 (F# → JS) + Vite + Three.js couch brawler. `README.md` is the commerci
 - Domain is `neondriftarena.com` (`siteUrl` in `strings.json`).
 - Desktop only for now. `index.html` and `play/index.html` test `(any-hover: hover) and (any-pointer: fine)` plus `navigator.userAgentData.mobile`; on a phone or tablet the landing CTA turns into DESKTOP ONLY and `/play/` shows the `#gate` screen instead of importing `build/Main.js`. `?desktop=1` overrides the gate. `pad.html` is never gated — it is the phone controller.
 - Three.js bindings in `Three.fs` are hand-written and minimal; add a member only when the renderer uses it.
-- Everything CrazyGames goes through `src/Platform/CrazyGames.fs` → `src/Platform/CrazyGames.js` (SDK v2 loaded from `sdk.crazygames.com` in `index.html` and `play/index.html`): gameplay start/stop, mute, invite rooms, user, ads, banners, data, leaderboard. Never call `window.CrazyGames` from anywhere else, and keep every path relative — `base: "./"` in `vite.config.js` is what lets the build run from a CrazyGames subpath.
-- Ads and banners are menu-only: banners live in `#cg-banner-1` / `#cg-banner-2` (refreshed at most every 31 s, cleared on hide) and the midgame ad runs between the match ending and the result screen. `Sfx.isMuted ()` ORs the CrazyGames mute, the ad mute and the local `M` toggle.
+- Everything CrazyGames goes through `src/Platform/CrazyGames.fs` → `src/Platform/CrazyGames.js` (SDK v3, `crazygames-sdk-v3.js` loaded from `sdk.crazygames.com` in `play/index.html` only): gameplay start/stop, loading start/stop, mute, invite rooms, user, video ads, data. No banners, no leaderboard. Never call `window.CrazyGames` from anywhere else, and keep every path relative — `base: "./"` in `vite.config.js` is what lets the build run from a CrazyGames subpath.
+- Ads and banners are menu-only: banners live in `#cg-banner-1` / `#cg-banner-2` (refreshed at most every 31 s, cleared on hide) and the midgame ad runs between the match ending and the result screen. `Sfx.isMuted ()` ORs the CrazyGames mute and the ad mute; the local `M` toggle silences the music only.
 - The lobby opens pre-seeded: `Menu.fs` claims slot 0 for the keyboard and slot 1 for a bot at load, so a solo player can press Start straight away.
 - Pilot progress lives in `Core/Progress.fs` (pure, shared with `test/Check.fsproj`): XP/level curve, the daily-challenge pool and the date-seeded pick. `Menu.recordMatch` is the only writer, called from `Main.fs` when a match ends; it saves `nda-xp` and `nda-daily` alongside the existing `nda-high-score` and `nda-matches-played` through the CrazyGames `data` module.
 - `Menu.clean ()` tags a match as bot-free (no bot slot, not practice). Bots still earn XP and daily progress — that is the solo loop — but `nda-high-score` only moves on a clean match, so it stays leaderboard-grade. In practice that means two or more humans, since a lobby without bots cannot start solo.

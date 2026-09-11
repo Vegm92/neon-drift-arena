@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>disable</Nullable>
@@ -14,6 +14,7 @@
     <Compile Include="Core\Spawn.fs" />
     <Compile Include="Core\Arena.fs" />
     <Compile Include="Core\Combat.fs" />
+    <Compile Include="Core\Impact.fs" />
     <Compile Include="Core\Kinematics.fs" />
     <Compile Include="Core\Weapons.fs" />
     <Compile Include="Core\Entities.fs" />
