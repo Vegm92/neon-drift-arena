@@ -232,11 +232,23 @@ let main _ =
         |> edit 0 (fun s -> { s with Vel = v 200. 0. }) |> run 3 (all present)
     let s11 = w11.Ships.[0]
     check "asteroid bounces ship back" (s11.Vel.X < 0.)
-    check "asteroid stuns and spins" (s11.Stun > 0. && s11.Spin <> 0.)
+    check "asteroid stuns on impact" (s11.Stun > 0.)
+    // Spin is torque now, not a canned flourish: a square hit has no lever arm
+    // to turn, an off-centre one scrapes and tumbles, and the harder scrape
+    // must tumble harder.
+    check "a square asteroid hit does not spin the ship" (abs s11.Spin < 1e-6)
+    let graze off =
+        (w0 |> place 0 (rock.Pos + v (-(rock.Radius + shipRadius + 2.)) off) 0.
+         |> edit 0 (fun s -> { s with Vel = v 200. 0. }) |> run 3 (all present)).Ships.[0].Spin
+    check "an off-centre asteroid hit spins the ship" (abs (graze 14.) > 1.)
+    check "a deeper scrape spins harder" (abs (graze 14.) > abs (graze 6.))
+    check "opposite sides spin opposite ways" (graze 14. * graze -14. < 0.)
     let w12 = run 10 (Array.init 4 (fun i -> if i = 0 then { present with Turn = 1.; Thrust = true } else present)) w11
     check "stunned ship ignores input" (w12.Ships.[0].Thrusting = 0.)
     let w13 = run (int (asteroidStun / dt) + 2) (all present) w12
-    check "stun wears off" (w13.Ships.[0].Stun = 0. && w13.Ships.[0].Spin = 0.)
+    check "stun wears off" (w13.Ships.[0].Stun = 0.)
+    let spun = w0 |> place 0 zero 0. |> edit 0 (fun s -> { s with Spin = 6. }) |> run 400 (all present)
+    check "a tumble damps down to a clean stop" (spun.Ships.[0].Spin = 0.)
 
     let w14 =
         w0 |> place 0 (rock.Pos + v (-(rock.Radius + 60.)) 0.) 0.
@@ -384,6 +396,27 @@ let main _ =
         { camping with Rng = -1234567 } |> edit 0 (fun s -> { s with Alive = false; RespawnIn = dt / 2. }) |> step dt (all present)
     check "respawn survives a negative rng state" (negativeRng.Ships.[0].Alive && [ 0..3 ] |> List.exists (fun i -> negativeRng.Ships.[0].Pos = spawnPos i))
 
+
+    // Two bots left alone used to open every match by flying straight down each
+    // other's throat, trading both hulls away and burning all three stocks each
+    // inside a minute. The opening has to survive on its own.
+    let feud =
+        setLayout 0
+        let joined = step dt (Array.init 4 (fun i -> if i < 2 then present else noInput)) initial
+        Seq.fold
+            (fun (w, worst) _ ->
+                let w = step dt (Array.init 4 (fun i -> if i < 2 then bot w i else noInput)) w
+                w, min worst (if w.Ships.[0].Alive || w.Ships.[1].Alive then 2 else 0))
+            (joined, 2)
+            (seq { 1 .. 120 * 45 })
+    let feudW, bothDown = feud
+    check "two bots never trade themselves out in the same breath" (bothDown = 2)
+    check "two bots duelling for 45 s do not burn through their stocks"
+        (feudW.Ships.[0].Stocks > 0 && feudW.Ships.[1].Stocks > 0)
+
+
+
+
     let duel = w0 |> place 0 zero 0. |> place 1 (v 300. 0.) 0. |> place 2 (v (-1200.) 1200.) 0. |> place 3 (v 1200. (-1200.)) 0.
     let b = bot duel 0
     check "bot fires at the ship ahead" (b.Fire && b.Aim = Some 0. && not b.Thrust)
@@ -403,6 +436,126 @@ let main _ =
     let veering = bot (headOn 20.) 0
     check "bot veers from a head-on that would kill it" (match veering.Aim with Some a -> abs a > 0.5 && veering.Thrust && veering.Boost | None -> false)
     check "bot keeps a ram that only kills the target" ((bot (headOn 100.) 0).Aim = Some 0.)
+    // A trade that guts both hulls kills both on the next touch, so an even
+    // head-on has to break off even though neither ship dies to this one hit.
+    let mutual =
+        duel |> place 1 (v 200. 0.) System.Math.PI
+        |> edit 0 (fun s -> { s with Vel = v 250. 0.; Angle = 0.3; Hp = hpMax; Shield = 0. })
+        |> edit 1 (fun s -> { s with Vel = v (-250.) 0.; Angle = System.Math.PI - 0.3; Hp = hpMax; Shield = 0. })
+    check "bot breaks off an even head-on instead of trading both hulls away"
+        (match (bot mutual 0).Aim with Some a -> abs a > 0.5 | None -> false)
+    // Turning for the centre used to replace the whole priority chain, so a bot
+    // that drifted out to the rim parked there, nose inward, firing and never
+    // thrusting clear of the band.
+    let rim = duel |> place 0 (v (arenaHalf - 100.) 0.) 0. |> place 1 (v 300. 0.) 0.
+    let back = bot rim 0
+    check "a bot on the rim turns inward and thrusts off it"
+        (match back.Aim with Some a -> abs (abs a - System.Math.PI) < 0.2 && back.Thrust | None -> false)
+    let cornered = duel |> place 0 (v (arenaHalf - 100.) 0.) 0. |> place 1 (v 2000. 0.) 0. |> edit 0 (fun s -> { s with Hp = 5. })
+    check "fleeing the rim outranks hunting a pad" (bot cornered 0).Thrust
+    // With the enemy respawning there is no target, and a bot used to hand back
+    // no input at all: it coasted on its last heading and sailed off the edge.
+    let alone =
+        w0 |> place 0 (v (arenaHalf - 300.) 0.) 0.
+        |> edit 0 (fun s -> { s with Vel = v 240. 0. })
+        |> edit 1 (fun s -> { s with Alive = false; Active = true; RespawnIn = 2.5 })
+        |> edit 2 (fun s -> { s with Alive = false; Active = true; RespawnIn = 2.5 })
+        |> edit 3 (fun s -> { s with Alive = false; Active = true; RespawnIn = 2.5 })
+    let lonely = bot alone 0
+    check "a bot with nobody to chase still flies itself off the rim"
+        (match lonely.Aim with Some a -> abs (abs a - System.Math.PI) < 0.2 && lonely.Steer | None -> false)
+    let survived =
+        Seq.fold (fun w _ -> step dt (Array.init 4 (fun i -> if i = 0 then bot w i else noInput)) w) alone (seq { 1 .. 120 * 4 })
+    check "a bot left alone does not drift out of the arena and die" survived.Ships.[0].Alive
+    // A lull is dead time, so the bar for a detour drops to "not already full".
+    let topping =
+        bot (w0 |> place 0 zero 0. |> edit 0 (fun s -> { s with Boost = boostMax * 0.5 })
+             |> edit 1 (fun s -> { s with Alive = false; Active = true; RespawnIn = 2.5 })
+             |> edit 2 (fun s -> { s with Alive = false; Active = true; RespawnIn = 2.5 })
+             |> edit 3 (fun s -> { s with Alive = false; Active = true; RespawnIn = 2.5 })) 0
+    check "a bot tops up its boost while there is nothing to fight" topping.Thrust
+    // The class of fault behind all of this: a branch that hands back no input
+    // at all, leaving a live ship coasting like scenery. A live bot always has
+    // somewhere it means to be, from anywhere in the arena, with or without a
+    // fight on.
+    let empty =
+        w0 |> edit 1 (fun s -> { s with Alive = false; Active = true; RespawnIn = 2.5 })
+        |> edit 2 (fun s -> { s with Alive = false; Active = true; RespawnIn = 2.5 })
+        |> edit 3 (fun s -> { s with Alive = false; Active = true; RespawnIn = 2.5 })
+    let inert =
+        [ for gx in -4 .. 4 do
+            for gy in -4 .. 4 do
+                let p = v (float gx * arenaHalf / 4.2) (float gy * arenaHalf / 4.2)
+                let b = bot (empty |> place 0 p 0. |> edit 0 (fun s -> { s with Boost = boostMax })) 0
+                if b.Aim.IsNone || not b.Steer then yield p ]
+    check "a live bot is never handed a dead stick, anywhere in the arena" inert.IsEmpty
+    let roaming =
+        Seq.fold (fun w _ -> step dt (Array.init 4 (fun i -> if i = 0 then bot w i else noInput)) w) (empty |> place 0 zero 0.) (seq { 1 .. 120 * 20 })
+    check "a bot with no fight keeps flying instead of parking" (len roaming.Ships.[0].Vel > 40. && roaming.Ships.[0].Alive)
+    let close = duel |> place 1 (v 220. 0.) 0.
+    let weaveA = bot close 0
+    let weaveB = bot { close with Time = close.Time + 0.7 } 0
+    check "bots weave across the line while duelling up close"
+        (weaveA.Strafe <> 0. && weaveB.Strafe <> 0. && weaveA.Strafe <> weaveB.Strafe)
+    check "bots hold a straight line at range" ((bot (duel |> place 1 (v 900. 0.) 0.) 0).Strafe = 0.)
+    // The lead was three rounds of a fixed point that contracts by |v| / speed:
+    // wobbly for the blaster and divergent for the swarm. Fire along the aim it
+    // gives and the shot has to actually arrive with the target.
+    let interceptMiss wpn (tv: V2) =
+        let w = duel |> place 1 (v 400. 0.) 0. |> edit 0 (fun s -> { s with Weapon = wpn }) |> edit 1 (fun s -> { s with Vel = tv })
+        let a = (bot w 0).Aim |> Option.defaultValue 0.
+        let speed = if wpn = Swarm then seekerSpeed else bulletSpeed
+        [ for k in 1 .. 240 -> float k / 120. ]
+        |> List.map (fun tm -> len (ofAngle a * speed * tm - (v 400. 0. + tv * tm)))
+        |> List.min
+    check "the blaster lead actually intercepts a crossing target" (interceptMiss Blaster (v 0. 200.) < shipRadius)
+    // Seekers home, so they do not need the lead to land - what matters is that
+    // asking for one against a target the seeker cannot outrun no longer throws
+    // the aim somewhere arbitrary, which is what the divergent fixed point did.
+    let swarmAim (tv: V2) =
+        let w = duel |> place 1 (v 400. 0.) 0. |> edit 0 (fun s -> { s with Weapon = Swarm }) |> edit 1 (fun s -> { s with Vel = tv })
+        (bot w 0).Aim |> Option.defaultValue nan
+    // When no intercept exists the only sane aim is the target itself. The old
+    // fixed point had nothing to converge on and simply ran away: three rounds
+    // of a 1.27x expansion put the nose 0.65 rad off a target sitting dead
+    // ahead, and the further it ran the further it pointed.
+    check "an unreachable swarm lead aims at the target rather than running away"
+        ([ v 260. 260.; v 300. 0.; v 200. 240. ]
+         |> List.forall (fun tv -> let a = swarmAim tv in not (System.Double.IsNaN a) && abs (atan2 (sin a) (cos a)) < 0.1))
+    // A solver that wobbles turns a smooth world into a twitching one, so nudge
+    // the target's speed in tiny steps: the aim must follow smoothly. The old
+    // fixed point jumped, which is the twitch seen from the cockpit.
+    let sweep =
+        [ for k in 0 .. 200 -> float k * 0.5 ]
+        |> List.map (fun sp ->
+            let w = duel |> place 1 (v 420. 0.) 0. |> edit 1 (fun s -> { s with Vel = v 0. sp })
+            (bot w 0).Aim |> Option.defaultValue nan)
+    let roughest =
+        sweep |> List.pairwise |> List.map (fun (a, b) -> abs (atan2 (sin (b - a)) (cos (b - a)))) |> List.max
+    check "the aim tracks a target's speed smoothly instead of jumping" (roughest < 0.02)
+    // Measured across all eight arenas, four bots, sixty seconds: ram accounted
+    // for 1% of the damage and guns 99%, so the opening slaughter was never a
+    // ramming problem. It was 249 nose-to-nose charges where both bots flew
+    // down each other's throat trading fire. Declining the trade halved them.
+    // Far enough out that veer is not in play yet - this is about how the bot
+    // chooses to approach, not how it bails out of a contact already on top of
+    // it.
+    let charge =
+        duel |> place 0 zero 0. |> place 1 (v 650. 0.) System.Math.PI
+        |> edit 0 (fun s -> { s with Vel = v 240. 0.; Hp = hpMax })
+        |> edit 1 (fun s -> { s with Vel = v (-240.) 0.; Hp = hpMax })
+    let offLine (b: Input) = match b.Aim with Some a -> abs (atan2 (sin a) (cos a)) > 0.3 | None -> false
+    check "an even head-on charge is declined by both sides" (offLine (bot charge 0) && offLine (bot charge 1))
+    // and they must slide past rather than both turning into the same gap
+    let aimOf (b: Input) = match b.Aim with Some a -> a | None -> 0.
+    check "the two sides of a declined charge pass on opposite sides"
+        (sin (aimOf (bot charge 0)) * sin (aimOf (bot charge 1)) < 0.)
+    let ahead = charge |> edit 1 (fun s -> { s with Hp = 20. })
+    check "a bot well ahead on health presses the charge home" (not (offLine (bot ahead 0)))
+    check "a distant approach is not treated as a charge"
+        (not (offLine (bot (charge |> place 1 (v 1100. 0.) System.Math.PI) 0)))
+    check "the declined charge is a pass, not a panic: veer is not what fired"
+        (match (bot charge 0).Aim with Some a -> abs (abs a - passArc) < 0.05 | None -> false)
     let sucked = bot { duel with Hole = Some { Pos = v 150. 0.; Life = 5. } } 0
     check "bot flees a gravity well" (match sucked.Aim with Some a -> abs a > 2.5 && sucked.Thrust && sucked.Boost | None -> false)
     let padAim kind (b: Input) =
