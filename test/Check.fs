@@ -337,6 +337,9 @@ let main _ =
     let camping = w0 |> place 1 (spawnPos 0 + v 50. 0.) 0. |> place 2 zero 0. |> place 3 (v 100. 100.) 0.
     let backAgain = camping |> edit 0 (fun s -> { s with Alive = false; RespawnIn = dt / 2. }) |> step dt (all present)
     check "respawn avoids the camped spawn point" (backAgain.Ships.[0].Alive && len (backAgain.Ships.[0].Pos - spawnPos 0) > 100.)
+    let negativeRng =
+        { camping with Rng = -1234567 } |> edit 0 (fun s -> { s with Alive = false; RespawnIn = dt / 2. }) |> step dt (all present)
+    check "respawn survives a negative rng state" (negativeRng.Ships.[0].Alive && [ 0..3 ] |> List.exists (fun i -> negativeRng.Ships.[0].Pos = spawnPos i))
 
     let duel = w0 |> place 0 zero 0. |> place 1 (v 300. 0.) 0. |> place 2 (v (-1200.) 1200.) 0. |> place 3 (v 1200. (-1200.)) 0.
     let b = bot duel 0
