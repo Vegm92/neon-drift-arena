@@ -1,4 +1,4 @@
-# Developing Neon Drift Arena
+﻿# Developing Neon Drift Arena
 
 F# compiled to JavaScript with [Fable 5](https://fable.io/), rendered with Three.js + bloom. The simulation is pure .NET and runs headless in tests. Game rules and controls live in [GAMEPLAY.md](GAMEPLAY.md).
 
@@ -18,7 +18,7 @@ npm run check      # headless simulation assertions on .NET
 dotnet fable src -o build   # one-shot compile, output is build/*.js
 ```
 
-`npm run check` runs `Sim` on .NET (no browser) and asserts traverse time, recoil, hits, pads, out-of-bounds, respawn, rams and win condition. Run it after touching `Sim.fs` or `Domain.fs`.
+`npm run check` runs `Sim` on .NET (no browser) and asserts traverse time, recoil, hits, pads, out-of-bounds, respawn, rams, impact spin and stun, bot behaviour and win condition. Run it after touching `Sim.fs`, `Domain.fs`, `Impact.fs`, `Collisions.fs` or `Bot.fs`.
 
 ## Site
 
@@ -92,6 +92,7 @@ SAVE MAP posts to the dev-server-only `/__maps` hook, which replaces the `custom
 | `src/Core/Vec.fs` | 2D vector struct and helpers |
 | `src/Core/Domain.fs` | Tunables (`Cfg`), the keyboard action -> key-code map (`Binds`), input, ship, bullet, pad, world records |
 | `src/Core/Strings.fs` | All user-facing strings and locale |
+| `src/Core/Impact.fs` | The one contact solver: linear and angular response for every ship collision |
 | `src/Core/Sim.fs` | Pure fixed-step simulation: movement, firing, bullets, rams, pads, deaths, match phase |
 | **Platform** (browser bindings) | |
 | `src/Platform/Input.fs` | Keyboard (through `Domain.Binds`) + Gamepad API → `Input[]` for the four slots |
