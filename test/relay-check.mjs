@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { WebSocket as WsClient } from "ws";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
 
@@ -93,6 +94,11 @@ try {
   fHost.send("y".repeat(300000));
   await settle();
   assert.deepEqual(fPeer.inbox, [], "a message over the cap is dropped, never truncated into invalid JSON");
+
+  const zip = new WsClient(`ws://127.0.0.1:${port}/relay?room=ZZZZ&role=pad`);
+  await new Promise((ok) => zip.on("open", ok));
+  assert.ok(String(zip.extensions).includes("permessage-deflate"), "the relay negotiates permessage-deflate, so snapshots ship compressed");
+  zip.close();
 
   console.log("relay ok");
 } catch (err) {
