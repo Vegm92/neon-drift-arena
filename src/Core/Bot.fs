@@ -107,6 +107,26 @@ let private weave (w: World) i (me: Ship) dist =
     else
         0.
 
+/// Two ships nosed at each other and closing is a trade, not a fight: both
+/// hulls come out of it worse, and an opening full of them is a mutual
+/// funeral. Offsetting the bearing turns the joust into a pass, and the shot
+/// comes later from an angle the target is not already pointing at. Both
+/// sides offset the same way around their own bearing, and those bearings
+/// point opposite ways, so they slide past each other rather than converging.
+/// A hull that is already well ahead on health is the one that wins a trade,
+/// so it presses instead - surviving beats killing only while the exchange is
+/// not already in your favour.
+let private pass (me: Ship) (t: Ship) =
+    let d = t.Pos - me.Pos
+    let n = norm d
+    if (me.Hp + me.Shield) <= (t.Hp + t.Shield) * passEdge
+       && len d < passRange
+       && dot (me.Vel - t.Vel) n > passSpeed
+       && dot (ofAngle t.Angle) (n * -1.) > passNose then
+        Some(atan2 n.Y n.X + passArc)
+    else
+        None
+
 /// The rim is lethal and the arena shrinks, so wanting back inside is not a
 /// combat decision - it applies whether or not there is anyone left to fight.
 let private inbound (w: World) (me: Ship) =
@@ -166,7 +186,12 @@ let bot (w: World) i =
             let dodging = dodge me
             let escaping = fleeHole me w |> Option.orElse (inbound w me) |> Option.orElse (veer me t)
             let seeking = seekPad false me w
-            let aim = escaping |> Option.orElse dodging |> Option.orElse seeking |> Option.defaultValue (atan2 d.Y d.X)
+            let aim =
+                escaping
+                |> Option.orElse dodging
+                |> Option.orElse seeking
+                |> Option.orElse (pass me t)
+                |> Option.defaultValue (atan2 d.Y d.X)
             let off = abs (atan2 (sin (aim - me.Angle)) (cos (aim - me.Angle)))
             let toShot = atan2 d.Y d.X
             let facing = abs (atan2 (sin (toShot - me.Angle)) (cos (toShot - me.Angle))) < 0.25 && dodging.IsNone && not (rockBetween me.Pos shot)

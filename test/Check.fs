@@ -414,6 +414,7 @@ let main _ =
     check "two bots duelling for 45 s do not burn through their stocks"
         (feudW.Ships.[0].Stocks > 0 && feudW.Ships.[1].Stocks > 0)
 
+
     let duel = w0 |> place 0 zero 0. |> place 1 (v 300. 0.) 0. |> place 2 (v (-1200.) 1200.) 0. |> place 3 (v 1200. (-1200.)) 0.
     let b = bot duel 0
     check "bot fires at the ship ahead" (b.Fire && b.Aim = Some 0. && not b.Thrust)
@@ -495,6 +496,29 @@ let main _ =
     check "bots weave across the line while duelling up close"
         (weaveA.Strafe <> 0. && weaveB.Strafe <> 0. && weaveA.Strafe <> weaveB.Strafe)
     check "bots hold a straight line at range" ((bot (duel |> place 1 (v 900. 0.) 0.) 0).Strafe = 0.)
+    // Measured across all eight arenas, four bots, sixty seconds: ram accounted
+    // for 1% of the damage and guns 99%, so the opening slaughter was never a
+    // ramming problem. It was 249 nose-to-nose charges where both bots flew
+    // down each other's throat trading fire. Declining the trade halved them.
+    // Far enough out that veer is not in play yet - this is about how the bot
+    // chooses to approach, not how it bails out of a contact already on top of
+    // it.
+    let charge =
+        duel |> place 0 zero 0. |> place 1 (v 650. 0.) System.Math.PI
+        |> edit 0 (fun s -> { s with Vel = v 240. 0.; Hp = hpMax })
+        |> edit 1 (fun s -> { s with Vel = v (-240.) 0.; Hp = hpMax })
+    let offLine (b: Input) = match b.Aim with Some a -> abs (atan2 (sin a) (cos a)) > 0.3 | None -> false
+    check "an even head-on charge is declined by both sides" (offLine (bot charge 0) && offLine (bot charge 1))
+    // and they must slide past rather than both turning into the same gap
+    let aimOf (b: Input) = match b.Aim with Some a -> a | None -> 0.
+    check "the two sides of a declined charge pass on opposite sides"
+        (sin (aimOf (bot charge 0)) * sin (aimOf (bot charge 1)) < 0.)
+    let ahead = charge |> edit 1 (fun s -> { s with Hp = 20. })
+    check "a bot well ahead on health presses the charge home" (not (offLine (bot ahead 0)))
+    check "a distant approach is not treated as a charge"
+        (not (offLine (bot (charge |> place 1 (v 1100. 0.) System.Math.PI) 0)))
+    check "the declined charge is a pass, not a panic: veer is not what fired"
+        (match (bot charge 0).Aim with Some a -> abs (abs a - passArc) < 0.05 | None -> false)
     let sucked = bot { duel with Hole = Some { Pos = v 150. 0.; Life = 5. } } 0
     check "bot flees a gravity well" (match sucked.Aim with Some a -> abs a > 2.5 && sucked.Thrust && sucked.Boost | None -> false)
     let padAim kind (b: Input) =

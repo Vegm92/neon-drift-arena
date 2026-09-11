@@ -133,6 +133,11 @@ module Cfg =
     let mutable ramSeparate = 6.
     let mutable ramEventSpeed = 40.
     let mutable ramVeerRisk = 0.35
+    let mutable passRange = 700.
+    let mutable passSpeed = 200.
+    let mutable passNose = 0.6
+    let mutable passArc = 0.55
+    let mutable passEdge = 1.5
     let physicsDt = 1. / 120.
     let mutable asteroidStun = 0.666
     let mutable asteroidSpin = 6.3
@@ -300,6 +305,11 @@ module Cfg =
            "ramSeparate", (fun () -> ramSeparate), (fun x -> ramSeparate <- x)
            "ramEventSpeed", (fun () -> ramEventSpeed), (fun x -> ramEventSpeed <- x)
            "ramVeerRisk", (fun () -> ramVeerRisk), (fun x -> ramVeerRisk <- x)
+           "passRange", (fun () -> passRange), (fun x -> passRange <- x)
+           "passSpeed", (fun () -> passSpeed), (fun x -> passSpeed <- x)
+           "passNose", (fun () -> passNose), (fun x -> passNose <- x)
+           "passArc", (fun () -> passArc), (fun x -> passArc <- x)
+           "passEdge", (fun () -> passEdge), (fun x -> passEdge <- x)
            "asteroidStun", (fun () -> asteroidStun), (fun x -> asteroidStun <- x)
            "asteroidSpin", (fun () -> asteroidSpin), (fun x -> asteroidSpin <- x)
            "spinInertia", (fun () -> spinInertia), (fun x -> spinInertia <- x)
