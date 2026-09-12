@@ -186,16 +186,17 @@ let stepCrates dt rng (ships: Ship[]) (crates: Crate[]) =
                 | Some i ->
                     r <- nextRng r
                     let w =
-                        if practice then arsenal.[sh.[i].Grabs % arsenal.Length]
-                        elif race then raceArsenal.[rngIndex raceArsenal.Length r]
-                        elif mutator = 1 then Rail
-                        else crateWeapons.[rngIndex crateWeapons.Length r]
+                        match mode with
+                        | Practice -> arsenal.[sh.[i].Grabs % arsenal.Length]
+                        | Race -> raceArsenal.[rngIndex raceArsenal.Length r]
+                        | Arena when mutator = 1 -> Rail
+                        | Arena -> crateWeapons.[rngIndex crateWeapons.Length r]
                     let a = Array.copy sh
-                    a.[i] <- { a.[i] with Weapon = w; Ammo = (if race && (w = Swarm || w = Scatter) then 1 else weaponAmmo w); Charge = 0.; Grabs = a.[i].Grabs + 1 }
+                    a.[i] <- { a.[i] with Weapon = w; Ammo = (if mode = Race && (w = Swarm || w = Scatter) then 1 else weaponAmmo w); Charge = 0.; Grabs = a.[i].Grabs + 1 }
                     sh <- a
                     events.Add(Grab c.Pos)
                     r <- nextRng r
-                    if practice then { c with RespawnIn = 1. } else
+                    if mode = Practice then { c with RespawnIn = 1. } else
                     let mutable k = rngIndex cratePositions.Length r
                     let mutable tries = 0
                     while tries < cratePositions.Length && taken.Contains cratePositions.[k] do

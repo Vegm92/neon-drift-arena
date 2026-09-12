@@ -114,9 +114,8 @@ let private go intro =
     CrazyGames.gameplayStart ()
 
 let private launch (w: World) =
-    State.practice <- Menu.practice ()
-    State.race <- Menu.race ()
-    if State.practice then
+    State.mode <- Menu.mode ()
+    if State.mode = Practice then
         if State.target < 0 || not (Menu.isBot State.target) then State.target <- Menu.addTarget ()
         world <- w
         go false
@@ -141,7 +140,7 @@ let private accuracy (s: Ship) =
 
 let private statRow winner pos (s: Ship) =
     let pips =
-        if State.race then
+        if State.mode = Race then
             sprintf "<b>%s</b>" (if s.Finish > 0. then sprintf "%d:%02d.%d" (int s.Finish / 60) (int s.Finish % 60) (int (s.Finish * 10.) % 10) else Strings.t.Dnf)
         else
             String.concat "" [ for k in 1 .. Cfg.stocks -> if k <= s.Stocks then "<i></i>" else "<i class=\"gone\"></i>" ]
@@ -185,7 +184,7 @@ let private stats (w: World) =
         | Over(Some i) -> i
         | _ -> -1
     let rows =
-        (if State.race then Sim.rank act |> Array.map (fun i -> w.Ships.[i]) else act |> Array.sortByDescending (fun s -> s.Id = winner, s.Stocks, s.Kills))
+        (if State.mode = Race then Sim.rank act |> Array.map (fun i -> w.Ships.[i]) else act |> Array.sortByDescending (fun s -> s.Id = winner, s.Stocks, s.Kills))
         |> Array.mapi (fun i s -> statRow winner (i + 1) s)
         |> String.concat ""
     let awards = ResizeArray()
@@ -209,7 +208,7 @@ let private stats (w: World) =
             Strings.t.ColAccuracy
             Strings.t.ColCrates
             Strings.t.ColRings
-            (if State.race then Strings.t.ColTime else Strings.t.ColStocks)
+            (if State.mode = Race then Strings.t.ColTime else Strings.t.ColStocks)
     sprintf "<div class=\"table\">%s%s</div><div class=\"awards\">%s</div>" head rows (String.concat "" awards)
 
 let private flash (cls: string) =
@@ -289,7 +288,7 @@ let private sendState () =
     let menu = if html = lastMenu && now - lastMenuAt < 1000. then null else html
     if not (isNull menu) then lastMenuAt <- now
     lastMenu <- html
-    let payload = createObj [ "world" ==> { world with Events = [] }; "events" ==> List.toArray frameEvents; "layout" ==> State.layout; "race" ==> State.race; "colors" ==> playerColor; "intro" ==> view.Intro; "banner" ==> banner.textContent; "bannerClass" ==> banner.className; "menuClass" ==> menuEl.className; "menu" ==> menu ]
+    let payload = createObj [ "world" ==> { world with Events = [] }; "events" ==> List.toArray frameEvents; "layout" ==> State.layout; "mode" ==> Array.findIndex ((=) State.mode) modes; "colors" ==> playerColor; "intro" ==> view.Intro; "banner" ==> banner.textContent; "bannerClass" ==> banner.className; "menuClass" ==> menuEl.className; "menu" ==> menu ]
     let bytes = (JS.JSON.stringify payload).Length
     if bytes > 60000 && Log.once "payload" 10000. then
         Log.warn "the world snapshot is big enough to stall the relay" (createObj [ "bytes" ==> bytes; "menuHtml" ==> not (isNull menu) ])
@@ -366,7 +365,7 @@ let private clientFrame dt =
         Log.warn "the mirrored world arrived late from the host" (createObj [ "ageMs" ==> JS.Math.round age; "expectedMs" ==> Cfg.netStateMs ])
     let m = remote
     let layout: int = m?layout
-    State.race <- m?race
+    State.mode <- modes.[m?mode]
     if State.layout <> layout then Sim.setLayout layout
     Array.blit (m?colors: int[]) 0 playerColor 0 4
     Render.syncArena view
@@ -558,7 +557,7 @@ window.requestAnimationFrame frame |> ignore
 window.addEventListener (
     "keydown",
     fun e ->
-        if State.practice && not (client ()) && not (Menu.visible ()) then
+        if State.mode = Practice && not (client ()) && not (Menu.visible ()) then
             match (e :?> Browser.Types.KeyboardEvent).code with
             | "KeyK" -> world <- { world with Ships = world.Ships |> Array.map (fun s -> if s.Id = State.target then { s with Hp = 0.; Invuln = 0. } else s) }
             | "KeyT" -> world <- { world with Time = Cfg.matchTime }

@@ -14,7 +14,7 @@ let private smooth x = x * x * (3. - 2. * x)
 let flyby (vw: View) (w: World) dt =
     vw.Intro <- vw.Intro - dt
     let stops =
-        if State.race && State.gates.Length > 0 then
+        if State.mode = Race && State.gates.Length > 0 then
             let n = min 8 State.gates.Length
             Array.init (n + 1) (fun i -> State.gates.[i * State.gates.Length / n % State.gates.Length])
         else
@@ -50,7 +50,7 @@ let frameCamera (vw: View) (w: World) dt =
         |> Array.filter (fun s -> s.Active && s.Stocks > 0 && s.Finish = 0.)
         |> Array.length
     let floorH =
-        if State.race then minCamH () * raceCamFactor
+        if State.mode = Race then minCamH () * raceCamFactor
         elif remaining <= duelShips then minCamH () * duelCamFactor
         else minCamH ()
     // floorH is only a floor: hX/hY still hold every alive ship in frame.

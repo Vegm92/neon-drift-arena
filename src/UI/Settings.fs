@@ -30,7 +30,7 @@ let mutable onSignInCompleted : string -> unit = fun _ -> ()
 let arenaName () =
     if arenaPick = Maps.layouts.Length then Strings.t.Random else Strings.t.Arenas.[State.layout]
 
-let private pool () = [| 0 .. Maps.layouts.Length - 1 |] |> Array.filter (fun i -> Maps.isTrack i = State.race)
+let private pool () = [| 0 .. Maps.layouts.Length - 1 |] |> Array.filter (fun i -> Maps.isTrack i = (State.mode = Race))
 
 let rollArena () =
     if arenaPick = Maps.layouts.Length then
@@ -38,7 +38,7 @@ let rollArena () =
         Sim.setLayout p.[System.Random().Next p.Length]
 
 let fixArena () =
-    if arenaPick < Maps.layouts.Length && Maps.isTrack arenaPick <> State.race then
+    if arenaPick < Maps.layouts.Length && Maps.isTrack arenaPick <> (State.mode = Race) then
         arenaPick <- (pool ()).[0]
         Sim.setLayout arenaPick
 

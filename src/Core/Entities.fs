@@ -19,7 +19,7 @@ let steer dt (ships: Ship[]) (b: Bullet) =
         b
     else
         match nearest ships b.Owner b.Pos with
-        | Some _ when race -> b
+        | Some _ when mode = Race -> b
         | Some t ->
             let a0 = atan2 b.Vel.Y b.Vel.X
             let a1 = atan2 (t.Pos.Y - b.Pos.Y) (t.Pos.X - b.Pos.X)
@@ -119,7 +119,7 @@ let stepDeploys dt (ships: Ship[]) (deploys: Deployable list) =
                 match nearest ships d.Owner d.Pos with
                 | Some t when len (t.Pos - d.Pos) < sentryRange ->
                     let a = atan2 (t.Pos.Y - d.Pos.Y) (t.Pos.X - d.Pos.X)
-                    if cd > 0. || race then
+                    if cd > 0. || mode = Race then
                         Some { d with Angle = a }
                     else
                         let dir = ofAngle a
@@ -175,7 +175,7 @@ let resolveWaves (ships: Ship[]) waves =
     let s = Array.copy ships
     for (p, a, owner) in waves do
         for i in 0 .. s.Length - 1 do
-            match inCone s p a (if race then racePulseRange else pulseRange) pulseCone owner i with
+            match inCone s p a (if mode = Race then racePulseRange else pulseRange) pulseCone owner i with
             | Some(n, f) -> s.[i] <- { s.[i] with Vel = s.[i].Vel + n * (pulseForce * f) } |> tag owner Pulse
             | None -> ()
     s
@@ -201,7 +201,7 @@ let private acquire (s: Ship[]) owner =
         let rel = atan2 d.Y d.X - me.Angle
         let off = abs (atan2 (sin rel) (cos rel))
         let reach = len d - radius
-        if reach < tractorRange && off < tractorCone then Some((if race then reach else off), tow) else None
+        if reach < tractorRange && off < tractorCone then Some((if mode = Race then reach else off), tow) else None
     let ships = s |> Array.choose (fun t -> if t.Alive && side t <> side me then ahead t.Pos 0. (TowShip t.Id) else None)
     let rocks = asteroids |> Array.mapi (fun k a -> ahead a.Pos a.Radius (TowRock k)) |> Array.choose id
     match (if ships.Length > 0 then ships else rocks) with
@@ -240,7 +240,7 @@ let stepMines k dtOf (ships: Ship[]) (mines: Mine list) =
         |> List.choose (fun m ->
             let dt = dtOf m
             let near = nearest ships m.Owner m.Pos
-            if race then
+            if mode = Race then
                 match near with
                 | Some t when len (t.Pos - m.Pos) < mineRadius + shipRadius ->
                     blasts.Add(m.Pos, m.Owner)

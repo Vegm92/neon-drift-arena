@@ -445,6 +445,18 @@ type ShipArchetype =
     | Engineer
     | Scout
 
+/// What kind of match the sim is running. Exactly one holds at a time, so a
+/// rule that differs per mode matches on this rather than on a pair of flags
+/// that could both be set. TEAMS is not a mode: it is the `Team` field on each
+/// ship, and every mode can carry it.
+type Mode =
+    | Arena
+    | Practice
+    | Race
+
+/// Wire order for the mirror payload (`Main.sendState`) and the lobby cycle.
+let modes = [| Arena; Practice; Race |]
+
 let crateTiers = [| Rail, 1; Bubble, 1; Pulse, 2; Scatter, 2; Tractor, 2; Barrier, 2; Sentry, 2; Mines, 3; Swarm, 3 |]
 let crateWeapons = crateTiers |> Array.collect (fun (w, n) -> Array.create n w)
 

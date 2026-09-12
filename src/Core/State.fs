@@ -3,7 +3,7 @@
 open Vec
 open Domain
 
-let mutable race = false
+let mutable mode = Arena
 let mutable road: V2[] = [||]
 let mutable corners: V2[] = [||]
 let mutable gates: V2[] = [||]
@@ -11,7 +11,6 @@ let mutable gateEvery = 1
 let mutable trackWidth = 0.
 
 let mutable layout = 0
-let mutable practice = false
 let mutable target = -1
 let arsenal = [| Rail; Mines; Swarm; Pulse; Scatter; Tractor; Barrier; Sentry; Bubble |]
 let raceArsenal = [| Scatter; Mines; Swarm; Pulse; Tractor; Bubble |]

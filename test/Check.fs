@@ -622,7 +622,7 @@ let main _ =
 
     check "launchers never win" ((step dt (all present) { out with Ships = out.Ships |> Array.mapi (fun i s -> if i = 1 then s else { s with Alive = false; Stocks = 0 }) }).Phase = Over(Some 1))
 
-    practice <- true
+    mode <- Practice
     target <- 3
     let staged = stage w0
     check "practice lines shooters up against the target"
@@ -632,7 +632,7 @@ let main _ =
     check "practice never costs a stock" (range.Ships.[3].Stocks = stocks && range.Phase = Playing)
     let grabbed = staged |> place 0 staged.Crates.[0].Pos 0. |> step dt (all present)
     check "practice crate cycles weapons and comes right back" (grabbed.Ships.[0].Weapon = Rail && grabbed.Crates.[0].RespawnIn = 1. && grabbed.Crates.[0].Pos = staged.Crates.[0].Pos)
-    practice <- false
+    mode <- Arena
     target <- -1
 
     let behindOne = w0 |> edit 0 (fun s -> { s with Alive = false; Stocks = 1; RespawnIn = dt / 2. }) |> step dt (all present)
@@ -697,7 +697,7 @@ let main _ =
     let plain = glide (w0 |> place 0 (v 0. -600.) 0. |> step dt (all present))
     check "a time bubble drags an enemy bullet down to bubbleFactor speed" (plain > 100. && abs (bubbled - plain * bubbleFactor) < 4.)
 
-    race <- true
+    mode <- Race
     setLayout (layouts |> Array.findIndex (fun l -> l.Track.IsSome))
     let grid = step dt (all present) initial
     check "race grid sits behind the start gate" (grid.Ships |> Array.forall (fun s -> s.Active && len (s.Pos - gates.[0]) < 400.))
@@ -803,7 +803,7 @@ let main _ =
     let missile = { Owner = 1; Pos = gates.[0] + v -300. 0.; Vel = v 400. 0.; Life = 2.; Kind = 2; Damage = seekerDamage }
     let straight = { grid with Bullets = [ missile ] } |> place 0 (gates.[0] + v 0. 250.) 0. |> run 30 (all present)
     check "a race missile flies straight past a target off its line" (straight.Bullets |> List.forall (fun b -> b.Vel.Y = 0.))
-    race <- false
+    mode <- Arena
     setLayout 0
 
     check "pilot levels start at 1 and climb on the XP curve" (Progress.level 0 = 1 && Progress.level 49 = 1 && Progress.level 50 = 2 && Progress.level 200 = 3)

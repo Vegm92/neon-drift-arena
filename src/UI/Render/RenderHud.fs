@@ -63,7 +63,7 @@ let private weaponHtml (s: Ship) =
             (icon w false)
             (wname w)
             (Strings.t.SwapMode(Strings.bindKeys Binds.Swap))
-    elif State.race && s.Weapon = Blaster then ""
+    elif State.mode = Race && s.Weapon = Blaster then ""
     else
         let n = if weaponAmmo s.Weapon > 0 then s.Ammo else 0
         icon s.Weapon false + wname s.Weapon + sprintf "<span class=\"ammo\">%s</span>" (String.replicate n "●")
@@ -101,7 +101,7 @@ let drawHud (vw: View) (w: World) dt =
         el.querySelector(".heat i")?style?width <- sprintf "%.0f%%" (s.Heat / heatMax * 100.)
         let stocks = el.querySelector ".stocks" :?> HTMLElement
         let stocksHtml =
-            if State.race then sprintf "<span>%s</span>" (Strings.t.Lap Strings.t.Places.[Sim.place w.Ships i - 1] (min (int laps) (s.Laps + 1)) (int laps))
+            if State.mode = Race then sprintf "<span>%s</span>" (Strings.t.Lap Strings.t.Places.[Sim.place w.Ships i - 1] (min (int laps) (s.Laps + 1)) (int laps))
             else
                 let shipIcon = "<svg class=\"stock-icon\" viewBox=\"0 0 48 48\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"4.5\" stroke-linejoin=\"round\"><path d=\"M24 4 L41 40 L24 32 L7 40 Z\"/></svg>"
                 String.concat "" [ for _ in 1 .. max 0 s.Stocks -> shipIcon ]
@@ -169,7 +169,7 @@ let drawMarks (vw: View) (w: World) =
 let drawSpawns (vw: View) (w: World) =
     Array.iter2
         (fun (m: Mesh) (s: Ship) ->
-            m.visible <- s.Active && not State.race
+            m.visible <- s.Active && State.mode <> Race
             m.material.color.setHex (shipColor s))
         vw.Spawns
         w.Ships
