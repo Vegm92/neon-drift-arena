@@ -90,9 +90,9 @@ let stepShip k dt (inp: Input) (s: Ship) =
             elif inp.Reverse then -thrustAccel * reverseFactor * k
             else 0.
         let push = ofAngle angle * accel + ofAngle (angle + System.Math.PI / 2.) * (inp.Strafe * strafeAccel * k)
-        let vel = (s.Vel + push * dt) * (1. - (if race then raceDrag else drag) * slick () * dt) |> clampLen (maxSpeed * k)
+        let vel = (s.Vel + push * dt) * (1. - (if mode = Race then raceDrag else drag) * slick () * dt) |> clampLen (maxSpeed * k)
         let vel =
-            if race then
+            if mode = Race then
                 let f = ofAngle angle
                 let fwd = dot vel f
                 f * fwd + (vel - f * fwd) * max 0. (1. - raceGrip * dt)

@@ -26,7 +26,7 @@ let stepGates time (ships: Ship[]) =
     let ships =
         ships
         |> Array.map (fun s ->
-            if not (race && s.Alive) || len (s.Pos - gates.[s.Next]) > gateRadius then
+            if not (mode = Race && s.Alive) || len (s.Pos - gates.[s.Next]) > gateRadius then
                 s
             else
                 let next = (s.Next + 1) % gates.Length
@@ -42,7 +42,7 @@ let stepGates time (ships: Ship[]) =
 let phase (ships: Ship[]) raceEnd =
     let active = ships |> Array.filter (fun s -> s.Active)
     let contenders = active |> Array.filter (fun s -> s.Stocks > 0)
-    if race then
+    if mode = Race then
         let finished = active |> Array.filter (fun s -> s.Finish > 0.)
         if active.Length >= 2 && finished.Length > 0 && (finished.Length = active.Length || raceEnd >= raceGrace) then
             Over(Some (finished |> Array.minBy (fun s -> s.Finish)).Id)

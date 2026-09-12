@@ -1,6 +1,7 @@
 module Track
 
 open Vec
+open Domain
 open State
 
 let private gateAhead i = gates.[(i + 1) % gates.Length]
@@ -15,7 +16,7 @@ let segClosest (a: V2) (b: V2) (p: V2) =
 let segDist (a: V2) (b: V2) (p: V2) = len (p - segClosest a b p)
 
 let onTrack (p: V2) =
-    not race
+    mode <> Race
     || road |> Array.mapi (fun i g -> segDist g (roadAhead i) p) |> Array.min < trackWidth / 2.
 
 let smoothSamples = 8

@@ -7,9 +7,9 @@ open Domain.Cfg
 open State
 
 let bounds t =
-    if race || t <= matchTime then 1. else max shrinkMin (1. - (t - matchTime) / shrinkTime)
+    if mode = Race || t <= matchTime then 1. else max shrinkMin (1. - (t - matchTime) / shrinkTime)
 
-let sudden (w: World) = not race && w.Time > matchTime
+let sudden (w: World) = mode <> Race && w.Time > matchTime
 
 let outOfBoundsAt k (p: V2) =
     abs p.X > arenaHalf * k + killMargin

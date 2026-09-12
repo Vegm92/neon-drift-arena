@@ -142,8 +142,8 @@ let step dt (inputs: Input[]) (w: World) =
         let ships = resolveHole w.Hole dt ships
         let ships, pads, picks = resolvePads (sudden w) dt ships w.Pads
         let ships, crates, rng, grabs = stepCrates dt w.Rng ships w.Crates
-        let portals, portalIn, rng, portalEvents = stepPortals k dt (sudden w || race) ships rng w
-        let hole, holeIn, rng, holeEvents = stepHole k dt (sudden w || race) ships rng w
+        let portals, portalIn, rng, portalEvents = stepPortals k dt (sudden w || mode = Race) ships rng w
+        let hole, holeIn, rng, holeEvents = stepHole k dt (sudden w || mode = Race) ships rng w
         let ships, gateEvents = stepGates (w.Time + dt) ships
         let raceEnd = if ships |> Array.exists (fun s -> s.Finish > 0.) then w.RaceEnd + dt else 0.
         let settled, deaths = ships |> Array.map (settle ships rng k dt) |> Array.unzip

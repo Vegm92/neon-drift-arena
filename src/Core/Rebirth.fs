@@ -22,7 +22,7 @@ let private underdog (ships: Ship[]) (s: Ship) =
 
 let private reborn (ships: Ship[]) rng (s: Ship) =
     let p, a =
-        if race then
+        if mode = Race then
             let p = gates.[(s.Next + gates.Length - 1) % gates.Length]
             let d = gates.[s.Next] - p
             p, atan2 d.Y d.X
@@ -37,7 +37,7 @@ let settle (ships: Ship[]) rng k dt (s: Ship) =
         let ring = outOfBoundsAt k s.Pos
         { s with
             Alive = false
-            Stocks = (if practice || race then s.Stocks else s.Stocks - 1)
+            Stocks = (if mode = Arena then s.Stocks - 1 else s.Stocks)
             RespawnIn = respawnDelay
             Vel = zero
             Thrusting = 0.

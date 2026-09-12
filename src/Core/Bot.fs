@@ -196,7 +196,7 @@ let bot (w: World) i =
         | None -> idle
     elif not me.Alive then
         idle
-    elif race then
+    elif mode = Race then
         let lo = (me.Next + gates.Length - 1) % gates.Length * gateEvery
         let seg = [| lo .. lo + gateEvery - 1 |] |> Array.minBy (fun i -> segDist road.[i % road.Length] (roadAhead i) me.Pos)
         let goal = if len (me.Pos - roadAhead seg) < 160. then roadAhead (seg + 1) else roadAhead seg

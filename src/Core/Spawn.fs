@@ -8,7 +8,7 @@ open State
 open Track
 
 let spawnPos i =
-    if race && road.Length > 1 then
+    if mode = Race && road.Length > 1 then
         let dir = norm (roadAhead 0 - road.[0])
         let side = v -dir.Y dir.X
         road.[0] + dir * (80. + 90. * float (i / 2)) + side * (if i % 2 = 0 then -60. else 60.)
@@ -21,7 +21,7 @@ let spawnPos i =
         | _ -> v a a
 
 let private spawnAngle (p: V2) =
-    if race && road.Length > 1 then
+    if mode = Race && road.Length > 1 then
         let d = roadAhead 0 - road.[0]
         atan2 d.Y d.X
     else

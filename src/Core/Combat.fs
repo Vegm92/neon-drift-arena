@@ -23,7 +23,7 @@ let nearest (ships: Ship[]) owner (p: V2) =
 let damage amt (s: Ship) =
     if s.Invuln > 0. then
         s
-    elif race then
+    elif mode = Race then
         if amt >= bulletDamage then
             { s with Stun = max s.Stun scatterStun; Spin = asteroidSpin; Thrusting = 0. }
         else

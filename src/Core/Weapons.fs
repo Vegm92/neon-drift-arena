@@ -93,7 +93,7 @@ let weaponRegistry =
                   Cooldown = (fun () -> 0.0) }
         Bubble, { Name = "Bubble"
                   Trigger = InstantSpecialPress
-                  Payload = DeployPayload(bubbleKind, (fun () -> 0.0), (fun () -> if race then raceBubbleLife else bubbleLife))
+                  Payload = DeployPayload(bubbleKind, (fun () -> 0.0), (fun () -> if mode = Race then raceBubbleLife else bubbleLife))
                   Recoil = (fun () -> 0.0)
                   Cost = ConsumesAmmo 1
                   Cooldown = (fun () -> 0.0) }
@@ -119,7 +119,7 @@ let executeWeapon live dt (inp: Input) (s0: Ship) (def: WeaponDef) =
         let triggered, nextCharge, extraEvents =
             match def.Trigger with
             | ContinuousPrimary ->
-                let canFire = inp.Fire && not race && s.Cooldown <= 0. && s.Locked <= 0.
+                let canFire = inp.Fire && mode <> Race && s.Cooldown <= 0. && s.Locked <= 0.
                 canFire, s.Charge, []
             | InstantSpecialPress ->
                 press, s.Charge, []
@@ -177,7 +177,7 @@ let executeWeapon live dt (inp: Input) (s0: Ship) (def: WeaponDef) =
                     let m =
                         { Owner = s.Id
                           Pos = s'''.Pos + dir * getOffset()
-                          Vel = (if race then zero else s'''.Vel * getSpeedFactor())
+                          Vel = (if mode = Race then zero else s'''.Vel * getSpeedFactor())
                           Fuse = getFuse() }
                     [], [ m ], [ MineSet m.Pos ]
                 | BeamPayload(getRangeMultiplier) ->

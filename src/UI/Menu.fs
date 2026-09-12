@@ -106,11 +106,9 @@ let private ready = Array.create 4 false
 let private onRow = Array.create 4 false
 let private owner = Array.create 4 ""
 let mutable private teamMode = false
-let mutable private practiceMode = false
-let mutable private raceMode = false
+let mutable private lobbyMode = Arena
 let mutable private renaming = -1
-let practice () = practiceMode
-let race () = raceMode
+let mode () = lobbyMode
 let mutable private optRows: Settings.Row list = []
 let mutable private optCursor = 0
 let mutable private optTop = 0
@@ -208,10 +206,10 @@ let private cycleColor slot dir =
 let private botKey = "bot"
 let isBot slot = joined.Contains slot && owner.[slot] = botKey
 
-let clean () = not practiceMode && not (joined |> Seq.exists isBot)
+let clean () = lobbyMode <> Practice && not (joined |> Seq.exists isBot)
 
 let private applyMode () =
-    State.race <- raceMode
+    State.mode <- lobbyMode
     Settings.fixArena ()
     for s in 0 .. 3 do if not (isBot s) then ready.[s] <- false
     Array.fill wins 0 4 0
@@ -296,20 +294,20 @@ let private opposed () =
     (joined |> Seq.exists (fun s -> teams.[s] = 1)) && (joined |> Seq.exists (fun s -> teams.[s] = 2))
 
 let private canStart () =
-    if practiceMode then joined.Count >= 1
+    if lobbyMode = Practice then joined.Count >= 1
     else joined.Count >= 2 && allReady () && (not teamMode || opposed ())
 
 let private modeName () =
-    if practiceMode then Strings.t.Practice
-    elif raceMode then Strings.t.Race
-    elif teamMode then Strings.t.Teams
-    else Strings.t.Ffa
+    match lobbyMode with
+    | Practice -> Strings.t.Practice
+    | Race -> Strings.t.Race
+    | Arena -> if teamMode then Strings.t.Teams else Strings.t.Ffa
 
 let private modeTagline () =
-    if practiceMode then Strings.t.ModePractice
-    elif raceMode then Strings.t.ModeRace(int Cfg.laps)
-    elif teamMode then Strings.t.ModeTeams
-    else Strings.t.ModeFfa
+    match lobbyMode with
+    | Practice -> Strings.t.ModePractice
+    | Race -> Strings.t.ModeRace(int Cfg.laps)
+    | Arena -> if teamMode then Strings.t.ModeTeams else Strings.t.ModeFfa
 
 let private pickName i =
     if teamMode then Strings.t.Team(teamName teams.[i]) else Strings.t.Colors.[playerColor.[i]]
@@ -458,7 +456,7 @@ let private renderLobby (devices: Input.Device[]) =
         if Sfx.asleep () then Strings.t.SoundHint
         elif go then ""
         elif joined.Count < 1 then Strings.t.NeedOne
-        elif joined.Count < 2 && not practiceMode then Strings.t.NeedPlayers
+        elif joined.Count < 2 && lobbyMode <> Practice then Strings.t.NeedPlayers
         elif teamMode && not (opposed ()) then Strings.t.NeedTwo
         else Strings.t.NeedReady
     let wrote =
@@ -606,10 +604,12 @@ let private updateLobby () =
                 elif fire || start then
                     match lobbyPick.[d.Slot] with
                     | 0 ->
-                        if raceMode then raceMode <- false
-                        elif practiceMode then (practiceMode <- false; raceMode <- true)
-                        elif teamMode then (teamMode <- false; practiceMode <- true)
-                        else teamMode <- true
+                        // FFA -> TEAMS -> PRACTICE -> RACE -> FFA
+                        match lobbyMode, teamMode with
+                        | Race, _ -> lobbyMode <- Arena
+                        | Practice, _ -> lobbyMode <- Race
+                        | Arena, true -> teamMode <- false; lobbyMode <- Practice
+                        | Arena, false -> teamMode <- true
                         applyMode ()
                     | 1 -> Settings.adjust Settings.Arena 1
                     | 2 -> State.mutator <- (State.mutator + 1) % State.mutators
