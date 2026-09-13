@@ -245,6 +245,15 @@ let private claim key slot =
 claim "kb" 0
 claim botKey 1
 
+/// The keyboard's seat is only a guess about which device the player at the
+/// desk will use. It holds until the keyboard itself acts in the lobby; a pad
+/// or phone joining before that takes the seat over instead of sitting beside
+/// an idle, unready keyboard nobody can dismiss (CrazyGames swallows Esc).
+let mutable private kbProvisional = true
+
+let private kbSeat () =
+    if kbProvisional then [ 0..3 ] |> List.tryFind (fun s -> joined.Contains s && owner.[s] = "kb") else None
+
 let private toggleBots () =
     match [ 0..3 ] |> List.tryFind (fun i -> not (joined.Contains i)) with
     | Some slot -> claim botKey slot
@@ -590,8 +599,11 @@ let private updateLobby () =
             let h = d.Input.Turn + d.Input.Strafe
             let right = rising d.Key "right" (h > 0.5)
             let left = rising d.Key "left" (h < -0.5)
+            if mine && d.Key = "kb" && (fire || start || back || up || down || left || right) then kbProvisional <- false
             if not mine then
                 if fire || start then
+                    kbSeat () |> Option.iter leave
+                    kbProvisional <- false
                     let slot =
                         if d.Slot >= 0 && not (joined.Contains d.Slot) then Some d.Slot
                         else [ 0..3 ] |> List.tryFind (fun i -> not (joined.Contains i))
