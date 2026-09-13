@@ -27,6 +27,19 @@ let joined = HashSet<int>()
 let teams: int[] = Array.zeroCreate 4
 let wins: int[] = Array.zeroCreate 4
 let names: string[] = Array.create 4 ""
+/// A seat the player typed a name into keeps it: neither the device nor the
+/// account refreshes it. An empty rename clears the flag and restores the default.
+let private renamed = Array.create 4 false
+/// Machine identity: this browser's CrazyGames username, one per machine, or "".
+/// It is not a seat name - `names` is what the cards show.
+let mutable localName = ""
+/// The seat carrying the machine identity: the first seat a local human device
+/// (keyboard or gamepad) holds, or -1. `Main.fs` records XP for this ship.
+let mutable localSeat = -1
+
+let private setLocalName (n: string) =
+    localName <- n
+    if localSeat >= 0 && joined.Contains localSeat && not renamed.[localSeat] then names.[localSeat] <- n
 
 let mutable highScore = 0
 let mutable matchesPlayed = 0
@@ -80,19 +93,19 @@ let saveProgress () =
         printfn "Failed to save progress: %s" e.Message
 
 let initUser () =
-    Input.getLocalPlayerName <- fun () -> names.[0]
-    Settings.onSignInCompleted <- fun username -> names.[0] <- username
+    Input.getLocalPlayerName <- fun () -> localName
+    Settings.onSignInCompleted <- setLocalName
     loadProgress ()
     async {
         let! user = CrazyGames.getUser() |> Async.AwaitPromise
         Settings.isGuest <- isNullOrUndefined user
         if not (isNullOrUndefined user) && not (isNullOrUndefined user.username) then
-            names.[0] <- user.username
+            setLocalName user.username
             loadProgress ()
     } |> Async.StartImmediate
     CrazyGames.addAuthListener(fun (user: CrazyGames.CGUser) ->
         if not (isNullOrUndefined user) && not (isNullOrUndefined user.username) then
-            names.[0] <- user.username
+            setLocalName user.username
             Settings.isGuest <- false
             loadProgress ()
     )
@@ -206,6 +219,28 @@ let private cycleColor slot dir =
 let private botKey = "bot"
 let isBot slot = joined.Contains slot && owner.[slot] = botKey
 
+/// A device plugged into this machine, as opposed to a phone or a joined desktop.
+let private isLocalKey (k: string) = k <> botKey && not (k.StartsWith "ph:")
+
+/// What a seat is called when nobody has renamed it: the machine's username on
+/// the seat that carries it, else the device's own name, else "" (drawn as P n).
+let private seatDefault slot =
+    if slot = localSeat && localName <> "" then localName
+    else
+        match Input.devices () |> Array.tryFind (fun d -> d.Key = owner.[slot]) with
+        | Some d -> d.Name
+        | None -> ""
+
+/// The machine identity follows the machine's humans: it stays on its seat while
+/// a local device holds that seat, else moves to the lowest seat one holds.
+let private settleLocalSeat () =
+    let local s = joined.Contains s && isLocalKey owner.[s]
+    let before = localSeat
+    if not (localSeat >= 0 && local localSeat) then
+        localSeat <- [ 0..3 ] |> List.tryFind local |> Option.defaultValue -1
+    for s in [ before; localSeat ] do
+        if s >= 0 && joined.Contains s && not (isBot s) && not renamed.[s] then names.[s] <- seatDefault s
+
 let clean () = lobbyMode <> Practice && not (joined |> Seq.exists isBot)
 
 let private applyMode () =
@@ -237,10 +272,9 @@ let private claim key slot =
         names.[slot] <- Strings.t.Bot
         ready.[slot] <- true
     else
-        let devOpt = Input.devices () |> Array.tryFind (fun d -> d.Key = key)
-        match devOpt with
-        | Some d -> if d.Name <> "" then names.[slot] <- d.Name
-        | None -> ()
+        renamed.[slot] <- false
+        settleLocalSeat ()
+        names.[slot] <- seatDefault slot
 
 claim "kb" 0
 claim botKey 1
@@ -296,6 +330,8 @@ let private leave slot =
     ready.[slot] <- false
     onRow.[slot] <- false
     teams.[slot] <- 0
+    renamed.[slot] <- false
+    settleLocalSeat ()
 
 let private allReady () = joined |> Seq.forall (fun s -> ready.[s])
 
@@ -329,7 +365,9 @@ let private cardColor i = if teams.[i] > 0 then teamColors.[teams.[i]] else colo
 
 let private displayName i = if isBot i then Strings.t.Bot elif names.[i] = "" then Strings.t.Player i else names.[i]
 
-let private rename slot = renaming <- slot
+/// Only a seat held by a local device takes a typed name: a phone or a joined
+/// desktop keeps the CrazyGames name it brings, so friends recognise it.
+let private rename slot = if isLocalKey owner.[slot] then renaming <- slot
 
 let phase () =
     if not shown then "play"
@@ -586,9 +624,10 @@ let private updateLobby () =
     else
         let devices = Input.devices ()
         dropMissing devices
+        // a phone's card follows the phone: the name it brings can arrive after it joins
         for d in devices do
-            if d.Slot >= 0 && joined.Contains d.Slot && owner.[d.Slot] = d.Key then
-                if d.Name <> "" && not (isBot d.Slot) then
+            if d.Key.StartsWith "ph:" && d.Slot >= 0 && joined.Contains d.Slot && owner.[d.Slot] = d.Key then
+                if d.Name <> "" && not renamed.[d.Slot] then
                     names.[d.Slot] <- d.Name
         let mutable launch = false
         let mutable options = false
@@ -769,8 +808,9 @@ el.addEventListener ("pointerup", fun _ -> Input.release ())
 
 let private commitRename (e: Browser.Types.Event) =
     if renaming >= 0 then
-        let v: string = (e.target :?> Browser.Types.HTMLInputElement).value
-        names.[renaming] <- v.Trim()
+        let v = (e.target :?> Browser.Types.HTMLInputElement).value.Trim()
+        renamed.[renaming] <- v <> ""
+        names.[renaming] <- if v = "" then seatDefault renaming else v
         renaming <- -1
         renderLobby (Input.devices ())
 
