@@ -573,6 +573,9 @@ let main _ =
     check "the launcher reloads slowly" ((run 10 firing hurled).Rocks.Length = 1)
     let struck = hurled |> place 1 zero 0. |> run 600 (all present)
     check "a rolling rock stuns, hurts and credits the launcher" (struck.Ships.[1].Hp < hpMax && struck.Ships.[1].LastHit = 0 && struck.Ships.[1].LastWeapon = Rock)
+    let firstHit = Seq.unfold (fun w -> let n = step dt (all present) w in Some(n, n)) (hurled |> place 1 zero 0.) |> Seq.find (fun w -> w.Ships.[1].Hp < hpMax)
+    check "a rolling rock hits once, sheds speed and does not hit again" (abs firstHit.Rocks.Head.Vel.X < rockSpeed - 50. && (run 120 (all present) firstHit).Ships.[1].Hp = firstHit.Ships.[1].Hp)
+    check "a fresh spawn is safe for two seconds" (freshShip 0 |> fun s -> s.Invuln = 2.)
     let walled = hurled |> place 1 (v (arenaHalf - 400.) 0.) 0. |> step dt (Array.init 4 (fun i -> if i = 1 then { present with Fire = true } else present))
     let shielded = run 60 (all present) walled
     check "rocks stop bullets" (walled.Bullets.Length = 1 && shielded.Bullets.IsEmpty && shielded.Rocks.Length = 1)
