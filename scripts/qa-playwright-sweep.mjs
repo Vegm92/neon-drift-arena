@@ -309,9 +309,9 @@ await wait(200);
 await shot(page, "settings-1366");
 await domCheck(page, "settings-1366");
 await page.setViewportSize({ width: 1920, height: 1080 });
-await key(page, "Escape");
+await key(page, "Backspace");
 await wait(300);
-note("settings-back", "after ESC: " + JSON.stringify(await lobbyState(page)));
+note("settings-back", "after BKSP: " + JSON.stringify(await lobbyState(page)));
 await q(page, () => { __qa.D.Binds_reset(); });
 
 // 8 launch FFA with 3 bots
@@ -402,7 +402,7 @@ await domCheck(page, "pause");
 note("pause", JSON.stringify(await q(page, () => ({ items: [...document.querySelectorAll("#menu .item")].map((i) => i.className + ":" + i.textContent), qr: !!document.querySelector("#menu details.qr"), hints: document.querySelector("#menu .hints")?.innerText.replace(/\s+/g, " ") }))));
 const pqr = await q(page, () => { const d = document.querySelector("#menu details.qr summary"); if (!d) return null; const r = d.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
 if (pqr) { await page.mouse.click(pqr.x, pqr.y); await wait(300); await shot(page, "pause-qr-open"); await page.mouse.click(960, 540); await wait(200); }
-await key(page, "Escape");
+await key(page, "Backspace");
 await wait(500);
 await shot(page, "resume-countdown");
 await page.waitForFunction(() => __qa.M.countdown() <= 0, null, { timeout: 8000 });

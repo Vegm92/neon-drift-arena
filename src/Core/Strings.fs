@@ -206,6 +206,20 @@ type Locale =
       TutPause: string
       TutSkip: string }
 
+/// A gamepad control drawn as its button rather than spelled out, so a legend
+/// never reads "B" as the letter on the keyboard. The class picks shape and
+/// colour in `play/index.html`; `Menu.legend` and `Menu.hint` pass a cap that
+/// is already markup through untouched.
+let pad (b: string) =
+    let cls, glyph =
+        match b with
+        | "A" | "B" | "X" | "Y" -> "face " + b.ToLower(), b
+        | "LT" | "RT" | "LB" | "RB" -> "shoulder", b
+        | "START" -> "sys", "&#9776;"
+        | "L" | "R" -> "stick", b
+        | _ -> "", b
+    sprintf "<i class=\"pb %s\">%s</i>" cls glyph
+
 let en =
     { Player = fun i -> sprintf "P%d" (i + 1)
       Wins = sprintf "%s WINS"
@@ -218,13 +232,13 @@ let en =
       ModeRace = fun laps -> [ "CIRCUIT RACE"; sprintf "%d LAPS" laps; "FIRST ACROSS THE LINE WINS" ]
       ModePractice = [ "TARGET RANGE"; "NO STOCKS"; "EVERY WEAPON IN ORDER" ]
       PadLegend =
-        [ [ "L" ], "THRUST / STRAFE"
-          [ "R" ], "TURN"
-          [ "A"; "LT" ], "BOOST"
-          [ "RT" ], "FIRE"
-          [ "RB" ], "SPECIAL"
-          [ "START" ], "PAUSE"
-          [ "B" ], "BACK" ]
+        [ [ pad "L" ], "THRUST / STRAFE"
+          [ pad "R" ], "TURN"
+          [ pad "A"; pad "LT" ], "BOOST"
+          [ pad "RT" ], "FIRE"
+          [ pad "RB" ], "SPECIAL"
+          [ pad "START" ], "PAUSE"
+          [ pad "B" ], "BACK" ]
       Gamepad = "GAMEPAD"
       Phone = "PHONE"
       Remote = "LAN PC"
@@ -470,7 +484,6 @@ let keyName (code: string) =
     | "Space" -> "SPACE"
     | "Enter"
     | "NumpadEnter" -> "ENTER"
-    | "Escape" -> "ESC"
     | "Tab" -> "TAB"
     | "Backspace" -> "BKSP"
     | "CapsLock" -> "CAPS"
@@ -531,22 +544,22 @@ let actionName (a: Bind.Act) =
 
 let bindHint () =
     sprintf "%s  ·  \u25b6 %s  ·  \u25c0 %s  ·  %s %s"
-        t.BindSet t.BindAdd t.BindDrop (keyName "Escape") t.BindCancel
+        t.BindSet t.BindAdd t.BindDrop (keyName "Backspace") t.BindCancel
 
 let optHint () =
-    sprintf "%s / %s  ·  %s        %s / %s  ·  %s        %s / A  ·  %s        %s / B  ·  %s"
-        (pair Bind.Thrust Bind.Reverse) t.Stick t.HintMove
-        (pair Bind.TurnLeft Bind.TurnRight) t.Stick t.HintAdjust
-        (bindKeys Bind.Fire) t.HintToggle
-        (bindKeys Bind.Back) t.HintBack
+    sprintf "%s / %s  ·  %s        %s / %s  ·  %s        %s / %s  ·  %s        %s / %s  ·  %s"
+        (pair Bind.Thrust Bind.Reverse) (pad "L") t.HintMove
+        (pair Bind.TurnLeft Bind.TurnRight) (pad "L") t.HintAdjust
+        (bindKeys Bind.Fire) (pad "A") t.HintToggle
+        (bindKeys Bind.Back) (pad "B") t.HintBack
 
 let navKeys () =
-    [ sprintf "%s / %s / %s" (first Bind.Thrust) (first Bind.Reverse) t.Stick, t.HintMove
-      sprintf "%s / A" (bindKeys Bind.Fire), t.HintSelect
-      sprintf "%s / B" (bindKeys Bind.Back), t.HintBack ]
+    [ sprintf "%s / %s / %s" (first Bind.Thrust) (first Bind.Reverse) (pad "L"), t.HintMove
+      sprintf "%s / %s" (bindKeys Bind.Fire) (pad "A"), t.HintSelect
+      sprintf "%s / %s" (bindKeys Bind.Back) (pad "B"), t.HintBack ]
 
-let keysJoin () = sprintf "%s / A" (bindKeys Bind.Fire)
-let keysLeave () = sprintf "%s / B" (bindKeys Bind.Back)
+let keysJoin () = sprintf "%s / %s" (bindKeys Bind.Fire) (pad "A")
+let keysLeave () = sprintf "%s / %s" (bindKeys Bind.Back) (pad "B")
 let keysLaunch () = sprintf "%s / %s" (bindKeys Bind.Start) t.Start
 
 let kbLegend () =
@@ -568,4 +581,4 @@ let tutRows () =
       bindCaps Bind.Special, t.TutSpecial
       bindCaps Bind.Start, t.TutPause ]
 
-let kbHint () = sprintf "%s / %s" (pair Bind.Thrust Bind.Reverse) t.Stick, t.HintMove
+let kbHint () = sprintf "%s / %s" (pair Bind.Thrust Bind.Reverse) (pad "L"), t.HintMove

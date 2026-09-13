@@ -97,7 +97,7 @@ let private phoneTimeout = 2000.
 
 let private keys = HashSet<string>()
 let mutable private keyboardSeen = false
-let private captured = set [ "Space"; "ArrowUp"; "ArrowDown"; "ArrowLeft"; "ArrowRight"; "Escape"; "Enter"; "Tab" ]
+let private captured = set [ "Space"; "ArrowUp"; "ArrowDown"; "ArrowLeft"; "ArrowRight"; "Backspace"; "Enter"; "Tab" ]
 
 /// Set by the rebinding UI in `Settings.fs`. While `capturing ()` holds, every
 /// keydown is swallowed whole — the code never reaches `keys`, so the key being
@@ -120,7 +120,10 @@ let init () =
         "keydown",
         fun e ->
             let ke = e :?> KeyboardEvent
-            if capturing () then
+            // Escape belongs to the page around the game (CrazyGames leaves
+            // fullscreen on it), so it is neither an input nor bindable.
+            if ke.code = "Escape" then ()
+            elif capturing () then
                 e.preventDefault ()
                 // this listener is registered first, so nothing else on the window
                 // (the M mute toggle, the tutorial dismiss) sees the key either
@@ -179,10 +182,10 @@ let private keyboard () =
       Boost = on Binds.Boost
       Fire = on Binds.Fire
       Special = on Binds.Special
-      // Enter and Escape always reach the menus whatever the map says, so a
-      // rebind can never leave the player without a way back.
+      // Enter and Backspace always reach the menus whatever the map says, so
+      // a rebind can never leave the player without a way back.
       Start = on Binds.Start || key "Enter"
-      Back = on Binds.Back || key "Escape"
+      Back = on Binds.Back || key "Backspace"
       Swap = on Binds.Swap
       Present = keyboardSeen }
 

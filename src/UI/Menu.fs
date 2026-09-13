@@ -245,6 +245,15 @@ let private claim key slot =
 claim "kb" 0
 claim botKey 1
 
+/// The keyboard's seat is only a guess about which device the player at the
+/// desk will use. It holds until the keyboard itself acts in the lobby; a pad
+/// or phone joining before that takes the seat over instead of sitting beside
+/// an idle, unready keyboard nobody can dismiss (CrazyGames swallows Esc).
+let mutable private kbProvisional = true
+
+let private kbSeat () =
+    if kbProvisional then [ 0..3 ] |> List.tryFind (fun s -> joined.Contains s && owner.[s] = "kb") else None
+
 let private toggleBots () =
     match [ 0..3 ] |> List.tryFind (fun i -> not (joined.Contains i)) with
     | Some slot -> claim botKey slot
@@ -363,17 +372,20 @@ let deviceIcon =
     | "pad" -> "<svg viewBox=\"0 0 24 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.4\" stroke-linejoin=\"round\"><path d=\"M6 4h12a4 4 0 0 1 4 4.6l-.9 4.4a2 2 0 0 1-3.5.8L15 11H9l-2.6 2.8a2 2 0 0 1-3.5-.8L2 8.6A4 4 0 0 1 6 4Z\"/><path d=\"M6.5 7v3M5 8.5h3\" stroke-linecap=\"round\"/><circle cx=\"18\" cy=\"7\" r=\".9\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"16\" cy=\"9\" r=\".9\" fill=\"currentColor\" stroke=\"none\"/></svg>"
     | _ -> "<svg viewBox=\"0 0 14 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.4\"><rect x=\"1\" y=\"1\" width=\"12\" height=\"18\" rx=\"2\"/><path d=\"M6 16h2\" stroke-linecap=\"round\"/></svg>"
 
+/// A cap that is already markup (a gamepad glyph from `Strings.pad`) is drawn as is.
+let private cap (k: string) = if k.StartsWith "<" then k else sprintf "<i>%s</i>" k
+
 let private legend (dev: string) (title: string) (rows: (string list * string) list) =
     let cells =
         rows
         |> List.map (fun (keys, label) ->
-            let caps = keys |> List.map (fun k -> sprintf "<i>%s</i>" k) |> String.concat ""
+            let caps = keys |> List.map cap |> String.concat ""
             sprintf "<div class=\"key\"><div class=\"caps\">%s</div><span>%s</span></div>" caps label)
         |> String.concat ""
     sprintf "<div class=\"legend %s\"><div class=\"lt\">%s<b>%s</b></div><div class=\"keys\">%s</div></div>" dev (deviceIcon dev) title cells
 
 let private hint (keys: string) (label: string) =
-    let caps = keys.Split([| " / " |], System.StringSplitOptions.None) |> Array.map (sprintf "<i>%s</i>") |> String.concat ""
+    let caps = keys.Split([| " / " |], System.StringSplitOptions.None) |> Array.map cap |> String.concat ""
     sprintf "<div class=\"key\"><div class=\"caps\">%s</div><span>%s</span></div>" caps label
 
 let private pilot () =
@@ -590,8 +602,11 @@ let private updateLobby () =
             let h = d.Input.Turn + d.Input.Strafe
             let right = rising d.Key "right" (h > 0.5)
             let left = rising d.Key "left" (h < -0.5)
+            if mine && d.Key = "kb" && (fire || start || back || up || down || left || right) then kbProvisional <- false
             if not mine then
                 if fire || start then
+                    kbSeat () |> Option.iter leave
+                    kbProvisional <- false
                     let slot =
                         if d.Slot >= 0 && not (joined.Contains d.Slot) then Some d.Slot
                         else [ 0..3 ] |> List.tryFind (fun i -> not (joined.Contains i))
@@ -768,10 +783,6 @@ el.addEventListener (
             | "Enter" ->
                 e.preventDefault ()
                 commitRename e
-            | "Escape" ->
-                e.preventDefault ()
-                renaming <- -1
-                renderLobby (Input.devices ())
             | _ -> ()
 )
 el.addEventListener ("focusout", commitRename)
@@ -802,7 +813,7 @@ el.addEventListener (
 el.addEventListener (
     "pointerdown",
     fun e ->
-        if (e :?> Browser.Types.MouseEvent).button = 2. then Input.press "Escape"
+        if (e :?> Browser.Types.MouseEvent).button = 2. then Input.press "Backspace"
         elif (hit e "qr").IsSome then qrOpen <- not qrOpen
         elif (hit e "copy").IsSome then
             window?navigator?clipboard?writeText (inviteUrl ()) |> ignore
