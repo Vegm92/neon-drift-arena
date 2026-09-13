@@ -126,8 +126,8 @@ let bindingOf (a: Binds.Act) =
     | Some(b, _) when Binds.ord b = Binds.ord a -> Strings.t.BindPress
     | _ -> Strings.bindKeys a
 
-/// Takes the captured code. Escape always cancels, which is what keeps Escape
-/// itself bindable-proof and the menus reachable. A code that is another action's
+/// Takes the captured code. Backspace always cancels, which is what keeps
+/// Backspace itself bindable-proof and the menus reachable. A code that is another action's
 /// last remaining binding is refused outright rather than leaving that action
 /// unusable; anything else is stolen from the actions that also hold it.
 let private takeBind (code: string) =
@@ -135,7 +135,7 @@ let private takeBind (code: string) =
     | None -> ()
     | Some(a, add) ->
         grabbing <- None
-        if code <> "Escape" && not (Binds.isSoleBindingOf code a) then
+        if code <> "Backspace" && not (Binds.isSoleBindingOf code a) then
             let cur = Binds.get a
             let next =
                 if add then (if Array.contains code cur then cur else Array.append cur [| code |])
