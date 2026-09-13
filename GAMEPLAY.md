@@ -35,7 +35,6 @@ A second PC on the LAN can open the game URL itself. The first browser to open t
 Playing on CrazyGames adds a few things the standalone site does not have:
 
 - **Sign in** from SETTINGS > CRAZYGAMES. Your CrazyGames username becomes your player tag, and it updates the moment you sign in — no restart, no blocking prompt. Play as a guest and nothing is lost.
-- **Your progress follows you.** Best kill count and matches played are saved to your CrazyGames profile, so they are the same on any machine you sign in on.
 - **Invite a friend** through CrazyGames and their link drops them straight into your room.
 - **Ads.** A short ad plays between the end of a match and the result screen; the game pauses and goes silent for it. There are no banner ads.
 - CrazyGames' own mute control silences the game, and the in-game `M` cannot override it.

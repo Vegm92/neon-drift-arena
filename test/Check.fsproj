@@ -20,7 +20,6 @@
     <Compile Include="../src/Core/Rebirth.fs" />
     <Compile Include="../src/Core/Race.fs" />
     <Compile Include="../src/Core/Bot.fs" />
-    <Compile Include="../src/Core/Progress.fs" />
     <Compile Include="../src/Core/Sim.fs" />
     <Compile Include="../src/Core/Determinism.fs" />
     <Compile Include="Check.fs" />
