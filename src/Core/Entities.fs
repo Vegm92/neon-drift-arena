@@ -176,6 +176,10 @@ let resolveWaves (ships: Ship[]) waves =
     for (p, a, owner) in waves do
         for i in 0 .. s.Length - 1 do
             match inCone s p a (if mode = Race then racePulseRange else pulseRange) pulseCone owner i with
+            | Some(n, f) when mode = Race ->
+                // A race shove has to beat the grip that pins a racer to its nose,
+                // so it hits harder and takes the controls for a moment.
+                s.[i] <- { s.[i] with Vel = s.[i].Vel + n * (racePulseForce * f); Stun = max s.[i].Stun racePulseStun; Spin = asteroidSpin; Thrusting = 0. } |> tag owner Pulse
             | Some(n, f) -> s.[i] <- { s.[i] with Vel = s.[i].Vel + n * (pulseForce * f) } |> tag owner Pulse
             | None -> ()
     s

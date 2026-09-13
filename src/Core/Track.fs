@@ -2,6 +2,7 @@ module Track
 
 open Vec
 open Domain
+open Domain.Cfg
 open State
 
 let private gateAhead i = gates.[(i + 1) % gates.Length]
@@ -29,3 +30,17 @@ let smoothLoop (pts: V2[]) =
                let t = float j / float smoothSamples
                let t2, t3 = t * t, t * t * t
                yield (p0 * (-t3 + 2. * t2 - t) + p1 * (3. * t3 - 5. * t2 + 2.) + p2 * (-3. * t3 + 4. * t2 + t) + p3 * (t3 - t2)) * 0.5 |]
+
+let private progress (s: Ship) =
+    let n = gates.Length
+    float (s.Laps * n + (s.Next + n - 1) % n) - len (s.Pos - gates.[s.Next]) / (4. * arenaHalf)
+
+/// Ship ids from first to last: finished ships by time, then by race progress.
+let rank (ships: Ship[]) =
+    ships
+    |> Array.filter (fun s -> s.Active)
+    |> Array.sortBy (fun s -> (if s.Finish > 0. then s.Finish else infinity), -progress s)
+    |> Array.map (fun s -> s.Id)
+
+let place (ships: Ship[]) i =
+    rank ships |> Array.tryFindIndex ((=) i) |> Option.defaultValue 0 |> (+) 1

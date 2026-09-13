@@ -7,18 +7,8 @@ open Domain.Cfg
 open State
 open Combat
 
-let private progress (s: Ship) =
-    let n = gates.Length
-    float (s.Laps * n + (s.Next + n - 1) % n) - len (s.Pos - gates.[s.Next]) / (4. * arenaHalf)
-
-let rank (ships: Ship[]) =
-    ships
-    |> Array.filter (fun s -> s.Active)
-    |> Array.sortBy (fun s -> (if s.Finish > 0. then s.Finish else infinity), -progress s)
-    |> Array.map (fun s -> s.Id)
-
-let place (ships: Ship[]) i =
-    rank ships |> Array.tryFindIndex ((=) i) |> Option.defaultValue 0 |> (+) 1
+let rank (ships: Ship[]) = Track.rank ships
+let place (ships: Ship[]) i = Track.place ships i
 
 let stepGates time (ships: Ship[]) =
     let mutable place = ships |> Array.filter (fun s -> s.Finish > 0.) |> Array.length

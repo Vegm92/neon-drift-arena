@@ -131,7 +131,7 @@ type View =
       Hole: Object3D
       Horizon: Mesh
       Halo: Mesh
-      Crates: Object3D[]
+      mutable Crates: Object3D[]
       Panels: HTMLElement[]
       Tags: HTMLElement[]
       Names: string[]

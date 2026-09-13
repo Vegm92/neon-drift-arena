@@ -199,7 +199,10 @@ let bot (w: World) i =
     elif mode = Race then
         let lo = (me.Next + gates.Length - 1) % gates.Length * gateEvery
         let seg = [| lo .. lo + gateEvery - 1 |] |> Array.minBy (fun i -> segDist road.[i % road.Length] (roadAhead i) me.Pos)
-        let goal = if len (me.Pos - roadAhead seg) < 160. then roadAhead (seg + 1) else roadAhead seg
+        // Look further down the road the faster the bot is going, so a boost
+        // does not carry it straight past a corner it read too late.
+        let reach = 160. * max 1. (len me.Vel / maxSpeed)
+        let goal = if len (me.Pos - roadAhead seg) < reach then roadAhead (seg + 1) else roadAhead seg
         let d = goal - me.Pos
         let aim = defaultArg (dodge me) (atan2 d.Y d.X)
         let off = abs (atan2 (sin (aim - me.Angle)) (cos (aim - me.Angle)))

@@ -358,8 +358,11 @@ let syncArena (vw: View) =
             vw.Scene.remove o
         for m in vw.Pads do
             vw.Scene.remove m
+        for o in vw.Crates do
+            vw.Scene.remove o
         vw.Rocks <- State.asteroids |> Array.map (mkAsteroid vw.Scene 0x05060f 0x6a7cff)
         vw.Pads <- Sim.initial.Pads |> Array.map (mkPad vw.Scene)
+        vw.Crates <- Sim.initial.Crates |> Array.map (fun _ -> mkCrate vw.Scene)
 
 let mkPanel (hud: HTMLElement) i =
     let el = document.createElement "div"

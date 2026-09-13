@@ -164,6 +164,13 @@ let resolvePads sudden dt (ships: Ship[]) (pads: Pad[]) =
                     s.[i] <- { s.[i] with Hp = min hpMax (s.[i].Hp + p.Amount) }
                     events.Add(Mend p.Pos)
                     { p with RespawnIn = healRespawn }
+                | Some i when mode = Race ->
+                    // A RACE pad is a Mario Kart boost panel: a bigger refill plus an
+                    // instant kick along the nose, and it is back almost at once.
+                    let kicked = s.[i].Vel + ofAngle s.[i].Angle * racePadKick
+                    s.[i] <- { s.[i] with Boost = min boostMax (s.[i].Boost + racePadRefill); Vel = kicked }
+                    events.Add(Pickup(p.Pos, racePadRefill >= boostMax))
+                    { p with RespawnIn = racePadRespawn }
                 | Some i ->
                     s.[i] <- { s.[i] with Boost = min boostMax (s.[i].Boost + p.Amount) }
                     events.Add(Pickup(p.Pos, p.Amount >= boostMax))
@@ -185,18 +192,28 @@ let stepCrates dt rng (ships: Ship[]) (crates: Crate[]) =
                 match sh |> Array.tryFindIndex (fun s -> s.Alive && len (s.Pos - c.Pos) < crateRadius + shipRadius) with
                 | Some i ->
                     r <- nextRng r
+                    // RACE hands out by place: the leader draws defensive kit, the
+                    // last ship draws the hunting kit and a boost top-up sized by how
+                    // far back it is, so the pack has a way to catch up.
+                    let racers = if mode = Race then Track.rank sh else [||]
+                    let behind = if racers.Length > 1 then float (Track.place sh i - 1) / float (racers.Length - 1) else 0.
                     let w =
                         match mode with
                         | Practice -> arsenal.[sh.[i].Grabs % arsenal.Length]
+                        | Race when racers.Length > 1 && behind <= 0. -> raceFrontArsenal.[rngIndex raceFrontArsenal.Length r]
+                        | Race when racers.Length > 1 && behind >= 1. -> raceBackArsenal.[rngIndex raceBackArsenal.Length r]
                         | Race -> raceArsenal.[rngIndex raceArsenal.Length r]
                         | Arena when mutator = 1 -> Rail
                         | Arena -> crateWeapons.[rngIndex crateWeapons.Length r]
                     let a = Array.copy sh
-                    a.[i] <- { a.[i] with Weapon = w; Ammo = (if mode = Race && (w = Swarm || w = Scatter) then 1 else weaponAmmo w); Charge = 0.; Grabs = a.[i].Grabs + 1 }
+                    let boost = if mode = Race then min boostMax (a.[i].Boost + raceCrateBoost * behind) else a.[i].Boost
+                    a.[i] <- { a.[i] with Weapon = w; Ammo = (if mode = Race && (w = Swarm || w = Scatter) then 1 else weaponAmmo w); Charge = 0.; Grabs = a.[i].Grabs + 1; Boost = boost }
                     sh <- a
                     events.Add(Grab c.Pos)
                     r <- nextRng r
-                    if mode = Practice then { c with RespawnIn = 1. } else
+                    if mode = Practice then { c with RespawnIn = 1. }
+                    elif mode = Race then { c with RespawnIn = raceCrateRespawn }
+                    else
                     let mutable k = rngIndex cratePositions.Length r
                     let mutable tries = 0
                     while tries < cratePositions.Length && taken.Contains cratePositions.[k] do

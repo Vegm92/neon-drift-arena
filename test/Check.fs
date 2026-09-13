@@ -763,7 +763,7 @@ let main _ =
     let grabs =
         Seq.fold
             (fun (w, seen) _ ->
-                let w = run 60 (all present) w
+                let w = run (int (raceCrateRespawn / dt) + 2) (all present) w
                 let w = w |> place 0 w.Crates.[0].Pos 0. |> step dt (all present)
                 w, (w.Ships.[0].Weapon, w.Ships.[0].Ammo) :: seen)
             (grid, [])
@@ -780,6 +780,41 @@ let main _ =
     check "the race arsenal only holds weapons that work in a race"
         (raceArsenal |> Array.forall (fun w -> w <> Sentry && w <> Blaster))
     check "the race repulsor has a shorter reach than the arena one" (racePulseRange < pulseRange)
+    // Mario Kart rules: item rows across the road, boxes back in place, the
+    // leader draws defensive kit, the tail draws the hunting kit and boost.
+    check "a track starts with every crate of every row" (grid.Crates.Length = cratePositions.Length && cratePositions.Length = 12)
+    check "crate rows sit on the road three abreast"
+        (cratePositions |> Array.forall Track.onTrack
+         && cratePositions
+            |> Array.chunkBySize 3
+            |> Array.forall (fun row -> len (row.[0] - row.[2]) > trackWidth * 0.4 && len (row.[0] - row.[1]) > 2. * crateRadius))
+    check "a race crate comes straight back in place" (crated.Crates.[0].RespawnIn = raceCrateRespawn && crated.Crates.[0].Pos = grid.Crates.[0].Pos)
+    check "the front and back pools split the race arsenal"
+        (raceFrontArsenal |> Array.forall (fun w -> w <> Swarm && w <> Pulse)
+         && raceBackArsenal |> Array.forall (fun w -> w <> Mines && w <> Bubble)
+         && Array.append raceFrontArsenal raceBackArsenal |> Array.forall (fun w -> Array.contains w raceArsenal))
+    check "the leader draws from the front pool and gets no boost" (Array.contains crated.Ships.[0].Weapon raceFrontArsenal && crated.Ships.[0].Boost = boostStart)
+    let tail = grid |> place 0 grid.Crates.[0].Pos 0. |> edit 0 (fun s -> { s with Laps = -1; Boost = 0. }) |> step dt (all present)
+    check "the last ship draws from the back pool and a full crate boost" (Array.contains tail.Ships.[0].Weapon raceBackArsenal && abs (tail.Ships.[0].Boost - raceCrateBoost) < 1e-6)
+    // Pace: RACE runs faster than an arena match, a boost lifts the cap and a
+    // pad kicks the ship along its nose on top of a bigger refill.
+    let ahead0 = Track.roadAhead 0 - road.[0]
+    let heading = atan2 ahead0.Y ahead0.X
+    // Clear the grid off the first straight so the runner has an empty road.
+    let lane = grid |> place 1 zero 0. |> place 2 (v 0. 200.) 0. |> place 3 (v 0. -200.) 0.
+    let pace = (lane |> place 0 gates.[0] heading |> run 400 thruster).Ships.[0].Vel |> len
+    check "a racer on the road runs past the arena top speed" (pace > maxSpeed * 1.1 && pace <= maxSpeed * raceSpeed + 1e-6)
+    let booster = Array.init 4 (fun i -> if i = 0 then { present with Thrust = true; Boost = true } else present)
+    let burst = (lane |> place 0 gates.[0] heading |> run 240 booster).Ships.[0].Vel |> len
+    check "a race boost runs past the race top speed" (burst > maxSpeed * raceSpeed * 1.1)
+    let padAt = grid.Pads |> Array.find (fun p -> p.Kind = 0)
+    let padded = grid |> place 0 padAt.Pos 0. |> edit 0 (fun s -> { s with Boost = 0. }) |> step dt (all present)
+    check "a race pad refills more and kicks the ship forward"
+        (abs (padded.Ships.[0].Boost - racePadRefill) < 1e-6 && racePadRefill > padRefill && padded.Ships.[0].Vel.X > racePadKick * 0.9 && padded.Pads |> Array.exists (fun p -> p.RespawnIn = racePadRespawn))
+    // The race repulsor is a shell: a harder shove and a spin-out.
+    let shove = grid |> place 0 gates.[0] 0. |> place 1 (gates.[0] + v 90. 0.) 0. |> edit 1 (fun s -> { s with Invuln = 0. }) |> arm 0 Pulse |> step dt special
+    check "a race repulsor shoves harder than an arena one and spins the target out"
+        (shove.Ships.[1].Vel.X > pulseForce * 0.5 && shove.Ships.[1].Stun > 0. && shove.Ships.[1].Spin <> 0.)
     check "a race time bubble fades sooner than an arena one" (raceBubbleLife < bubbleLife)
     // The tractor sorts by reach in a race and by aim angle otherwise, so a
     // near target off to the side must win over a distant one dead ahead.

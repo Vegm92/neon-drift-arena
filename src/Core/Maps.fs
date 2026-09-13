@@ -169,49 +169,79 @@ let private figureEight =
     [ v 350. -350.; v -350. 350.; v -750. 480.; v -1050. 300.; v -1150. 0.; v -1050. -300.; v -750. -480.
       v -350. -350.; v 350. 350.; v 750. 480.; v 1050. 300.; v 1150. 0.; v 1050. -300.; v 750. -480. ]
 
-let private boostClusters (road: V2 list) (w: float) =
+/// Boost pad clusters along the road. A cluster that would land on an item
+/// row, or on a corner another cluster already took, slides forward to the
+/// next clear corner, so pads and crates never share a spot.
+let private boostClusters (road: V2 list) (w: float) (spots: V2 list) =
     let arr = List.toArray road
     let n = arr.Length
     let h = w / 2.
+    let clear i = spots |> List.forall (fun c -> len (c - arr.[i]) > w * 0.85)
+    let slot (used: int list) i0 =
+        let cand = [ for j in 0 .. n - 1 -> (i0 + j) % n ]
+        match cand |> List.tryFind (fun i -> clear i && not (List.contains i used)) with
+        | Some i -> i
+        | None -> cand |> List.find (fun i -> not (List.contains i used))
     let shape =
         function
         | 2 -> [ -0.55, -0.35; 0.55, 0.35 ]
         | 3 -> [ 0.0, -0.55; -0.6, 0.3; 0.6, 0.3 ]
         | _ -> [ -0.6, -0.45; 0.6, -0.45; -0.3, 0.5; 0.3, 0.5 ]
-    [ for (f, k) in [ 0.06, 3; 0.19, 2; 0.32, 4; 0.45, 2; 0.58, 3; 0.71, 2; 0.86, 4 ] do
-        let i = int (f * float n) % n
+    let placed =
+        ([], [ 0.06, 3; 0.13, 3; 0.19, 2; 0.32, 4; 0.45, 2; 0.58, 3; 0.64, 3; 0.71, 2; 0.78, 3; 0.86, 4 ])
+        ||> List.fold (fun acc (f, k) -> (slot (List.map fst acc) (int (f * float n) % n), k) :: acc)
+        |> List.rev
+    [ for (i, k) in placed do
         let p = arr.[i]
         let t = norm (arr.[(i + 1) % n] - arr.[(i + n - 1) % n])
         let s = v -t.Y t.X
         for (lat, lon) in shape k -> p + s * (lat * h) + t * (lon * h), padRefill, 0 ]
 
+/// Mario Kart item rows: every crate spot on a track snaps to its nearest
+/// corner and becomes three crates side by side across the road, so the ship
+/// behind the leader has a box of its own instead of watching the leader take
+/// the only one.
+let private crateRows (road: V2 list) (w: float) (spots: V2 list) =
+    let arr = List.toArray road
+    let n = arr.Length
+    [ for spot in spots do
+          let i = arr |> Array.mapi (fun i q -> i, len (q - spot)) |> Array.minBy snd |> fst
+          let p = arr.[i]
+          let t = norm (arr.[(i + 1) % n] - arr.[(i + n - 1) % n])
+          let s = v -t.Y t.X
+          for lat in [ -0.62; 0.; 0.62 ] -> p + s * (lat * w / 2.) ]
+
+let private grandPrixBoxes = [ v 600. -1000.; v 750. 400.; v -550. 650.; v -550. -350. ]
+let private hairpinBoxes = [ v 100. -850.; v 1200. -600.; v -380. 140.; v 1200. 500. ]
+let private figureEightBoxes = [ v 750. -480.; v -750. 480.; v 1050. 300.; v -1050. -300. ]
+
 let tracks =
     [| { Rocks = [ v 0. -500., 50.; v 300. 300., 46.; v -200. -700., 40.; v -700. 450., 44. ]
          Pads =
-           boostClusters grandPrix 280.
+           boostClusters grandPrix 280. grandPrixBoxes
            @ [ v 1050. -400., healAmount, 1
                v -1150. 550., healAmount, 1 ]
-         Crates = [ v 600. -1000.; v 750. 400.; v -550. 650.; v -550. -350. ]
+         Crates = crateRows grandPrix 280. grandPrixBoxes
          Track = Some(grandPrix, 280., 3)
          Hole = None
          Size = arenaDefault }
 
        { Rocks = [ v 400. -50., 50.; v 400. 500., 46.; v -700. -50., 44. ]
          Pads =
-           boostClusters hairpin 260.
+           boostClusters hairpin 260. hairpinBoxes
            @ [ v -1180. -50., healAmount, 1
                v 650. -350., healAmount, 1 ]
-         Crates = [ v -200. -850.; v 1200. -600.; v -300. 0.; v 1200. 500. ]
+         Crates = crateRows hairpin 260. hairpinBoxes
          Track = Some(hairpin, 260., 3)
          Hole = None
          Size = arenaDefault }
 
        { Rocks = [ v 0. 450., 46.; v 0. -450., 46. ]
          Pads =
-           boostClusters figureEight 300.
+           boostClusters figureEight 300. figureEightBoxes
            @ [ v 750. 480., healAmount, 1
                v -750. -480., healAmount, 1 ]
-         Crates = [ v 750. -480.; v -750. 480.; v 1050. 300.; v -1050. -300. ]
+         Crates = crateRows figureEight 300. figureEightBoxes
          Track = Some(figureEight, 300., 2)
          Hole = None
          Size = arenaDefault } |]
