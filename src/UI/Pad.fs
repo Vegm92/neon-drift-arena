@@ -65,7 +65,7 @@ let private button (cls: string) (key: string) (label: string) =
 let private wire () =
     let list = root.querySelectorAll "[data-k]"
     for i in 0 .. list.length - 1 do
-        let el = list.[i] :?> Element
+        let el = list.[i]
         hold el (el.getAttribute "data-k")
 
 let private place (el: Element) (x: float) (y: float) =
