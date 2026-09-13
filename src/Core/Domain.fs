@@ -71,7 +71,8 @@ module Binds =
         | Fire -> [| "Space" |]
         | Special -> [| "KeyF" |]
         | Start -> [| "Enter" |]
-        | Back -> [| "Escape" |]
+        // Backspace rides along because CrazyGames takes Escape for leaving fullscreen
+        | Back -> [| "Escape"; "Backspace" |]
         // shares Special's default: dead players have no weapon, so F is free to
         // double as the ghost/launcher toggle — see `Binds.isSoleBindingOf` note above
         | Swap -> [| "KeyF" |]
