@@ -14,6 +14,11 @@ let mutable layout = 0
 let mutable target = -1
 let arsenal = [| Rail; Mines; Swarm; Pulse; Scatter; Tractor; Barrier; Sentry; Bubble |]
 let raceArsenal = [| Scatter; Mines; Swarm; Pulse; Tractor; Bubble |]
+/// Mario Kart rule: the crate you get depends on where you are. The leader
+/// draws from the defensive half of the race arsenal, the last ship from the
+/// hunting half, everyone between from the whole of it.
+let raceFrontArsenal = [| Scatter; Mines; Bubble; Scatter; Mines; Tractor |]
+let raceBackArsenal = [| Swarm; Pulse; Tractor; Swarm; Pulse; Scatter |]
 let mutable mutator = 0
 let mutators = 4
 let mutable mapHole: (V2 * float * float) option = None

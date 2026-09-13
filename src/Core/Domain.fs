@@ -257,9 +257,33 @@ module Cfg =
     let mutable raceGrace = 20.
     let mutable raceDrag = 0.10
     let mutable offroadFactor = 0.55
-    let mutable raceGrip = 2.5
+    // Sideways speed bleeds at this rate per second in RACE. 0 is the arena's
+    // free flight, 2.5 pinned the ship to its nose; halfway keeps some drift.
+    let mutable raceGrip = 1.25
     let mutable racePulseRange = 190.
     let mutable raceBubbleLife = 2.
+    // RACE runs everything - turn, thrust, top speed - this much faster than
+    // an arena match; the track arena is bigger, so the crossing stays 8-10 s.
+    let mutable raceSpeed = 1.25
+    // While boosting in RACE the speed cap lifts by this factor, so a boost is
+    // a real burst past top speed instead of just reaching it sooner.
+    let mutable raceBoostTop = 1.3
+    // Speed above the cap bleeds off at this rate per second in RACE, so a
+    // boost, a pad kick or a repulsor shove tails off instead of being cut.
+    let mutable raceBoostFade = 2.5
+    // A RACE boost pad: how much bar it refills, the instant speed kick it
+    // adds along the nose, and how soon it is back.
+    let mutable racePadRefill = 45.
+    let mutable racePadKick = 140.
+    let racePadRespawn = 2.
+    // RACE item rows come straight back in place, like Mario Kart boxes.
+    let raceCrateRespawn = 3.
+    // A RACE crate also tops up boost, scaled by how far back you are: the
+    // leader gets none, the last ship gets this much.
+    let mutable raceCrateBoost = 60.
+    // The RACE repulsor is a shell: a harder shove and a short spin-out.
+    let mutable racePulseForce = 2600.
+    let mutable racePulseStun = 0.6
 
     let mutable padAimOn = 0.15
     let mutable padThrustOn = 0.75
@@ -387,6 +411,14 @@ module Cfg =
            "raceGrip", (fun () -> raceGrip), (fun x -> raceGrip <- x)
            "racePulseRange", (fun () -> racePulseRange), (fun x -> racePulseRange <- x)
            "raceBubbleLife", (fun () -> raceBubbleLife), (fun x -> raceBubbleLife <- x)
+           "raceSpeed", (fun () -> raceSpeed), (fun x -> raceSpeed <- x)
+           "raceBoostTop", (fun () -> raceBoostTop), (fun x -> raceBoostTop <- x)
+           "raceBoostFade", (fun () -> raceBoostFade), (fun x -> raceBoostFade <- x)
+           "racePadRefill", (fun () -> racePadRefill), (fun x -> racePadRefill <- x)
+           "racePadKick", (fun () -> racePadKick), (fun x -> racePadKick <- x)
+           "raceCrateBoost", (fun () -> raceCrateBoost), (fun x -> raceCrateBoost <- x)
+           "racePulseForce", (fun () -> racePulseForce), (fun x -> racePulseForce <- x)
+           "racePulseStun", (fun () -> racePulseStun), (fun x -> racePulseStun <- x)
            "padAimOn", (fun () -> padAimOn), (fun x -> padAimOn <- x)
            "padThrustOn", (fun () -> padThrustOn), (fun x -> padThrustOn <- x)
            "trailLength", (fun () -> trailLength), (fun x -> trailLength <- x)

@@ -54,7 +54,11 @@ let private build i =
       Deploys = []
       RaceEnd = 0.
       Pads = l.Pads |> List.map (fun (p, a, k) -> { Pos = p; Amount = a; RespawnIn = 0.; Kind = k }) |> List.toArray
-      Crates = [| 0; 2; 4; 6 |] |> Array.map (fun i -> { Pos = cratePositions.[i % cratePositions.Length]; RespawnIn = 0. })
+      Crates =
+        if l.Track.IsSome then
+            cratePositions |> Array.map (fun p -> { Pos = p; RespawnIn = 0. })
+        else
+            [| 0; 2; 4; 6 |] |> Array.map (fun i -> { Pos = cratePositions.[i % cratePositions.Length]; RespawnIn = 0. })
       Rng = 7
       Phase = Playing
       Time = 0.

@@ -73,7 +73,7 @@ let stepShip k dt (inp: Input) (s: Ship) =
         s
     else
         let inp = if s.Stun > 0. then noInput else inp
-        let k = slow s * turbo ()
+        let k = slow s * turbo () * (if mode = Race then raceSpeed else 1.)
         let angle =
             match inp.Aim with
             | Some a when not inp.Steer -> a
@@ -90,7 +90,14 @@ let stepShip k dt (inp: Input) (s: Ship) =
             elif inp.Reverse then -thrustAccel * reverseFactor * k
             else 0.
         let push = ofAngle angle * accel + ofAngle (angle + System.Math.PI / 2.) * (inp.Strafe * strafeAccel * k)
-        let vel = (s.Vel + push * dt) * (1. - (if mode = Race then raceDrag else drag) * slick () * dt) |> clampLen (maxSpeed * k)
+        // In RACE a boost lifts the cap, and anything above the cap - the boost
+        // itself, a pad kick, a repulsor shove - tails off instead of being cut.
+        let cap =
+            if mode = Race then
+                max (maxSpeed * k * (if boosting then raceBoostTop else 1.)) (len s.Vel * (1. - raceBoostFade * dt))
+            else
+                maxSpeed * k
+        let vel = (s.Vel + push * dt) * (1. - (if mode = Race then raceDrag else drag) * slick () * dt) |> clampLen cap
         let vel =
             if mode = Race then
                 let f = ofAngle angle
