@@ -566,7 +566,7 @@ let main _ =
 
     let out = w0 |> place 0 zero 0. |> edit 0 (fun s -> { s with Alive = false; Stocks = 0; LaunchAngle = 0. })
     let turning = run 12 (Array.init 4 (fun i -> if i = 0 then { present with Turn = 1. } else present)) out
-    check "a launcher sits on the rim and turns with the stick" (launcher turning.Ships.[0] && turning.Ships.[0].LaunchAngle > 0.3 && abs (turning.Ships.[0].Pos.X - arenaHalf) < 1. && turning.Ships.[0].Pos.Y > 0.)
+    check "a launcher sits on the rim and turns with the stick" (launcher turning.Ships.[0] && abs (turning.Ships.[0].LaunchAngle - 12. * dt * launchTurnRate) < 1e-9 && abs (turning.Ships.[0].Pos.X - arenaHalf) < 1. && turning.Ships.[0].Pos.Y > 0.)
     let hurled = out |> step dt firing
     let rock = hurled.Rocks.Head
     check "a launcher hurls a rock from the rim toward the centre" (hurled.Rocks.Length = 1 && rock.Pos.X > arenaHalf - 10. && rock.Vel.X < 0. && hurled.Ships.[0].LaunchCd > 0.)

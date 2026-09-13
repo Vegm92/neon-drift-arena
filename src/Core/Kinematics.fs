@@ -52,7 +52,7 @@ let private stepLauncher k dt (inp: Input) (s: Ship) =
     let angle =
         match inp.Aim with
         | Some a -> a
-        | None -> s.LaunchAngle + inp.Turn * turnRate * dt
+        | None -> s.LaunchAngle + inp.Turn * launchTurnRate * dt
     { s with
         LaunchAngle = angle
         Angle = angle + Math.PI

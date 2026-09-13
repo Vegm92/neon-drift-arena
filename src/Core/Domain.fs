@@ -105,6 +105,7 @@ module Cfg =
     let killMargin = 60.
     let shipRadius = 18.
     let mutable turnRate = 4.2
+    let mutable launchTurnRate = 1.6
     let mutable thrustAccel = 110.
     let mutable reverseFactor = 0.25
     let mutable boostAccel = 320.
@@ -314,6 +315,7 @@ module Cfg =
 
     let tunables: (string * (unit -> float) * (float -> unit))[] =
         [| "turnRate", (fun () -> turnRate), (fun x -> turnRate <- x)
+           "launchTurnRate", (fun () -> launchTurnRate), (fun x -> launchTurnRate <- x)
            "thrustAccel", (fun () -> thrustAccel), (fun x -> thrustAccel <- x)
            "reverseFactor", (fun () -> reverseFactor), (fun x -> reverseFactor <- x)
            "boostAccel", (fun () -> boostAccel), (fun x -> boostAccel <- x)
