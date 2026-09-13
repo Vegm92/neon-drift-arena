@@ -103,6 +103,6 @@ const phonePad = {
 export default {
   base: "./",
   plugins: [siteStrings, bakeTweaks, phonePad, mapEdit, modelTune],
-  build: { rollupOptions: { input: { main: "index.html", play: "play/index.html", pad: "pad.html" } } },
+  build: { rollupOptions: { input: { main: "index.html", play: "play/index.html", pad: "pad.html", privacy: "privacy.html" } } },
   server: { port: process.env.PORT ? +process.env.PORT : undefined },
 };
