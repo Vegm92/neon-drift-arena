@@ -151,6 +151,7 @@ type Locale =
       Bot: string
       CrazyGames: string
       SignIn: string
+      PrivacyPolicy: string
       AddBot: string
       ClearBots: string
       Tuning: string
@@ -378,6 +379,7 @@ let en =
       Bot = "BOT"
       CrazyGames = "CRAZYGAMES"
       SignIn = "SIGN IN"
+      PrivacyPolicy = "PRIVACY POLICY"
       AddBot = "ADD BOT"
       ClearBots = "CLEAR BOTS"
       Tuning = "TUNING"

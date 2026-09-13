@@ -228,7 +228,8 @@ let rows (machine: bool) =
                   if not (isNullOrUndefined user) && not (isNullOrUndefined user.username) then
                       onSignInCompleted user.username
               } |> Async.StartImmediate
-          ) ]
+          )
+      yield Action(Strings.t.PrivacyPolicy, fun () -> window?``open`` ("../privacy.html", "_blank") |> ignore) ]
 
 let selectable r =
     match r with
