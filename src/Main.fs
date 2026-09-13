@@ -500,10 +500,12 @@ let private localFrame (t: float) dt =
                 resultShown <- true
                 banner.className <- "hidden"
                 Menu.note <- endNote
-                let me = world.Ships.[0]
-                if me.Active then
+                // progress belongs to the seat carrying this machine's identity, not to slot 0
+                let seat = Menu.localSeat
+                let me = if seat >= 0 then world.Ships.[seat] else Unchecked.defaultof<_>
+                if seat >= 0 && me.Active then
                     let won = match world.Phase with
-                              | Over(Some i) -> i = 0 || (me.Team > 0 && world.Ships.[i].Team = me.Team)
+                              | Over(Some i) -> i = seat || (me.Team > 0 && world.Ships.[i].Team = me.Team)
                               | _ -> false
                     Menu.recordMatch won me.Kills (Cfg.stocks - me.Stocks) me.Finish
                 if Menu.adSeen then
