@@ -121,8 +121,9 @@ let resolveRams (ships: Ship[]) =
                 let enemy = side a <> side b
                 // damage is one-sided by default: each ship's own closing speed hurts the other,
                 // so a stationary ship dies to a full-speed hit while the attacker takes nothing back
-                let speedIntoB = max 0. (dot a.Vel n)
-                let speedIntoA = max 0. (-(dot b.Vel n))
+                let closing = max 0. -vn
+                let speedIntoB = min closing (max 0. (dot a.Vel n))
+                let speedIntoA = min closing (max 0. (-(dot b.Vel n)))
                 // facing the incoming ship (bracing nose-first) cuts the damage you take
                 let faceA = max 0. (dot (ofAngle a.Angle) n)
                 let faceB = max 0. (dot (ofAngle b.Angle) (n * -1.))

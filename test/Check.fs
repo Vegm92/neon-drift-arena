@@ -79,6 +79,13 @@ let main _ =
     let w7 =
         w0 |> place 0 zero 0. |> place 1 (v 30. 0.) 0. |> edit 1 (fun s -> { s with Vel = v (-150.) 0. })
         |> step dt (all present)
+
+    let tap =
+        w0 |> place 0 zero 0. |> place 1 (v 35. 0.) 0.
+        |> edit 0 (fun s -> { s with Invuln = 0.; Vel = v 210. 0. })
+        |> edit 1 (fun s -> { s with Invuln = 0.; Vel = v 200. 0. })
+        |> run 120 (all present)
+    check "a rear-end tap at walking pace only scratches" (tap.Ships.[1].Hp > hpMax - 10. && tap.Ships.[1].Hp < hpMax)
     check "ram exchanges momentum" (w7.Ships.[0].Vel.X < -50. && w7.Ships.[1].Vel.X > -50.)
 
     let w7b =
