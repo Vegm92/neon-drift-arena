@@ -257,7 +257,9 @@ module Cfg =
     let mutable raceGrace = 20.
     let mutable raceDrag = 0.10
     let mutable offroadFactor = 0.55
-    let mutable raceGrip = 2.5
+    // Sideways speed bleeds at this rate per second in RACE. 0 is the arena's
+    // free flight, 2.5 pinned the ship to its nose; halfway keeps some drift.
+    let mutable raceGrip = 1.25
     let mutable racePulseRange = 190.
     let mutable raceBubbleLife = 2.
     // RACE runs everything - turn, thrust, top speed - this much faster than
