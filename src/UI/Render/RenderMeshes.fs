@@ -13,7 +13,7 @@ let private assetRoot = if window.location.pathname.Contains "/play/" then "../"
 
 let private shipSheet =
     lazy
-        (let t = three.loadTexture (assetRoot + "ships.png")
+        (let t = three.loadTexture (assetRoot + "assets/ships.png")
          t.colorSpace <- three.SRGBColorSpace
          t.repeat.set (fst cell / fst sheet, snd cell / snd sheet)
          t)

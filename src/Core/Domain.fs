@@ -280,9 +280,9 @@ module Cfg =
 
     // Engine drone: gain contributed per ship on plain thrust vs boost, the
     // overall loudness cap, and how the lowpass cutoff tracks speed (pitch).
-    let mutable sfxThrustVolume = 0.005
-    let mutable sfxBoostVolume = 0.01
-    let mutable sfxThrustVolumeMax = 0.08
+    let mutable sfxThrustVolume = 0.00125
+    let mutable sfxBoostVolume = 0.0025
+    let mutable sfxThrustVolumeMax = 0.02
     let mutable sfxThrustPitchBase = 40.
     let mutable sfxThrustPitchRange = 340.
 

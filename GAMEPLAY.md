@@ -90,7 +90,7 @@ Each shot is the weapon firing in the sandbox (`combat.html`), stripped to the t
 
 ## Medals
 
-Medals appear as a coin on your HUD panel during the match and as a coin, code and count on the results screen; the art is one sprite sheet, `public/medals.png`, in the order below. The first five are shouted by the announcer as you earn them.
+Medals appear as a coin on your HUD panel during the match and as a coin, code and count on the results screen; the art is one sprite sheet, `public/assets/medals.png`, in the order below. The first five are shouted by the announcer as you earn them.
 
 | Medal | Earned by |
 |-------|-----------|

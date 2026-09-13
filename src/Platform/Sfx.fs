@@ -87,9 +87,9 @@ let mutable private levels = ResizeArray [ 1.; 1. ]
 let private music = document.createElement "audio" :?> HTMLAudioElement
 
 let private apply () =
-    let m = isMuted ()
-    music.volume <- 0.35 * levels.[1]
-    music.muted <- m || localMuted
+    let m = isMuted () || localMuted
+    music.volume <- 0.175 * levels.[1]
+    music.muted <- m
     if not (isNullOrUndefined (box ctx)) then
         master.gain.value <- (if m then 0. else volume * levels.[0])
 
