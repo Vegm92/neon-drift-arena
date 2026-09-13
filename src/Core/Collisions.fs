@@ -8,35 +8,41 @@ open Track
 open Combat
 open Entities
 
-let private bump (events: ResizeArray<Event>) (pos: V2) (radius: float) (vel: V2) (sh: Ship) =
+let private bump (events: ResizeArray<Event>) (pos: V2) (radius: float) (vel: V2) (invMass: float) (sh: Ship) =
     let d = sh.Pos - pos
     let dist = len d
     if dist < radius + shipRadius && dist > 1e-6 then
         let n = d * (1. / dist)
         let cp = pos + n * radius
         events.Add(Bump cp)
-        let hit, jn = Impact.apply cp n vel 0. sh
+        let hit, jn = Impact.apply cp n vel invMass sh
         hit |> Impact.separate cp n shipRadius |> Impact.stun jn, jn
     else
         sh, 0.
 
 let resolveAsteroids (ships: Ship[]) =
     let events = ResizeArray()
-    let one sh (a: Asteroid) = fst (bump events a.Pos a.Radius zero sh)
+    let one sh (a: Asteroid) = fst (bump events a.Pos a.Radius zero 0. sh)
     let s = ships |> Array.map (fun sh -> if sh.Alive then Array.fold one sh asteroids else sh)
     s, List.ofSeq events
 
 let resolveRocks (ships: Ship[]) (rocks: Rock list) =
     let events = ResizeArray()
-    let hit (sh: Ship) (r: Rock) =
-        let bumped, jn = bump events r.Pos r.Radius r.Vel sh
-        if jn > 0. then
-            let mark s = if side s <> side ships.[r.Owner] then tag r.Owner Rock s else s
-            bumped |> mark |> damage (jn * rockDamage)
-        else
-            bumped
-    let s = ships |> Array.map (fun sh -> if sh.Alive then List.fold hit sh rocks else sh)
-    s, List.ofSeq events
+    let s = Array.copy ships
+    let roll (r: Rock) =
+        let mutable r = r
+        for i in 0 .. s.Length - 1 do
+            if s.[i].Alive then
+                let bumped, jn = bump events r.Pos r.Radius r.Vel (1. / rockMass) s.[i]
+                if jn > 0. then
+                    r <- { r with Vel = r.Vel - norm (s.[i].Pos - r.Pos) * (jn / rockMass) }
+                    let mark x = if side x <> side ships.[r.Owner] then tag r.Owner Rock x else x
+                    s.[i] <- bumped |> mark |> damage (jn * rockDamage)
+                else
+                    s.[i] <- bumped
+        r
+    let rocks = rocks |> List.map roll
+    s, rocks, List.ofSeq events
 
 let resolveDeploys (ships: Ship[]) (deploys: Deployable list) (bullets: Bullet list) =
     let events = ResizeArray()

@@ -1,4 +1,4 @@
-module Sim
+﻿module Sim
 
 open System
 open Vec
@@ -141,7 +141,7 @@ let step dt (inputs: Input[]) (w: World) =
         let ships, bumps = resolveAsteroids ships
         let rocks, rockEvents = stepRocks k (fun r -> entDt r.Owner r.Pos) (newRocks @ w.Rocks)
         let rocks = rocks |> List.map (fun r -> match warpAt w.Portals r.Pos r.Vel with Some p -> { r with Pos = p } | None -> { r with Vel = pull w.Hole dt r.Pos r.Vel })
-        let ships, rockHits = resolveRocks ships rocks
+        let ships, rocks, rockHits = resolveRocks ships rocks
         let ships, warps = resolveWarps dt w.Portals ships
         let ships = resolveHole w.Hole dt ships
         let ships, pads, picks = resolvePads (sudden w) dt ships w.Pads

@@ -105,6 +105,7 @@ module Cfg =
     let killMargin = 60.
     let shipRadius = 18.
     let mutable turnRate = 4.2
+    let mutable launchTurnRate = 1.6
     let mutable thrustAccel = 110.
     let mutable reverseFactor = 0.25
     let mutable boostAccel = 320.
@@ -126,7 +127,7 @@ module Cfg =
     let hpMax = 100.
     let stocks = 3
     let respawnDelay = 3.
-    let invulnTime = 1.5
+    let invulnTime = 2.
     let restitution = 0.85
     let mutable ramDamageFactor = 0.372
     let mutable ramFaceGuard = 0.6
@@ -223,6 +224,7 @@ module Cfg =
     let mutable rockCooldown = 6.
     let mutable rockLife = 14.
     let mutable rockDamage = 0.049
+    let mutable rockMass = 3.
     let inviteButton = false
 
     let mutable portalEvery = 20.
@@ -314,6 +316,7 @@ module Cfg =
 
     let tunables: (string * (unit -> float) * (float -> unit))[] =
         [| "turnRate", (fun () -> turnRate), (fun x -> turnRate <- x)
+           "launchTurnRate", (fun () -> launchTurnRate), (fun x -> launchTurnRate <- x)
            "thrustAccel", (fun () -> thrustAccel), (fun x -> thrustAccel <- x)
            "reverseFactor", (fun () -> reverseFactor), (fun x -> reverseFactor <- x)
            "boostAccel", (fun () -> boostAccel), (fun x -> boostAccel <- x)
@@ -384,6 +387,7 @@ module Cfg =
            "rockCooldown", (fun () -> rockCooldown), (fun x -> rockCooldown <- x)
            "rockLife", (fun () -> rockLife), (fun x -> rockLife <- x)
            "rockDamage", (fun () -> rockDamage), (fun x -> rockDamage <- x)
+           "rockMass", (fun () -> rockMass), (fun x -> rockMass <- x)
            "portalEvery", (fun () -> portalEvery), (fun x -> portalEvery <- x)
            "portalLife", (fun () -> portalLife), (fun x -> portalLife <- x)
            "portalRadius", (fun () -> portalRadius), (fun x -> portalRadius <- x)
