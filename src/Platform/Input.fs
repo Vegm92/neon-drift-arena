@@ -39,9 +39,11 @@ let mutable private sock: obj = null
 
 let mutable getLocalPlayerName : unit -> string = fun () -> ""
 
-/// Set from the relay's "nda:role" message: true once this connection was
-/// demoted to a peer, so the joining machine stops broadcasting its own world.
-let mutable isPeer = false
+/// Set from the relay's "nda:role" message: true while this connection is a
+/// peer, so the joining machine does not broadcast its own world. It starts true
+/// and a relayed connection stays silent until the role arrives - one snapshot
+/// sent before then flips the real host into mirror mode for a whole second.
+let mutable isPeer = true
 
 let rec private connect () =
     let s = createNew window?WebSocket (relayOrigin.Replace("http", "ws") + "/relay?room=" + room + (if isPad then "&role=pad" else "&role=host"))
@@ -60,6 +62,7 @@ let initNetwork () =
     if not (isNullOrUndefined hot) then
         room <- ""
         padUrl <- ""
+        isPeer <- false
     elif isPad then
         room <- window.location.hash.TrimStart '#'
         padUrl <- ""
@@ -77,7 +80,8 @@ let initNetwork () =
                 room <- code
             | code -> room <- code
         padUrl <- if room = "" then "" else relayOrigin + "/pad.html#" + room
-        if room <> "" then
+        if room = "" then isPeer <- false
+        else
             connect ()
             CrazyGames.updateRoom (room, true)
 

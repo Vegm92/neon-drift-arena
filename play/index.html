@@ -299,6 +299,18 @@
   #menu .hint{font-size:clamp(11px,1vw,17px);opacity:.7;white-space:pre-line;line-height:2}
   #menu .cue{font-size:clamp(11px,1vw,17px);opacity:.7;letter-spacing:.12em}
   #menu .cue:empty{display:none}
+  #chat{position:fixed;right:18px;top:18px;z-index:9;width:min(320px,30vw);display:flex;flex-direction:column;gap:6px;
+    color:#7cff3a;padding:8px 10px;border:1px solid currentColor;background:linear-gradient(rgba(8,14,26,.82),rgba(4,6,12,.9));
+    font-size:clamp(9px,.9vw,13px);letter-spacing:.12em;box-shadow:0 0 26px -10px currentColor}
+  #chat.hidden{display:none}
+  #chat .lt{display:flex;justify-content:space-between;gap:10px;font-weight:700;opacity:.75}
+  #chat .lt span{opacity:.6}
+  #chat .log{display:flex;flex-direction:column;gap:3px;max-height:26vh;overflow:hidden;color:#cfe6ff;letter-spacing:.06em;line-height:1.7}
+  #chat .log:empty{display:none}
+  #chat .log i{font-style:normal;color:#7cff3a;margin-right:6px}
+  #chat input{font:inherit;letter-spacing:.12em;color:#cfe6ff;background:transparent;border:none;
+    border-top:1px solid currentColor;padding:6px 0 2px;width:100%;outline:none}
+  #chat input::placeholder{color:currentColor;opacity:.5}
   #gate{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:20px;padding:32px;text-align:center;background:#03030a}
   #gate[hidden]{display:none}
@@ -317,6 +329,7 @@
 <div id="banner" class="hidden"></div>
 <div id="tut" class="hidden"></div>
 <div id="menu"></div>
+<div id="chat" class="hidden"></div>
 <div id="gate" hidden>
   <h1>{{gateTitle}}</h1>
   <p>{{gateBody}}</p>

@@ -349,18 +349,124 @@ let private qr () =
             (if qrOpen then " open" else "") Strings.t.ScanToJoin (qrToSvg padUrl) padUrl
 
 let private inviteUrl () =
-    if Input.room = "" then ""
-    else window.location.href.Split('?').[0] + "?room=" + Input.room
+    match CrazyGames.inviteLink () with
+    | null | "" -> if Input.room = "" then "" else window.location.href.Split('?').[0] + "?room=" + Input.room
+    | link -> link
 
 let private invite () =
     let url = inviteUrl ()
-    if not Cfg.inviteButton || url = "" then ""
+    if url = "" then ""
     else
         let fresh = JS.Constructors.Date.now () - copiedAt < 1600.
         sprintf
             "<div class=\"legend invite%s\" data-copy=\"0\"><div class=\"lt\">%s</div></div>"
             (if fresh then " copied" else "")
             (if fresh then Strings.t.InviteCopied else Strings.t.InviteCopy)
+
+
+// ---- Room chat ----------------------------------------------------------
+// One log, owned by the host: a peer sends `nda:chat` and reads the log back out
+// of the mirrored `nda:state`, so both machines show the same lines in the same
+// order. It lives in its own `#chat` element rather than the mirrored menu HTML,
+// because a peer's half-typed line must survive the host's next menu refresh.
+
+let private chatEl = document.getElementById "chat"
+let private chatLog = ResizeArray<string * string>()
+let mutable private chatShown = false
+
+let private escape (t: string) =
+    t.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;")
+
+/// The host's log, mirrored to peers in `nda:state`.
+let chatLines () = [| for name, text in chatLog -> [| name; text |] |]
+
+/// Read off the menu's own class, not `screen`: a mirror peer never runs
+/// `update`, so its `screen` is stale while its menu element is not.
+let private chatEnabled () = el.className = "" && not (CrazyGames.chatDisabled ())
+
+let private drawChat () =
+    let log =
+        chatLog
+        |> Seq.map (fun (name, text) -> sprintf "<div><i>%s</i>%s</div>" (escape name) (escape text))
+        |> String.concat ""
+    let input = chatEl.querySelector "input"
+    if isNull input then
+        chatEl.innerHTML <-
+            sprintf
+                "<div class=\"lt\">%s<span>%s</span></div><div class=\"log\">%s</div><input maxlength=\"%d\" placeholder=\"%s\">"
+                Strings.t.ChatTitle Strings.t.ChatHint log Cfg.chatMax Strings.t.ChatPrompt
+    else
+        (chatEl.querySelector ".log").innerHTML <- log
+
+let syncChat () =
+    let want = chatEnabled ()
+    if want <> chatShown then
+        chatShown <- want
+        chatEl.className <- if want then "" else "hidden"
+        if want then drawChat () else chatEl.innerHTML <- ""
+
+let private chatPush (name: string) (text: string) =
+    if not (CrazyGames.chatDisabled ()) then
+        chatLog.Add(name, text)
+        while chatLog.Count > Cfg.chatKeep do chatLog.RemoveAt 0
+        if chatShown then drawChat ()
+
+let private chatKey () = chatLog |> Seq.map (fun (n, t) -> n + ">" + t) |> String.concat "|"
+
+/// Peers replace their log wholesale from the host's mirrored copy.
+let chatApply (lines: string[][]) =
+    if not (isNullOrUndefined lines) then
+        let before = chatKey ()
+        chatLog.Clear()
+        for l in lines do chatLog.Add(l.[0], l.[1])
+        if chatShown && chatKey () <> before then drawChat ()
+
+let private chatName () =
+    if localName <> "" then localName
+    elif localSeat >= 0 then displayName localSeat
+    else Strings.t.Player 0
+
+let private chatSay (raw: string) =
+    let text = raw.Trim()
+    if text <> "" then
+        let text = if text.Length > Cfg.chatMax then text.Substring(0, Cfg.chatMax) else text
+        // the host owns the log, so it appends; a peer asks the host to
+        if Input.isPeer then Input.hotSend "nda:chat" (createObj [ "name" ==> chatName (); "text" ==> text ])
+        else chatPush (chatName ()) text
+
+Input.hotOn "nda:chat" (fun m -> chatPush (string m?name) (string m?text))
+
+// every keystroke is swallowed here so the letters never reach the game's own
+// window listener, the same guard the rename field uses
+chatEl.addEventListener (
+    "keydown",
+    fun e ->
+        e.stopPropagation ()
+        let inp = e.target :?> Browser.Types.HTMLInputElement
+        if (e :?> Browser.Types.KeyboardEvent).key = "Enter" then
+            e.preventDefault ()
+            chatSay inp.value
+            inp.value <- ""
+)
+
+let private focusChat () =
+    if chatShown then
+        match chatEl.querySelector "input" with
+        | null -> ()
+        | inp -> (inp :?> Browser.Types.HTMLInputElement).focus ()
+
+window.addEventListener (
+    "keydown",
+    fun e ->
+        let ke = e :?> Browser.Types.KeyboardEvent
+        if ke.code = "KeyT" && not ke.ctrlKey && not ke.altKey && not ke.metaKey then
+            match chatEl.querySelector "input" with
+            | null -> ()
+            | inp when document.activeElement = inp -> ()
+            | _ ->
+                e.preventDefault ()
+                focusChat ()
+)
 
 let private plus =
     "<svg viewBox=\"0 0 100 100\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linejoin=\"round\"><path d=\"M50 8 L86 29 L86 71 L50 92 L14 71 L14 29 Z\"/><path d=\"M50 34 L50 66 M34 50 L66 50\" stroke-width=\"4\"/></svg>"

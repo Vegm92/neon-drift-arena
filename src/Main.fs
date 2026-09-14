@@ -288,7 +288,7 @@ let private sendState () =
     let menu = if html = lastMenu && now - lastMenuAt < 1000. then null else html
     if not (isNull menu) then lastMenuAt <- now
     lastMenu <- html
-    let payload = createObj [ "world" ==> { world with Events = [] }; "events" ==> List.toArray frameEvents; "layout" ==> State.layout; "mode" ==> Array.findIndex ((=) State.mode) modes; "colors" ==> playerColor; "intro" ==> view.Intro; "banner" ==> banner.textContent; "bannerClass" ==> banner.className; "menuClass" ==> menuEl.className; "menu" ==> menu ]
+    let payload = createObj [ "world" ==> { world with Events = [] }; "events" ==> List.toArray frameEvents; "layout" ==> State.layout; "mode" ==> Array.findIndex ((=) State.mode) modes; "colors" ==> playerColor; "intro" ==> view.Intro; "banner" ==> banner.textContent; "bannerClass" ==> banner.className; "menuClass" ==> menuEl.className; "menu" ==> menu; "chat" ==> Menu.chatLines () ]
     let bytes = (JS.JSON.stringify payload).Length
     if bytes > 60000 && Log.once "payload" 10000. then
         Log.warn "the world snapshot is big enough to stall the relay" (createObj [ "bytes" ==> bytes; "menuHtml" ==> not (isNull menu) ])
@@ -376,6 +376,7 @@ let private clientFrame dt =
         Menu.update [||] |> ignore
     else
         menuEl.className <- m?menuClass
+        Menu.chatApply m?chat
         let html: string = m?menu
         if not (isNull html) then
             menuEl.innerHTML <- html
@@ -384,6 +385,7 @@ let private clientFrame dt =
     let events = (m?events: obj[]) |> Array.map eventOf |> List.ofArray
     m?events <- [||]
     world <- worldOf m?world
+    Menu.syncChat ()
     Sfx.track (menuEl.className <> "hidden" || ownScreen)
     Sfx.play events
     Sfx.thrust world
@@ -398,6 +400,7 @@ let private syncJoinable () =
 
 let private localFrame (t: float) dt =
     syncJoinable ()
+    Menu.syncChat ()
     if t - lastHost > 100. then
         lastHost <- t
         broadcast ()
@@ -418,8 +421,10 @@ let private localFrame (t: float) dt =
         | Some Menu.Quit ->
             world <- Sim.initial
             State.target <- -1
+            // back to this room's own lobby, not out of the room: the peers are
+            // still connected and `syncJoinable` reopens it, so announcing a
+            // departure here would drop the friends an invite brought in
             Menu.show ()
-            if Input.padUrl <> "" then CrazyGames.leftRoom ()
         | _ -> ()
         if view.Layout <> State.layout then world <- Sim.initial
         Render.syncArena view

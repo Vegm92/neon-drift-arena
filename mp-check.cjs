@@ -30,15 +30,21 @@ const spy = (room) => {
     return ws;
   };
   window.WebSocket.prototype = Native.prototype;
+  window.__cg = { inviteCalls: [], settingsListeners: [], rooms: [], left: 0 };
   // block the real CrazyGames SDK, stub what Input/Menu touch
   window.CrazyGames = {
     SDK: {
       init: async () => {},
       game: {
         gameplayStart() {}, gameplayStop() {}, loadingStart() {}, loadingStop() {},
-        addSettingsChangeListener() {}, addRoomJoinListener() {},
-        getInviteLinkParameters: () => ({}), inviteLink: async () => "",
-        updateRoom() {}, leftRoom() {}, isInstantMultiplayer: false, showInviteButton() {},
+        addSettingsChangeListener(f) { window.__cg.settingsListeners.push(f); }, addRoomJoinListener() {},
+        addJoinRoomListener() {},
+        getInviteLinkParameters: () => ({}),
+        inviteLink: async (p) => { window.__cg.inviteCalls.push(p); return "https://www.crazygames.com/i/SDKLINK"; },
+        updateRoom(r) { window.__cg.rooms.push(r); }, leftRoom() { window.__cg.left++; },
+        isInstantMultiplayer: false, showInviteButton() {},
+        hideInviteButton() {},
+        settings: { muteAudio: false, disableChat: false },
       },
       user: { isUserAccountAvailable: false, getUser: async () => null, addAuthListener() {} },
       ad: { requestAd: async () => {} },
@@ -89,6 +95,91 @@ const counts = (s, ev, since) => s.filter((m) => m.ev === ev && (!since || m.t >
   // no flip-flop: B must stay a peer and stay silent
   b = await read(B.page);
   check("B stays a peer (no flip-flop)", b.role === false && counts(b.sent, "nda:state") === 0, `role=${b.role}, sent=${counts(b.sent, "nda:state")}`);
+
+  // the SDK is the source of the invite link, and the lobby offers it
+  const inviteCalls = await A.page.evaluate(() => window.__cg.inviteCalls.length);
+  check("A asks the SDK for the room's invite link", inviteCalls > 0, `${inviteCalls} calls`);
+  const panel = await A.page.evaluate(() => {
+    const el = document.querySelector("#menu .legend.invite");
+    return el ? el.textContent.trim() : null;
+  });
+  check("the lobby shows the invite panel", !!panel, panel ?? "absent");
+
+  // chat: host types, the peer must see the line; then the other way round
+  const say = (p, text) =>
+    p.evaluate((t) => {
+      const inp = document.querySelector("#chat input");
+      if (!inp) return false;
+      inp.focus();
+      inp.value = t;
+      inp.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      return true;
+    }, text);
+  const log = (p) => p.evaluate(() => [...document.querySelectorAll("#chat .log > div")].map((d) => d.textContent));
+
+  check("the chat panel is up in the lobby", await say(A.page, "hello from the host"), "");
+  await A.page.waitForTimeout(400);
+  check("the host's line lands in its own log", (await log(A.page)).some((l) => l.includes("hello from the host")), JSON.stringify(await log(A.page)));
+  await B.page.waitForTimeout(600);
+  check("the peer sees the host's line", (await log(B.page)).some((l) => l.includes("hello from the host")), JSON.stringify(await log(B.page)));
+
+  await say(B.page, "and back from the peer");
+  await A.page.waitForTimeout(600);
+  check("the host sees the peer's line", (await log(A.page)).some((l) => l.includes("and back from the peer")), JSON.stringify(await log(A.page)));
+  await B.page.waitForTimeout(600);
+  check("the peer sees its own line echoed by the host", (await log(B.page)).some((l) => l.includes("and back from the peer")), JSON.stringify(await log(B.page)));
+
+  // chat text is escaped, never injected
+  await say(A.page, "<img src=x onerror=alert(1)>");
+  await A.page.waitForTimeout(400);
+  const injected = await A.page.evaluate(() => document.querySelectorAll("#chat img").length);
+  check("a message cannot inject markup", injected === 0, `${injected} elements`);
+
+  // disableChat: the SDK setting hides the panel on that machine
+  await A.page.evaluate(() => {
+    window.CrazyGames.SDK.game.settings.disableChat = true;
+    window.__cg.settingsListeners.forEach((f) => f({ disableChat: true, muteAudio: false }));
+  });
+  await A.page.waitForTimeout(400);
+  const hidden = await A.page.evaluate(() => document.getElementById("chat").className.includes("hidden"));
+  check("disableChat hides the chat panel", hidden, `class=${await A.page.evaluate(() => document.getElementById("chat").className)}`);
+  await A.page.evaluate(() => {
+    window.CrazyGames.SDK.game.settings.disableChat = false;
+    window.__cg.settingsListeners.forEach((f) => f({ disableChat: false, muteAudio: false }));
+  });
+
+  // between rounds the room must go back to joinable, so an invited friend can
+  // still walk in; and the peer must never be dropped on the way through
+  const joinable = () => A.page.evaluate(() => window.__cg.rooms.map((r) => r.isJoinable));
+  const bRecv = () => B.page.evaluate(() => window.__spy.recv.filter((m) => m.ev === "nda:state").length);
+  // the key has to be held across at least one frame for `rising` to see it
+  const pressA = async (code, key) => {
+    const fire = (type) =>
+      A.page.evaluate(([t, c, k]) => window.dispatchEvent(new KeyboardEvent(t, { code: c, key: k, bubbles: true })), [type, code, key]);
+    await fire("keydown");
+    await A.page.waitForTimeout(150);
+    await fire("keyup");
+    await A.page.waitForTimeout(150);
+  };
+  await A.page.evaluate(() => document.activeElement?.blur?.());
+  await pressA("Space", " ");
+  await A.page.waitForTimeout(300);
+  await pressA("Enter", "Enter");
+  await A.page.waitForTimeout(7000);
+  const inMatch = await A.page.evaluate(() => document.getElementById("menu").className.includes("hidden"));
+  check("the lobby launches a round", inMatch, `menu=${await A.page.evaluate(() => document.getElementById("menu").className)}`);
+  check("the room closes while the round runs", (await joinable()).at(-1) === false, JSON.stringify(await joinable()));
+  const before = await bRecv();
+  // PAUSE > QUIT TO LOBBY, then YES: the shortest way back to the lobby
+  await pressA("Enter", "Enter");
+  for (let i = 0; i < 3; i++) await pressA("ArrowDown", "ArrowDown");
+  await pressA("Enter", "Enter");
+  await pressA("ArrowDown", "ArrowDown");
+  await pressA("Enter", "Enter");
+  await A.page.waitForTimeout(1500);
+  check("the room reopens for friends back in the lobby", (await joinable()).at(-1) === true, JSON.stringify(await joinable()));
+  check("the peer is still in the room after the round", (await bRecv()) > before, `${(await bRecv()) - before} more snapshots`);
+  check("the host never announced it left the room", (await A.page.evaluate(() => window.__cg.left)) === 0, "");
 
   // host promotion: close A, B should be promoted and start broadcasting
   const tKill = Date.now();
