@@ -179,6 +179,11 @@ let private cycleColor slot dir =
     let i = List.findIndex ((=) playerColor.[slot]) free
     playerColor.[slot] <- free.[(i + dir + free.Length) % free.Length]
 
+/// The CrazyGames package is the lean cut: FFA only and no phone pad, so the
+/// MODE tile, the phone legend and the QR never draw there.
+let private lean = CrazyGames.isCrazyGames ()
+let private modePick = 0
+
 let private botKey = "bot"
 let isBot slot = joined.Contains slot && owner.[slot] = botKey
 
@@ -239,6 +244,9 @@ let private claim key slot =
 
 claim "kb" 0
 claim botKey 1
+// The seeded seat is ready as the seeded bot is: a lone player's first press
+// should start the match, not spend itself saying they are ready.
+ready.[0] <- true
 
 /// The keyboard's seat is only a guess about which device the player at the
 /// desk will use. It holds until the keyboard itself acts in the lobby; a pad
@@ -430,7 +438,9 @@ let private renderLobby (devices: Input.Device[]) =
           "", (if joined.Count < 4 then Strings.t.AddBot else Strings.t.ClearBots), true
           "", Strings.t.Settings, true
           Strings.keysLaunch (), (if go then Strings.t.Start else Strings.t.Ready), go ]
-        |> List.mapi (fun i (top, t, ok) ->
+        |> List.mapi (fun i (top, t, ok) -> i, top, t, ok)
+        |> List.filter (fun (i, _, _, _) -> not (lean && i = modePick))
+        |> List.map (fun (i, top, t, ok) ->
             let who = whoOn i
             let sel = who <> ""
             let cls = (if sel then " sel" else "") + (if ok then "" else " dim") + (if i = 5 && go then " go" else "")
@@ -458,8 +468,8 @@ let private renderLobby (devices: Input.Device[]) =
                 Strings.t.TitleMain Strings.t.TitleSub mode slots hints picks note
                 (legend "kb" Strings.t.Keyboard (Strings.kbLegend ()))
                 (legend "pad" Strings.t.Gamepad Strings.t.PadLegend)
-                (legend "phone" Strings.t.Phone Strings.t.PhoneLegend)
-                (qr ())
+                (if lean then "" else legend "phone" Strings.t.Phone Strings.t.PhoneLegend)
+                (if lean then "" else qr ())
                 (invite ()))
     if wrote && renaming >= 0 then
         match el.querySelector "input.rename" with
@@ -580,8 +590,11 @@ let private updateLobby () =
                         else [ 0..3 ] |> List.tryFind (fun i -> not (joined.Contains i))
                     slot |> Option.iter (claim d.Key)
             elif onRow.[d.Slot] then
-                if left then lobbyPick.[d.Slot] <- (lobbyPick.[d.Slot] + 5) % 6
-                if right then lobbyPick.[d.Slot] <- (lobbyPick.[d.Slot] + 1) % 6
+                let step dir = 
+                    let n = (lobbyPick.[d.Slot] + dir + 6) % 6
+                    lobbyPick.[d.Slot] <- if lean && n = modePick then (n + dir + 6) % 6 else n
+                if left then step 5
+                if right then step 1
                 if up || back then onRow.[d.Slot] <- false
                 elif start && canStart () then launch <- true
                 elif fire || start then

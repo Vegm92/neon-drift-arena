@@ -10,37 +10,11 @@ Input.init ()
 Settings.init ()
 Sfx.init ()
 
-let tutKey = "nda-tut"
-let tutEl = document.getElementById "tut"
-let mutable tutShown = false
-
-let showTutorial () =
-    if window.localStorage.getItem tutKey = null then
-        let rows =
-            Strings.tutRows ()
-            |> List.map (fun (caps, label) ->
-                let keys = caps |> List.map (sprintf "<i>%s</i>") |> String.concat ""
-                sprintf "<div class=\"row\"><div class=\"keys\">%s</div><div class=\"lbl\">%s</div></div>" keys label)
-            |> String.concat ""
-        tutEl.innerHTML <-
-            sprintf
-                "<div class=\"tp\"><div class=\"lt\">%s<b>%s</b></div><div class=\"rows\">%s</div></div><div class=\"skip\">%s</div>"
-                (Menu.deviceIcon "kb") Strings.t.TutTitle rows Strings.t.TutSkip
-        tutEl.className <- ""
-        tutShown <- true
-
-let hideTutorial () =
-    if tutShown then
-        window.localStorage.setItem (tutKey, "1")
-        tutEl.className <- "hidden"
-        tutShown <- false
-
 async {
     do! CrazyGames.init(Sfx.setCrazyGamesMuted) |> Async.AwaitPromise
     CrazyGames.loadingStart ()
     Input.initNetwork ()
     Menu.initUser ()
-    if not (CrazyGames.isInstantMultiplayer ()) then showTutorial ()
     CrazyGames.addJoinRoomListener(fun roomId ->
         if roomId <> "" then
             window.sessionStorage.setItem ("nda-room", roomId)
@@ -537,8 +511,6 @@ let rec frame (t: float) =
     if ms > 33. && Log.once "frame" 5000. then
         Log.warn "a frame took longer than 30 fps allows" (createObj [ "frameMs" ==> JS.Math.round ms; "physicsMs" ==> JS.Math.round simMs; "renderMs" ==> JS.Math.round (ms - simMs); "mirrored" ==> client (); "menu" ==> Menu.visible () ])
     window.requestAnimationFrame frame |> ignore
-window.addEventListener ("keydown", fun _ -> hideTutorial ())
-window.addEventListener ("pointerdown", fun _ -> hideTutorial ())
 window.addEventListener (
     "visibilitychange",
     fun _ ->

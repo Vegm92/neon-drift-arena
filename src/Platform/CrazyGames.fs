@@ -4,6 +4,12 @@ open Fable.Core
 
 type CGUser = { username: string; profilePictureUrl: string }
 
+/// True only in the package `scripts/pack-crazygames.mjs` builds, which stamps
+/// `window.NDA_CG`; `?cg=1` turns it on locally. The SDK exposes no environment
+/// property, so the packer is the signal.
+[<Import("isCrazyGames", "./CrazyGames.js")>]
+let isCrazyGames () : bool = jsNative
+
 [<Import("init", "./CrazyGames.js")>]
 let init (onMute: bool -> unit) : JS.Promise<unit> = jsNative
 
