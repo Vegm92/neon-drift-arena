@@ -141,25 +141,6 @@
   @keyframes slamin{0%{transform:scale(3) skewX(-12deg);opacity:0;filter:blur(6px) brightness(3)}100%{transform:scale(1) skewX(-12deg);opacity:1}}
   @keyframes rumble{0%,100%{transform:skewX(-12deg) translate(0,0)}20%{transform:skewX(-12deg) translate(-6px,3px)}40%{transform:skewX(-12deg) translate(5px,-4px)}60%{transform:skewX(-12deg) translate(-4px,2px)}80%{transform:skewX(-12deg) translate(3px,-2px)}}
   @keyframes score{0%{filter:brightness(3) drop-shadow(0 0 14px #fff)}100%{filter:none}}
-  #tut{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;z-index:8;
-    background:rgba(3,3,10,.88);letter-spacing:.2em;text-align:center;animation:fadein .4s ease}
-  #tut.hidden{display:none}
-  #tut .tp{color:#00f6ff;padding:22px 34px;border:1px solid currentColor;
-    background:linear-gradient(rgba(8,14,26,.85),rgba(4,6,12,.92));box-shadow:0 0 30px -6px currentColor;
-    clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px)}
-  #tut .lt{display:flex;align-items:center;justify-content:center;gap:10px;font-size:clamp(16px,3.4vh,28px);
-    text-shadow:0 0 14px currentColor;border-bottom:1px solid currentColor;padding-bottom:14px;margin-bottom:16px}
-  #tut .lt svg{width:26px;height:26px;filter:drop-shadow(0 0 6px currentColor)}
-  #tut .rows{display:flex;flex-direction:column;gap:14px;font-size:clamp(11px,1.8vh,16px)}
-  #tut .row{display:flex;align-items:center;gap:18px;justify-content:space-between}
-  #tut .keys{display:flex;gap:5px}
-  #tut .keys i{font-style:normal;padding:4px 11px;border:1px solid #3a557a;border-radius:4px;color:#cfe;
-    background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.02));
-    box-shadow:0 2px 0 rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08);
-    font-size:clamp(10px,1.5vh,14px);min-width:1.6em;text-align:center}
-  #tut .lbl{opacity:.75;min-width:120px;text-align:left;color:#cfe}
-  #tut .skip{font-size:clamp(10px,1.4vh,13px);opacity:.5;letter-spacing:.3em}
-  @keyframes fadein{from{opacity:0}to{opacity:1}}
   #menu{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;letter-spacing:.3em;text-align:center;
     background:linear-gradient(rgba(3,3,10,.78),rgba(3,3,10,.9)),url(/assets/backdrop.jpg) center/cover no-repeat #03030a}
   #menu.hidden{display:none}
@@ -327,7 +308,6 @@
 <div id="vignette"></div>
 <div id="hud"><div id="clock"></div><div id="feed"></div></div>
 <div id="banner" class="hidden"></div>
-<div id="tut" class="hidden"></div>
 <div id="menu"></div>
 <div id="chat" class="hidden"></div>
 <div id="gate" hidden>

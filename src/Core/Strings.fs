@@ -195,14 +195,12 @@ type Locale =
       BindBack: string
       BindSwap: string
       SwapMode: string -> string
-      TutTitle: string
       TutThrust: string
       TutTurn: string
       TutFire: string
       TutBoost: string
       TutSpecial: string
-      TutPause: string
-      TutSkip: string }
+      TutPause: string }
 
 /// A gamepad control drawn as its button rather than spelled out, so a legend
 /// never reads "B" as the letter on the keyboard. The class picks shape and
@@ -426,14 +424,13 @@ let en =
       BindBack = "BACK / CANCEL"
       BindSwap = "GHOST / LAUNCHER"
       SwapMode = sprintf "%s SWAP"
-      TutTitle = "HOW TO PLAY"
       TutThrust = "THRUST / REVERSE"
       TutTurn = "TURN"
       TutFire = "FIRE"
       TutBoost = "BOOST"
       TutSpecial = "SPECIAL"
       TutPause = "PAUSE"
-      TutSkip = "PRESS ANY KEY OR CLICK TO START" }
+}
 
 let t = en
 
@@ -560,14 +557,5 @@ let kbLegend () =
       bindCaps Bind.Special, t.TutSpecial
       bindCaps Bind.Start, t.TutPause
       [ t.MuteKey ], t.Mute ]
-
-/// The tutorial card: the same rows as the keyboard legend without STRAFE and MUTE.
-let tutRows () =
-    [ [ first Bind.Thrust; first Bind.Reverse ], t.TutThrust
-      [ first Bind.TurnLeft; first Bind.TurnRight ], t.TutTurn
-      bindCaps Bind.Fire, t.TutFire
-      bindCaps Bind.Boost, t.TutBoost
-      bindCaps Bind.Special, t.TutSpecial
-      bindCaps Bind.Start, t.TutPause ]
 
 let kbHint () = sprintf "%s / %s" (pair Bind.Thrust Bind.Reverse) (pad "L"), t.HintMove

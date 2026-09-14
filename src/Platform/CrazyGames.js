@@ -2,6 +2,10 @@ let sdk = null;
 let invite = "";
 let chatOff = false;
 
+const cgBuild = window.NDA_CG === true || new URLSearchParams(location.search).has("cg");
+
+export function isCrazyGames() { return cgBuild; }
+
 export async function init(onMute) {
   const cg = window.CrazyGames?.SDK;
   if (!cg) return;
