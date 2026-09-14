@@ -1,4 +1,4 @@
-import { cp, readFile, writeFile, rm } from "node:fs/promises";
+import { cp, readdir, readFile, writeFile, rm } from "node:fs/promises";
 
 
 const at = (p) => new URL(`../${p}`, import.meta.url);
@@ -14,3 +14,9 @@ await rm(at("dist-game/play"), { recursive: true });
 await Promise.all(siteOnly.map((p) => rm(at(`dist-game/${p}`), { force: true })));
 await cp(at("dist-game/index.html.tmp"), at("dist-game/index.html"));
 await rm(at("dist-game/index.html.tmp"));
+
+for (const f of await readdir(at("dist-game/assets"))) {
+  if (!f.endsWith(".js")) continue;
+  const js = at(`dist-game/assets/${f}`);
+  await writeFile(js, (await readFile(js, "utf8")).replaceAll("../privacy.html", "./privacy.html"));
+}
