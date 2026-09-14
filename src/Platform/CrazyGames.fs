@@ -25,6 +25,15 @@ let getInviteRoom () : string = jsNative
 [<Import("updateRoom", "./CrazyGames.js")>]
 let updateRoom (roomId: string, isJoinable: bool) : unit = jsNative
 
+/// The room's CrazyGames invite link, fetched by `updateRoom` and cached there;
+/// "" until the SDK answers, or on a build with no SDK.
+[<Import("inviteLink", "./CrazyGames.js")>]
+let inviteLink () : string = jsNative
+
+/// True while the player has chat switched off in the CrazyGames settings.
+[<Import("chatDisabled", "./CrazyGames.js")>]
+let chatDisabled () : bool = jsNative
+
 [<Import("addJoinRoomListener", "./CrazyGames.js")>]
 let addJoinRoomListener (callback: string -> unit) : unit = jsNative
 

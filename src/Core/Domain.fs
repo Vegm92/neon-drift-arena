@@ -225,7 +225,8 @@ module Cfg =
     let mutable rockLife = 14.
     let mutable rockDamage = 0.049
     let mutable rockMass = 3.
-    let inviteButton = false
+    let chatKeep = 8
+    let chatMax = 120
 
     let mutable portalEvery = 20.
     let mutable portalLife = 12.

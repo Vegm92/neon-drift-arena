@@ -1,4 +1,6 @@
 let sdk = null;
+let invite = "";
+let chatOff = false;
 
 export async function init(onMute) {
   const cg = window.CrazyGames?.SDK;
@@ -6,7 +8,8 @@ export async function init(onMute) {
   try {
     await cg.init();
     sdk = cg;
-    sdk.game.addSettingsChangeListener((s) => onMute(!!s.muteAudio));
+    sdk.game.addSettingsChangeListener((s) => { chatOff = !!s.disableChat; onMute(!!s.muteAudio); });
+    chatOff = !!sdk.game.settings?.disableChat;
     onMute(!!sdk.game.settings?.muteAudio);
   } catch (e) {
     console.error("CrazyGames SDK init failed", e);
@@ -30,8 +33,15 @@ export function getInviteRoom() {
 }
 
 export function updateRoom(roomId, isJoinable) {
-  if (sdk) call(() => sdk.game.updateRoom({ roomId, isJoinable, inviteParams: { roomId } }));
+  if (!sdk) return;
+  call(() => sdk.game.updateRoom({ roomId, isJoinable, inviteParams: { roomId } }));
+  // awaiting covers both SDK shapes: HTML5 returns the link, other wrappers a promise
+  (async () => { invite = (await sdk.game.inviteLink({ roomId })) ?? ""; })().catch(console.error);
 }
+
+export function inviteLink() { return invite; }
+
+export function chatDisabled() { return chatOff; }
 
 export function addJoinRoomListener(callback) {
   if (sdk) call(() => sdk.game.addJoinRoomListener((p) => p?.roomId && callback(p.roomId)));

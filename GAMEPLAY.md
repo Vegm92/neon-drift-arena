@@ -28,6 +28,8 @@ The lobby shows a QR code with the pad URL; the pause menu shows it again. A pho
 
 The pad relay carries input, nothing else - the match still runs entirely in the host browser.
 
+The lobby's COPY INVITE LINK panel copies a link to this room, so a friend on another PC lands straight in it. While they are here the lobby carries ROOM CHAT in the top right: press `T`, type, Enter sends, and the last few lines stay up for everyone in the room. It is there between rounds, not during one, and it is the desktops in the room talking - the phones are already in the same sofa. Turning chat off in your CrazyGames settings hides the panel for you.
+
 A second PC on the LAN can open the game URL itself. The first browser to open the game is the host and runs the simulation; every later one becomes a mirror: it sends its keyboard and gamepads to the host as `LAN PC` devices (join with Fire like a phone) and renders the host's world, menu and banner as they arrive. If the host closes, the mirror falls back to a local lobby after a second. LAN mirroring works on the dev server only.
 
 ## On CrazyGames

@@ -18,6 +18,9 @@ type Locale =
       ScanToJoin: string
       InviteCopy: string
       InviteCopied: string
+      ChatTitle: string
+      ChatPrompt: string
+      ChatHint: string
       PadConnecting: string
       PadFire: string
       PadBoost: string
@@ -240,6 +243,9 @@ let en =
       ScanToJoin = "SCAN TO PLAY FROM YOUR PHONE"
       InviteCopy = "COPY INVITE LINK"
       InviteCopied = "LINK COPIED"
+      ChatTitle = "ROOM CHAT"
+      ChatPrompt = "SAY SOMETHING"
+      ChatHint = "T TO CHAT"
       PadConnecting = "CONNECTING"
       PadFire = "FIRE"
       PadBoost = "BOOST"
