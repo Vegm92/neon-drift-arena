@@ -313,7 +313,11 @@ module Cfg =
     let mutable sfxThrustPitchBase = 40.
     let mutable sfxThrustPitchRange = 340.
 
-    let netStateMs = 100.
+    // A joined desktop draws the host's world `netDelayMs` behind it, blending the
+    // two `nda:state` snapshots either side, so it needs one in hand past that
+    // moment: two send ticks of headroom absorb one late snapshot without a stall.
+    let netStateMs = 50.
+    let netDelayMs = netStateMs * 2.
 
     let tunables: (string * (unit -> float) * (float -> unit))[] =
         [| "turnRate", (fun () -> turnRate), (fun x -> turnRate <- x)
