@@ -90,7 +90,7 @@ const counts = (s, ev, since) => s.filter((m) => m.ev === ev && (!since || m.t >
   await A.page.waitForTimeout(2000);
   a = await read(A.page);
   const rate = counts(a.sent, "nda:state", t0) / 2;
-  check("A sends at the ~10/s netStateMs tick, not per frame", rate > 5 && rate < 16, `${rate.toFixed(1)}/s`);
+  check("A sends at the ~20/s netStateMs tick, not per frame", rate > 12 && rate < 26, `${rate.toFixed(1)}/s`);
 
   // no flip-flop: B must stay a peer and stay silent
   b = await read(B.page);

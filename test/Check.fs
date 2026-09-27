@@ -851,6 +851,32 @@ let main _ =
     mode <- Arena
     setLayout 0
 
+    // what a joined desktop draws between two host snapshots
+    let m0 = step dt (all present) initial
+    let steer = all { present with Thrust = true; Turn = 1. }
+    let early = run 30 steer m0
+    let late = run 6 steer early
+    let mid = Mirror.lerp early late 0.5
+    check "a mirrored ship is drawn halfway between two snapshots" (len (mid.Ships.[0].Pos - (early.Ships.[0].Pos + late.Ships.[0].Pos) * 0.5) < 1e-9)
+    check "the mirrored clock is blended with it" (abs (mid.Time - (early.Time + late.Time) * 0.5) < 1e-9)
+    let still = place 0 zero (System.Math.PI - 0.1) m0
+    let later (w: World) = { w with Time = still.Time + 0.05 }
+    let across = Mirror.lerp still (place 0 zero (0.1 - System.Math.PI) still |> later) 0.5
+    check "a mirrored ship turns the short way round" (abs (abs across.Ships.[0].Angle - System.Math.PI) < 1e-9)
+    check "a ship that warps holds, then snaps, rather than sliding across" ((Mirror.lerp still (place 0 (v 900. 0.) 0. still |> later) 0.9).Ships.[0].Pos = zero)
+    check "a ship that dies holds until the next snapshot" ((Mirror.lerp still (still |> edit 0 (fun s -> { s with Alive = false; Pos = v 10. 0. }) |> later) 0.9).Ships.[0].Pos = zero)
+    let shot = { Owner = 0; Pos = zero; Vel = v 560. 0.; Life = 1.; Kind = 0; Damage = 10. }
+    let fired = { still with Bullets = [ shot ] }
+    let bent = Mirror.lerp fired ({ fired with Bullets = [ { shot with Pos = v 30. 6. } ] } |> later) 0.5
+    check "a mirrored bullet slides to its partner in the next snapshot" (len (bent.Bullets.Head.Pos - v 15. 3.) < 1e-9)
+    let spent = Mirror.lerp fired ({ fired with Bullets = [] } |> later) 0.5
+    check "a bullet gone by the next snapshot flies on along its velocity" (len (spent.Bullets.Head.Pos - v 14. 0.) < 1e-6)
+    let snap at w : Mirror.Snap = { At = at; World = w; Events = [] }
+    let buffer = ResizeArray [ snap 100. early; snap 150. late ]
+    check "the mirror holds the oldest snapshot before its buffer starts" ((Mirror.sample buffer 90.).Time = early.Time)
+    check "the mirror holds the newest snapshot rather than guessing past it" ((Mirror.sample buffer 400.).Time = late.Time)
+    check "the mirror blends by the host clock between snapshots" (abs ((Mirror.sample buffer 125.).Time - mid.Time) < 1e-9)
+
     let goldenHash = Determinism.golden
     let settled = Determinism.goldenRun ()
     let actual = Determinism.worldHash settled

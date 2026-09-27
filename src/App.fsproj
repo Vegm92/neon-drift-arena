@@ -25,6 +25,7 @@
     <Compile Include="Core\Strings.fs" />
     <Compile Include="Core\Sim.fs" />
     <Compile Include="Core\Determinism.fs" />
+    <Compile Include="Core\Mirror.fs" />
     <!-- Platform: thin browser bindings -->
     <Compile Include="Platform/CrazyGames.fs" />
     <Compile Include="Platform/Input.fs" />

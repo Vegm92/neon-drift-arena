@@ -253,7 +253,6 @@ let mutable private wasClient = false
 let mutable private simMs = 0.
 let mutable private hostLeftSaid = false
 let mutable private lastJoinable = true
-Input.hotOn "nda:state" (fun m -> remote <- m; remoteAt <- JS.Constructors.Date.now ())
 let private client () = not (isNull remote) && JS.Constructors.Date.now () - remoteAt < 1000.
 
 let private sendState () =
@@ -262,7 +261,7 @@ let private sendState () =
     let menu = if html = lastMenu && now - lastMenuAt < 1000. then null else html
     if not (isNull menu) then lastMenuAt <- now
     lastMenu <- html
-    let payload = createObj [ "world" ==> { world with Events = [] }; "events" ==> List.toArray frameEvents; "layout" ==> State.layout; "mode" ==> Array.findIndex ((=) State.mode) modes; "colors" ==> playerColor; "intro" ==> view.Intro; "banner" ==> banner.textContent; "bannerClass" ==> banner.className; "menuClass" ==> menuEl.className; "menu" ==> menu; "chat" ==> Menu.chatLines () ]
+    let payload = createObj [ "world" ==> { world with Events = [] }; "events" ==> List.toArray frameEvents; "layout" ==> State.layout; "mode" ==> Array.findIndex ((=) State.mode) modes; "colors" ==> playerColor; "intro" ==> view.Intro; "banner" ==> banner.textContent; "bannerClass" ==> banner.className; "menuClass" ==> menuEl.className; "menu" ==> menu; "chat" ==> Menu.chatLines (); "at" ==> Log.now () ]
     let bytes = (JS.JSON.stringify payload).Length
     if bytes > 60000 && Log.once "payload" 10000. then
         Log.warn "the world snapshot is big enough to stall the relay" (createObj [ "bytes" ==> bytes; "menuHtml" ==> not (isNull menu) ])
@@ -328,6 +327,31 @@ let private worldOf (w: obj) : World =
       Time = w?Time
       Events = [] }
 
+// The mirror's buffer of host snapshots, and how far behind the host's clock
+// this machine's clock reads: the least lag seen lately is the fastest the
+// relay has carried one, so jitter above it is what `netDelayMs` absorbs.
+let private snaps = ResizeArray<Mirror.Snap>()
+let private lags = ResizeArray<float>()
+let mutable private played = -infinity
+
+Input.hotOn "nda:state" (fun m ->
+    remote <- m
+    remoteAt <- JS.Constructors.Date.now ()
+    let now = Log.now ()
+    let at: float = if isNullOrUndefined m?at then now else m?at
+    // a lag a second off the rest is another host's clock after a promotion
+    if lags.Count > 0 && abs (now - at - Seq.min lags) > 1000. then
+        snaps.Clear ()
+        lags.Clear ()
+        played <- -infinity
+    lags.Add(now - at)
+    if lags.Count > 40 then lags.RemoveAt 0
+    // once per snapshot, less the time it sat on the wire past the fastest one:
+    // the camera counts the flyby down itself between snapshots
+    view.Intro <- m?intro - (now - at - Seq.min lags) / 1000.
+    snaps.Add { At = at; World = worldOf m?world; Events = (m?events: obj[]) |> Array.map eventOf |> List.ofArray }
+    if snaps.Count > 40 then snaps.RemoveAt 0)
+
 let private clientFrame dt =
     let ownScreen = Menu.visible () && Menu.localOptions ()
     if not ownScreen then Input.sendRemote ()
@@ -343,7 +367,6 @@ let private clientFrame dt =
     if State.layout <> layout then Sim.setLayout layout
     Array.blit (m?colors: int[]) 0 playerColor 0 4
     Render.syncArena view
-    view.Intro <- m?intro
     banner.textContent <- m?banner
     banner.className <- m?bannerClass
     if ownScreen then
@@ -356,9 +379,11 @@ let private clientFrame dt =
             menuEl.innerHTML <- html
             Menu.dirty ()
             m?menu <- null
-    let events = (m?events: obj[]) |> Array.map eventOf |> List.ofArray
-    m?events <- [||]
-    world <- worldOf m?world
+    let at = Log.now () - Seq.min lags - Cfg.netDelayMs
+    let events = [ for s in snaps do if s.At > played && s.At <= at then yield! s.Events ]
+    for s in snaps do
+        if s.At <= at then played <- max played s.At
+    world <- Mirror.sample snaps at
     Menu.syncChat ()
     Sfx.track (menuEl.className <> "hidden" || ownScreen)
     Sfx.play events
@@ -509,8 +534,10 @@ let rec frame (t: float) =
             say Strings.t.HostLeft
         localFrame t dt
         if Input.isPeer then frameEvents <- []
-        elif t - lastSend > Cfg.netStateMs then
-            lastSend <- t
+        elif t - lastSend >= Cfg.netStateMs then
+            // step the tick rather than restart it from `t`, or a 60 Hz frame
+            // clock rounds every 50 ms send up to the next frame, 67 ms
+            lastSend <- if t - lastSend > 2. * Cfg.netStateMs then t else lastSend + Cfg.netStateMs
             sendState ()
     let ms = Log.now () - started
     if ms > 33. && Log.once "frame" 5000. then
