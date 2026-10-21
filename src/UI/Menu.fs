@@ -326,11 +326,11 @@ let private modeTagline () =
 let private pickName i =
     if teamMode then Strings.t.Team(teamName teams.[i]) else Strings.t.Colors.[playerColor.[i]]
 
+let private cardColor i = if teams.[i] > 0 then teamColors.[teams.[i]] else colors.[playerColor.[i]]
+
 let private ship i =
     let k = if teams.[i] > 0 then teams.[i] - 1 else [| 0; 1; 3; 4 |].[playerColor.[i]]
-    sprintf "<i class=\"ship k%d t%d\"></i>" k teams.[i]
-
-let private cardColor i = if teams.[i] > 0 then teamColors.[teams.[i]] else colors.[playerColor.[i]]
+    sprintf "<i class=\"ship k%d\" style=\"--c:%s\"></i>" k (cardColor i)
 
 let private displayName i = if isBot i then Strings.t.Bot elif names.[i] = "" then Strings.t.Player i else names.[i]
 
