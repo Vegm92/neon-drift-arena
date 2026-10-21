@@ -166,10 +166,9 @@
     background:url(/assets/icons.png) 0 0/300% 100% no-repeat}
   #menu .lobby .modebar span:nth-child(2)::before{background-position:50% 0}
   #menu .lobby .modebar span:nth-child(3)::before{background-position:100% 0}
-  #menu .lobby .ship{display:block;width:100%;aspect-ratio:530/450;background:url(/assets/ships.png) no-repeat;background-size:289.81% 227.56%}
-  #menu .lobby .k0{background-position:21.57% 6.97%}#menu .lobby .k1{background-position:78.53% 8.01%}
-  #menu .lobby .k2{background-position:1.19% 78.75%}#menu .lobby .k3{background-position:49.9% 83.8%;transform:rotate(180deg)}#menu .lobby .k4{background-position:97.81% 82.58%}
-  #menu .lobby .t1{filter:hue-rotate(35deg)}#menu .lobby .t2{filter:hue-rotate(50deg)}
+  #menu .lobby .ship{display:block;width:100%;aspect-ratio:512/432;background:var(--c,#fff) url(/assets/ships.svg) var(--x,0) 0/500% 100% no-repeat;background-blend-mode:multiply;
+    -webkit-mask:url(/assets/ships.svg) var(--x,0) 0/500% 100% no-repeat;mask:url(/assets/ships.svg) var(--x,0) 0/500% 100% no-repeat}
+  #menu .lobby .k1{--x:25%}#menu .lobby .k2{--x:50%}#menu .lobby .k3{--x:75%}#menu .lobby .k4{--x:100%}
   #menu .lobby .slots{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(10px,1.6vw,26px);width:100%}
   #menu .lobby .slot{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 12px 0;
     border:2px solid currentColor;clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px);

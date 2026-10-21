@@ -13,9 +13,9 @@ let private assetRoot = if window.location.pathname.Contains "/play/" then "../"
 
 let private shipSheet =
     lazy
-        (let t = three.loadTexture (assetRoot + "assets/ships.png")
+        (let t = three.loadTexture (assetRoot + "assets/ships.svg")
          t.colorSpace <- three.SRGBColorSpace
-         t.repeat.set (fst cell / fst sheet, snd cell / snd sheet)
+         t.repeat.set (1. / shipCells, 1.)
          t)
 
 let private shipGeometry = lazy (three.PlaneGeometry(64., 54.).rotateZ (-Math.PI / 2.) |> flat)

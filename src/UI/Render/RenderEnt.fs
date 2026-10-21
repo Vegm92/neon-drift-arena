@@ -95,11 +95,8 @@ let drawShip t dt (vw: View) (sv: ShipView) (s: Ship) =
             sv.Shield.material.opacity <- 0.35 + 0.45 * (s.Shield / shieldAmount) + 0.2 * sin (t * 8.)
             sv.Shield.rotation.z <- t * 0.9
         sv.Body.material.opacity <- if s.Invuln > 0. then 0.4 + 0.4 * sin (t * 30.) else 1.
-        sv.Body.material.color.setHex (if s.Team > 0 then teamColors.[s.Team] else 0xffffff)
-        let k = spriteOf s
-        let cx, cy = cells.[k]
-        sv.Body.rotation.y <- if k = 3 then Math.PI else 0.
-        sv.Body.material?map?offset?set (cx / fst sheet, 1. - (cy + snd cell) / snd sheet)
+        sv.Body.material.color.setHex (shipColor s)
+        sv.Body.material?map?offset?set (float (spriteOf s) / shipCells, 0.)
         sv.Flame.material.color.setHex (shipColor s)
         // Small unconditional sample kept only so `Explode` can read a recent
         // heading (History[0]-History[1]); the exhaust trail below is separate.

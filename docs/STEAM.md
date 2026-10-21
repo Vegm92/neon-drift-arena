@@ -31,7 +31,7 @@ Steam only ships native builds. Today the game is a Vite site served by `deploy/
 - Sign the digital agreements, then identity verification, tax questionnaire (W-9 for US, W-8BEN for treaty countries) and bank details. The bank account holder must match the legal identity; a company needs a business account.
 - 30-day wait after paying the fee before the app can be released.
 - Content rules: nothing you do not own the rights to, no ad-based business model, adult content labelled. The first one is the only risk here, see asset rights below.
-- Asset rights: no `LICENSE` file in the repo. `public/music/battle1..3.mp3` and `menu.mp3` were committed without any license or attribution record; `ships.png` and `backdrop.jpg` likewise. Valve's review checks ownership of copyrighted material. Bebas Neue (OFL) is only on the landing page.
+- Asset rights: no `LICENSE` file in the repo. `public/music/battle1..3.mp3` and `menu.mp3` were committed without any license or attribution record; `backdrop.jpg` likewise. Valve's review checks ownership of copyrighted material. Bebas Neue (OFL) is only on the landing page.
 
 ## 3. Store page (all missing)
 
